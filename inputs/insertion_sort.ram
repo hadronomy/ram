@@ -1,0 +1,71 @@
+# Insertion Sort
+        read 0      # Read size into R1
+        store 1     # R1 will be our size decremented
+        store 10    # R10 will be our permanent size
+        load =0
+        store 2     # R2 will be our index register
+        load 1
+start_load: jzero end_load   # If size is 0, we're done
+        read 0      # Read next element into R0
+        store 3[2]  # Store element in R3
+        load 2      # Increment register index
+        add =1
+        store 2
+        load 1      # Decrement counter
+        sub =1
+        store 1
+        jump start_load   # Continue until done
+# Now starts the main program
+end_load: load =2
+        store 2 # R2 will be j
+for:    load 10
+        sub  2
+        jgtz for_condition
+        jump end_for
+for_condition: load  3[2]
+        store 4 # R4 will be key
+        load  2
+        sub  =1
+        store 5 # R5 will be i
+while:  load  5
+        jgtz  second
+        jump  end_while
+second: load  3[5]
+        sub   4   # A[i] - key
+        jgtz  skip
+        jump  end_while
+skip:   load  3[5]
+        store 6 # R6 will be aux
+        load  5
+        add   =1
+        store 7 # R7 will be i+1
+        load  6
+        store 3[7]
+        load  5
+        sub   =1
+        store 5
+        jump  while
+end_while:  load  5
+        add  =1
+        store 6 # R6 will be i+1
+        load  4
+        store 3[6]
+        load 2
+        add =1
+        store 2
+        jump  for
+# Write the result
+end_for: load =0
+        store 2
+print:  load  10
+        sub   2 # i - size
+        debug
+        jgtz  skip_condition
+        jump  terminate
+skip_condition: load  3[2]
+        write 0
+        load  2
+        add   =1
+        store 2 # i++
+terminate: halt
+

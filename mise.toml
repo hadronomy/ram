@@ -1,0 +1,11 @@
+[tools]
+dotnet = "9.0.102"
+"pipx:marimo" = "latest"
+uv = "latest"
+"cargo:ouch" = "latest"
+typst = "latest"
+
+[tasks]
+"c:run" = "dotnet run --project src/MemoryMachine.Console"
+build = "dotnet build"
+tar = "ouch c . Grupo2-PR2-DAA.tar.gz -g"
