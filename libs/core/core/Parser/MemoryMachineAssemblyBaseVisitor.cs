@@ -8,7 +8,7 @@
 // </auto-generated>
 //------------------------------------------------------------------------------
 
-// Generated from /home/hadronomy/practicas/PR2-DAA-2425/src/MemoryMachine.Core/Parser/MemoryMachineAssembly.g4 by ANTLR 4.13.1
+// Generated from /home/hadronomy/repos/ram/libs/core/core/Parser/MemoryMachineAssembly.g4 by ANTLR 4.13.1
 
 // Unreachable code detected
 #pragma warning disable 0162
