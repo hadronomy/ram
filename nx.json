@@ -22,6 +22,9 @@
   ],
   "targetDefaults": {
     "build": {
+      "dependsOn": ["^build", "^generate"]
+    },
+    "dev": {
       "dependsOn": ["^build"]
     }
   },
