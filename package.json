@@ -5,7 +5,7 @@
   "license": "MIT",
   "keywords": [],
   "scripts": {
-    "prepare": "nx g @nx-dotnet/core:restore",
+    "postinstall": "nx g @nx-dotnet/core:restore",
     "build": "nx run-many --target=build --all"
   },
   "dependencies": {
