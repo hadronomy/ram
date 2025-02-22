@@ -13,7 +13,8 @@
   },
   "packageManager": "pnpm@10.4.1",
   "dependencies": {
-    "bunchee": "^6.4.0"
+    "bunchee": "^6.4.0",
+    "monaco-editor": "^0.52.2"
   },
   "devDependencies": {
     "@types/tmp": "^0.2.6",
@@ -27,6 +28,9 @@
   "main": "./dist/es/index.js",
   "module": "./dist/es/index.js",
   "types": "./dist/es/index.d.ts",
+  "imports": {
+    "#grammar": "./src/index.ts"
+  },
   "exports": {
     ".": {
       "import": {
@@ -37,6 +41,16 @@
         "types": "./dist/cjs/index.d.cts",
         "default": "./dist/cjs/index.cjs"
       }
+    },
+    "./monaco": {
+        "import": {
+            "types": "./dist/es/monaco.d.ts",
+            "default": "./dist/es/monaco.js"
+        },
+        "require": {
+            "types": "./dist/cjs/monaco.d.cts",
+            "default": "./dist/cjs/monaco.cjs"
+        }
     }
   }
 }
