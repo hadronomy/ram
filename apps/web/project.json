@@ -1,9 +1,9 @@
 {
-    "name": "@ram/web",
-    "$schema": "../../node_modules/nx/schemas/project-schema.json",
-    "sourceRoot": "apps/web",
-    "projectType": "application",
-    "tags": [],
-    "// targets": "to see all targets run: nx show project web-example --web",
-    "targets": {}
+  "name": "@ram/web",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "apps/web",
+  "projectType": "application",
+  "tags": [],
+  "// targets": "to see all targets run: nx show project web-example --web",
+  "targets": {}
 }

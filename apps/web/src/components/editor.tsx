@@ -1,7 +1,7 @@
 'use client';
 
-import Editor, { useMonaco } from '@monaco-editor/react';
 import type * as Monaco from 'monaco-editor';
+import Editor, { useMonaco } from '@monaco-editor/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 const EXAMPLE = `# Bubble Sort - Initial setup
@@ -81,8 +81,8 @@ terminate: halt
 
 export function LiveEditor() {
   const monaco = useMonaco();
-  const [editor, setEditor] =
-    useState<Monaco.editor.IStandaloneCodeEditor | null>(null);
+  const [editor, setEditor]
+    = useState<Monaco.editor.IStandaloneCodeEditor | null>(null);
   const [breakpoints, setBreakpoints] = useState<number[]>([]);
   const [hoverLine, setHoverLine] = useState<number | null>(null);
   const decorationsCollection = useRef<Monaco.editor.IEditorDecorationsCollection | null>(null);
@@ -98,25 +98,27 @@ export function LiveEditor() {
           e.event.preventDefault();
 
           const lineNumber = e.target.position?.lineNumber;
-          if (!lineNumber) return;
+          if (!lineNumber)
+            return;
 
           setBreakpoints((prev) => {
             const idx = prev.indexOf(lineNumber);
             if (idx === -1) {
               return [...prev, lineNumber];
             }
-            return prev.filter((bp) => bp !== lineNumber);
+            return prev.filter(bp => bp !== lineNumber);
           });
         }
       });
 
       editor.onMouseMove((e) => {
         if (
-          e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN ||
-          e.target.type === monaco.editor.MouseTargetType.GUTTER_LINE_NUMBERS
+          e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN
+          || e.target.type === monaco.editor.MouseTargetType.GUTTER_LINE_NUMBERS
         ) {
           setHoverLine(e.target.position?.lineNumber || null);
-        } else {
+        }
+        else {
           setHoverLine(null);
         }
       });
@@ -130,10 +132,12 @@ export function LiveEditor() {
 
   // Update decorations whenever breakpoints change
   useEffect(() => {
-    if (!editor || !monaco || !decorationsCollection.current) return;
+    if (!editor || !monaco || !decorationsCollection.current)
+      return;
 
     const model = editor.getModel();
-    if (!model) return;
+    if (!model)
+      return;
 
     const newDecorations: Monaco.editor.IModelDeltaDecoration[] = [];
 
@@ -175,11 +179,13 @@ export function LiveEditor() {
     };
   }, []);
 
-  if (!monaco) return null;
+  if (!monaco)
+    return null;
 
   return (
     <>
-      <style jsx global>{`
+      <style jsx global>
+        {`
         .monaco-editor .margin-view-overlays .cgmr {
           cursor: pointer;
         }
@@ -207,7 +213,8 @@ export function LiveEditor() {
           width: 10px;
           height: 10px;
         }
-      `}</style>
+      `}
+      </style>
       <Editor
         height="100vh"
         width="100vw"

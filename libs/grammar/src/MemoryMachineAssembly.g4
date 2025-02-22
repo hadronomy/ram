@@ -1,7 +1,5 @@
 grammar MemoryMachineAssembly;
 
-@header {#pragma warning disable 3021}
-
 // Parser Rules
 
 program: line (NEWLINE+ line)* NEWLINE* EOF;

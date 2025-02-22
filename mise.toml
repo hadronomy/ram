@@ -1,9 +1,8 @@
 [tools]
 dotnet = "9.0.102"
-"pipx:marimo" = "latest"
 uv = "latest"
 "cargo:ouch" = "latest"
-typst = "latest"
+"pipx:antlr4-tools" = "latest"
 
 [tasks]
 "c:run" = "dotnet run --project src/MemoryMachine.Console"

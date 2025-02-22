@@ -1,6 +1,6 @@
 'use client';
 
-import { LiveEditor } from "~/components/editor";
+import { LiveEditor } from '~/components/editor';
 
 export default function Home() {
   return (
