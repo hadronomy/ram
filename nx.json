@@ -25,7 +25,10 @@
       "dependsOn": ["^build", "^generate"]
     },
     "dev": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "options": {
+        "dev": true
+      }
     }
   },
   "generators": {

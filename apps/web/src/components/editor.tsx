@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import catppuccinMocha from '@shikijs/themes/catppuccin-mocha';
 import { textmateThemeToMonacoTheme } from '@shikijs/monaco';
 
-import { RAMTokenProvider } from '@ram/grammar/monaco'
+import { RAMTokenProvider } from '@ram/grammar/monaco';
 
 import { EXAMPLE_FILE } from '~/lib/consts';
 import { normalizeTheme } from '~/lib/theme';
