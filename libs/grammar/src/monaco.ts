@@ -13,6 +13,19 @@ const GRAMMAR_CONSTANTS = {
     FILE_EXTENSION: '.ram'
 } as const;
 
+const TOKEN_MAP: Record<string, string> = {
+    'IDENTIFIER': 'entity.name.function',
+    'NUMBER': 'constant.numeric',
+    'COLON': 'delimiter',
+    'EQUALS': 'operator',
+    'ASTERISK': 'operator',
+    'LBRACKET': 'punctuation.bracket',
+    'RBRACKET': 'punctuation.bracket',
+    'COMMENT': 'comment',
+    'NEWLINE': 'whitespace',
+    [GRAMMAR_CONSTANTS.ERROR_SCOPE]: 'error'
+} as const;
+
 export class RAMState implements IState {
     public clone(): IState {
         return new RAMState();
@@ -28,7 +41,7 @@ export class RAMToken implements IToken {
     public readonly startIndex: number;
 
     constructor(ruleName: string, startIndex: number) {
-        this.scopes = `${ruleName.toLowerCase()}${GRAMMAR_CONSTANTS.FILE_EXTENSION}`;
+        this.scopes = TOKEN_MAP[ruleName] || `${ruleName.toLowerCase()}${GRAMMAR_CONSTANTS.FILE_EXTENSION}`;
         this.startIndex = startIndex;
     }
 }

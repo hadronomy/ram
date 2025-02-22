@@ -10,11 +10,17 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
+    "@ram/grammar": "workspace:*",
+    "@shikijs/core": "^3.0.0",
+    "@shikijs/monaco": "^3.0.0",
+    "@shikijs/themes": "^3.0.0",
+    "@shikijs/types": "^3.0.0",
     "monaco-editor": "^0.52.2",
+    "monaco-editor-core": "^0.52.2",
     "next": "15.1.7",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "@ram/grammar": "workspace:*"
+    "tm-themes": "^1.9.13"
   },
   "devDependencies": {
     "@eslint/compat": "^1.1.1",

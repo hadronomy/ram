@@ -2,11 +2,14 @@
 
 import type * as Monaco from 'monaco-editor';
 import Editor, { useMonaco } from '@monaco-editor/react';
-import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import catppuccinMocha from '@shikijs/themes/catppuccin-mocha';
+import { textmateThemeToMonacoTheme } from '@shikijs/monaco';
 
 import { RAMTokenProvider } from '@ram/grammar/monaco'
 
 import { EXAMPLE_FILE } from '~/lib/consts';
+import { normalizeTheme } from '~/lib/theme';
 
 export function LiveEditor() {
   const monaco = useMonaco();
@@ -15,7 +18,7 @@ export function LiveEditor() {
   const [breakpoints, setBreakpoints] = useState<number[]>([]);
   const [hoverLine, setHoverLine] = useState<number | null>(null);
   const decorationsCollection = useRef<Monaco.editor.IEditorDecorationsCollection | null>(null);
-
+  
   const handleEditorDidMount = useCallback(
     (editor: Monaco.editor.IStandaloneCodeEditor, monaco: typeof Monaco) => {
       setEditor(editor);
@@ -58,20 +61,12 @@ export function LiveEditor() {
 
       monaco.languages.register({ id: 'ram' })
       monaco.languages.setTokensProvider('ram', new RAMTokenProvider())
-      monaco.editor.defineTheme('ram-theme', {
-        base: 'vs-dark',
-        inherit: true,
-        colors: {},
-        rules: [
-          { token: 'comment.ram', foreground: '#585b70' }, // Catppuccin Surface2
-          { token: 'number.ram', foreground: '#f9e2af' },  // Catppuccin Yellow
-          { token: 'identifier.ram', foreground: '#89b4fa' }, // Catppuccin Blue
-          { token: 'lbracket.ram', foreground: '#cdd6f4' }, // Catppuccin Text
-          { token: 'rbracket.ram', foreground: '#cdd6f4' }, // Catppuccin Text
-          { token: 'error.ram', foreground: '#f38ba8' }, // Catppuccin Red
-        ],
-      });
-      monaco.editor.setTheme('ram-theme');
+
+      const normalizedTheme = normalizeTheme(catppuccinMocha);
+      const theme = textmateThemeToMonacoTheme(normalizedTheme);
+
+      monaco.editor.defineTheme('catppuccin-mocha', theme);
+      monaco.editor.setTheme('catppuccin-mocha');
     },
     [],
   );

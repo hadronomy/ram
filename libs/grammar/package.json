@@ -43,14 +43,14 @@
       }
     },
     "./monaco": {
-        "import": {
-            "types": "./dist/es/monaco.d.ts",
-            "default": "./dist/es/monaco.js"
-        },
-        "require": {
-            "types": "./dist/cjs/monaco.d.cts",
-            "default": "./dist/cjs/monaco.cjs"
-        }
+      "import": {
+        "types": "./dist/es/monaco.d.ts",
+        "default": "./dist/es/monaco.js"
+      },
+      "require": {
+        "types": "./dist/cjs/monaco.d.cts",
+        "default": "./dist/cjs/monaco.cjs"
+      }
     }
   }
 }
