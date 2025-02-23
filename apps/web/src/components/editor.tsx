@@ -1,5 +1,7 @@
 'use client';
 
+import './editor-styles.css';
+
 import type * as Monaco from 'monaco-editor';
 import Editor, { useMonaco } from '@monaco-editor/react';
 import { useCallback, useState } from 'react';
@@ -7,7 +9,6 @@ import { useCallback, useState } from 'react';
 import { configureMonaco, EDITOR_OPTIONS } from '~/lib/config';
 import { EXAMPLE_FILE } from '~/lib/consts';
 import { useBreakpoints, useEditorDecorations } from '~/lib/hooks';
-import { EditorStyles } from './editor-styles';
 
 export function LiveEditor() {
   const monaco = useMonaco();
@@ -60,7 +61,6 @@ export function LiveEditor() {
 
   return (
     <>
-      <EditorStyles />
       <Editor
         height="100vh"
         width="100vw"
