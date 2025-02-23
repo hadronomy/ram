@@ -1,0 +1,36 @@
+[package]
+name = "ram"
+
+authors.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+version.workspace    = true
+
+[features]
+default = []
+serde   = ["dep:serde", "serde_json", "serde_derive"]
+
+[dependencies]
+ram-cli = { workspace = true }
+
+anstream       = { workspace = true }
+anyhow         = { workspace = true }
+clap           = { workspace = true }
+globset        = { workspace = true, features = ["serde"] }
+human-panic    = { workspace = true }
+itertools      = { workspace = true }
+miette         = { workspace = true, features = ["fancy"] }
+owo-colors     = { workspace = true }
+semver         = { workspace = true }
+serde          = { workspace = true, optional = true }
+serde_derive   = { workspace = true, optional = true }
+serde_json     = { workspace = true, optional = true }
+tempfile       = { workspace = true }
+textwrap       = { workspace = true }
+thiserror      = { workspace = true }
+tokio          = { workspace = true }
+walkdir        = { workspace = true }
+
+[[bin]]
+name = "ram"

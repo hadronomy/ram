@@ -33,6 +33,8 @@
 ## Requirements
 
 - mise - [Installation](https://mise.jdx.dev)
+- mold - [Installation](https://github.com/rui314/mold)
+- rustup/cargo - [Installation](https://rustup.rs)
 
 `mise` Is used to manage the project dependencies and environment.
 To ensure that you have the needed tools installed, run the following command:
