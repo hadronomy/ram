@@ -4,7 +4,7 @@ obj/
 *.user
 *.suo
 *.vs/
-.vscode/
+!.vscode/settings.json
 TestResults/
 BenchmarkDotNet.Artifacts/
 .venv
