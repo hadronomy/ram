@@ -121,6 +121,9 @@ pub enum Command {
         #[arg(long, value_enum, default_value = "text")]
         output_format: VersionFormat,
     },
+
+    /// Run the Language Server Protocol (LSP) server.
+    Lsp
 }
 
 #[derive(Args, Clone)]
