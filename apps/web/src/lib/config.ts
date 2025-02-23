@@ -1,8 +1,17 @@
 import type * as Monaco from 'monaco-editor';
 import catppuccinMocha from '@shikijs/themes/catppuccin-mocha';
 import { textmateThemeToMonacoTheme } from '@shikijs/monaco';
-import { normalizeTheme } from '~/lib/theme';
+
 import { RAMTokenProvider } from '@ram/grammar/monaco';
+
+import { normalizeTheme } from '~/lib/theme';
+
+export const RAM_LANG_CONFIG: Monaco.languages.ILanguageExtensionPoint = {
+  id: 'ram',
+  extensions: ['.ram'],
+  aliases: ['ram', 'RAM'],
+  mimetypes: ['text/x-ram']
+};
 
 export const EDITOR_OPTIONS: Monaco.editor.IStandaloneEditorConstructionOptions = {
   fontSize: 16,
@@ -20,12 +29,18 @@ export const EDITOR_OPTIONS: Monaco.editor.IStandaloneEditorConstructionOptions 
 };
 
 export function configureMonaco(monaco: typeof Monaco) {
-  monaco.languages.register({ id: 'ram' });
-  monaco.languages.setTokensProvider('ram', new RAMTokenProvider());
+  registerLanguage(monaco);
+  configureTheme(monaco);
+}
 
+export function registerLanguage(monaco: typeof Monaco) {
+  monaco.languages.register(RAM_LANG_CONFIG);
+  monaco.languages.setTokensProvider('ram', new RAMTokenProvider());
+}
+
+export function configureTheme(monaco: typeof Monaco) {
   const normalizedTheme = normalizeTheme(catppuccinMocha);
   const theme = textmateThemeToMonacoTheme(normalizedTheme);
 
   monaco.editor.defineTheme('catppuccin-mocha', theme);
-  monaco.editor.setTheme('catppuccin-mocha');
 }

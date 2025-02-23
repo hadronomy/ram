@@ -22,10 +22,13 @@ export function LiveEditor() {
 
   useEditorDecorations(editor, monaco, breakpoints, hoverLine);
 
+  const handleBeforeMount = useCallback((monaco: typeof Monaco) => {
+    configureMonaco(monaco);
+  }, []);
+
   const handleEditorDidMount = useCallback(
     (editor: Monaco.editor.IStandaloneCodeEditor, monaco: typeof Monaco) => {
       setEditor(editor);
-      configureMonaco(monaco);
 
       editor.onMouseDown((e) => {
         if (e.target.type === monaco.editor.MouseTargetType.GUTTER_GLYPH_MARGIN) {
@@ -61,9 +64,10 @@ export function LiveEditor() {
       <Editor
         height="100vh"
         width="100vw"
-        theme="vs-dark"
+        theme="catppuccin-mocha"
         defaultLanguage="ram"
         defaultValue={EXAMPLE_FILE}
+        beforeMount={handleBeforeMount}
         onMount={handleEditorDidMount}
         options={EDITOR_OPTIONS}
       />
