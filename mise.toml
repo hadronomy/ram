@@ -7,4 +7,4 @@ uv = "latest"
 [tasks]
 "c:run" = "dotnet run --project src/MemoryMachine.Console"
 build = "dotnet build"
-tar = "ouch c . Grupo2-PR2-DAA.tar.gz -g"
+tar = "ouch c . ram.tar.gz -g"
