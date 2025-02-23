@@ -1,37 +1,10 @@
 {
   "name": "@ram/grammar",
+  "type": "module",
   "version": "0.1.0",
+  "packageManager": "pnpm@10.4.1",
   "description": "The grammar for the ram assembly language",
   "keywords": [],
-  "files": [
-    "dist"
-  ],
-  "type": "module",
-  "scripts": {
-    "build": "bunchee",
-    "dev": "bunchee --watch",
-    "generate": "esno scripts/generate.ts"
-  },
-  "packageManager": "pnpm@10.4.1",
-  "dependencies": {
-    "bunchee": "^6.4.0",
-    "monaco-editor": "^0.52.2"
-  },
-  "devDependencies": {
-    "@types/tmp": "^0.2.6",
-    "antlr-ng": "^0.7.0",
-    "antlr4ng": "^3.0.14",
-    "chalk": "^5.4.1",
-    "commander": "^13.1.0",
-    "esno": "^4.8.0",
-    "tmp": "^0.2.3"
-  },
-  "main": "./dist/es/index.js",
-  "module": "./dist/es/index.js",
-  "types": "./dist/es/index.d.ts",
-  "imports": {
-    "#grammar": "./src/index.ts"
-  },
   "exports": {
     ".": {
       "import": {
@@ -53,5 +26,32 @@
         "default": "./dist/cjs/monaco.cjs"
       }
     }
+  },
+  "main": "./dist/es/index.js",
+  "module": "./dist/es/index.js",
+  "types": "./dist/es/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bunchee",
+    "dev": "bunchee --watch",
+    "generate": "esno scripts/generate.ts"
+  },
+  "dependencies": {
+    "bunchee": "^6.4.0",
+    "monaco-editor": "^0.52.2"
+  },
+  "devDependencies": {
+    "@types/tmp": "^0.2.6",
+    "antlr-ng": "^0.7.0",
+    "antlr4ng": "^3.0.14",
+    "chalk": "^5.4.1",
+    "commander": "^13.1.0",
+    "esno": "^4.8.0",
+    "tmp": "^0.2.3"
+  },
+  "imports": {
+    "#grammar": "./src/index.ts"
   }
 }

@@ -4,9 +4,9 @@ import type * as Monaco from 'monaco-editor';
 import Editor, { useMonaco } from '@monaco-editor/react';
 import { useCallback, useState } from 'react';
 
+import { configureMonaco, EDITOR_OPTIONS } from '~/lib/config';
 import { EXAMPLE_FILE } from '~/lib/consts';
 import { useBreakpoints, useEditorDecorations } from '~/lib/hooks';
-import { EDITOR_OPTIONS, configureMonaco } from '~/lib/config';
 import { EditorStyles } from './editor-styles';
 
 export function LiveEditor() {

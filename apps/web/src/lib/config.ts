@@ -1,8 +1,8 @@
 import type * as Monaco from 'monaco-editor';
-import catppuccinMocha from '@shikijs/themes/catppuccin-mocha';
+import { RAMTokenProvider } from '@ram/grammar/monaco';
 import { textmateThemeToMonacoTheme } from '@shikijs/monaco';
 
-import { RAMTokenProvider } from '@ram/grammar/monaco';
+import catppuccinMocha from '@shikijs/themes/catppuccin-mocha';
 
 import { normalizeTheme } from '~/lib/theme';
 
@@ -10,7 +10,7 @@ export const RAM_LANG_CONFIG: Monaco.languages.ILanguageExtensionPoint = {
   id: 'ram',
   extensions: ['.ram'],
   aliases: ['ram', 'RAM'],
-  mimetypes: ['text/x-ram']
+  mimetypes: ['text/x-ram'],
 };
 
 export const EDITOR_OPTIONS: Monaco.editor.IStandaloneEditorConstructionOptions = {

@@ -1,8 +1,8 @@
 import { execSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import * as process from 'node:process';
+import { fileURLToPath } from 'node:url';
 import chalk from 'chalk';
 import * as tmp from 'tmp';
 
@@ -83,7 +83,7 @@ function createTempGrammarFile(grammarFile: string): {
   fs.writeFileSync(tempFile, contentWithPragma);
   return {
     tempFile,
-    cleanup: () => tmpDir.removeCallback()
+    cleanup: () => tmpDir.removeCallback(),
   };
 }
 
@@ -102,7 +102,7 @@ function buildAntlrCommand(
   return [
     baseCommand,
     !noListener && '-l',
-    !noVisitor && '-v'
+    !noVisitor && '-v',
   ].filter(Boolean).join(' ');
 }
 
@@ -140,7 +140,7 @@ function generateAntlr(
       effectiveGrammarFile,
       namespace,
       noListener,
-      noVisitor
+      noVisitor,
     );
 
     console.log(chalk.blue(`Generating ${language} parser...`));
@@ -149,14 +149,17 @@ function generateAntlr(
     execSync(command, { stdio: 'inherit' });
 
     console.log(chalk.green(`Successfully generated ${language} parser in ${outputDir}`));
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  } catch (error) {
+  }
+  // eslint-disable-next-line unused-imports/no-unused-vars
+  catch (error) {
     console.error(chalk.red(`ANTLR generation failed for ${language}.`));
-    if (cleanup) cleanup();
+    if (cleanup)
+      cleanup();
     process.exit(1);
   }
 
-  if (cleanup) cleanup();
+  if (cleanup)
+    cleanup();
 }
 
 function main(): void {
@@ -183,7 +186,7 @@ function main(): void {
 
     console.log(chalk.green.bold('All parsers generated successfully!'));
   }
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line unused-imports/no-unused-vars
   catch (error) {
     console.error(chalk.red.bold('Parser generation failed. See errors above.'));
     process.exit(1);

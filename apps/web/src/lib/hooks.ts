@@ -1,5 +1,5 @@
-import { useState, useRef, useEffect } from 'react';
 import type * as Monaco from 'monaco-editor';
+import { useEffect, useRef, useState } from 'react';
 
 export function useBreakpoints() {
   const [breakpoints, setBreakpoints] = useState<number[]>([]);
