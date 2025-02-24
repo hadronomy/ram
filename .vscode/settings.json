@@ -52,5 +52,17 @@
     "scss",
     "pcss",
     "postcss"
-  ]
+  ],
+  "[cpp]": {
+    "editor.formatOnSave": true
+  },
+  "[c]": {
+    "editor.formatOnSave": true
+  },
+  "[rust]": {
+    "editor.formatOnSave": true
+  },
+  "[csharp]": {
+    "editor.formatOnSave": true
+  }
 }
