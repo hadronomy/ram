@@ -32,8 +32,6 @@ serde          = "1.0.217"
 serde_derive   = "1.0.217"
 serde_json     = "1.0.134"
 
-ram-cli = { path = "./crates/ram-cli" }
-
 # Lint rules that I like taken from
 # https://github.com/rolldown/rolldown/blob/main/Cargo.toml
 [workspace.lints.clippy]

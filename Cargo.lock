@@ -500,7 +500,6 @@ dependencies = [
  "itertools",
  "miette",
  "owo-colors",
- "ram-cli",
  "semver",
  "serde",
  "serde_derive",
@@ -510,14 +509,6 @@ dependencies = [
  "thiserror 2.0.11",
  "tokio",
  "walkdir",
-]
-
-[[package]]
-name = "ram-cli"
-version = "0.1.0"
-dependencies = [
- "anstream",
- "clap",
 ]
 
 [[package]]

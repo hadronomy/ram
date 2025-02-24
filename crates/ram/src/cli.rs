@@ -126,7 +126,14 @@ pub enum Command {
     Lsp,
 
     /// Validate a RAM file.
-    Validate
+    Validate {
+        /// The file to validate.
+        program: String,
+
+        /// Output the ast as JSON.
+        #[arg(long, short, action)]
+        ast: bool,
+    },
 }
 
 #[derive(Args, Clone)]
