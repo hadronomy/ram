@@ -123,7 +123,10 @@ pub enum Command {
     },
 
     /// Run the Language Server Protocol (LSP) server.
-    Lsp
+    Lsp,
+
+    /// Validate a RAM file.
+    Validate
 }
 
 #[derive(Args, Clone)]

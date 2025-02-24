@@ -101,6 +101,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6b964d184e89d9b6b67dd2715bc8e74cf3107fb2b529990c90cf517326150bf4"
 
 [[package]]
+name = "ariadne"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31beedec3ce83ae6da3a79592b3d8d7afd146a5b15bb9bb940279aced60faa89"
+dependencies = [
+ "unicode-width",
+ "yansi",
+]
+
+[[package]]
 name = "backtrace"
 version = "0.3.74"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -482,6 +492,7 @@ version = "0.1.0"
 dependencies = [
  "anstream",
  "anyhow",
+ "ariadne",
  "chumsky",
  "clap",
  "globset",
@@ -945,6 +956,12 @@ checksum = "3268f3d866458b787f390cf61f4bbb563b922d091359f9608842999eaee3943c"
 dependencies = [
  "bitflags",
 ]
+
+[[package]]
+name = "yansi"
+version = "1.0.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cfe53a6657fd280eaa890a3bc59152892ffa3e30101319d168b781ed6529b049"
 
 [[package]]
 name = "zerocopy"

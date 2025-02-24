@@ -8,7 +8,7 @@ repository.workspace = true
 version.workspace    = true
 
 [features]
-default = []
+default = ["serde"]
 serde   = ["dep:serde", "serde_json", "serde_derive"]
 
 [dependencies]
@@ -32,6 +32,8 @@ thiserror      = { workspace = true }
 tokio          = { workspace = true }
 walkdir        = { workspace = true }
 chumsky        = { workspace = true }
+ariadne        = { workspace = true }
 
 [[bin]]
 name = "ram"
+required-features = ["serde"]
