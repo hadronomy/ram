@@ -64,5 +64,10 @@
   },
   "[csharp]": {
     "editor.formatOnSave": true
+  },
+  "workbench.colorCustomizations": {
+    "tab.activeBorder": "#4F6A0A",
+    "statusBar.background": "#4F6A0A",
+    "statusBar.foreground": "#ffffff"
   }
 }

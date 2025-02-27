@@ -26,7 +26,6 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tm-themes": "^1.9.13",
-    "vscode": "^1.1.37",
     "vscode-jsonrpc": "^8.2.1",
     "vscode-languageserver-protocol": "^3.17.5",
     "vscode-languageserver-types": "^3.17.5"
@@ -40,6 +39,7 @@
     "@types/node": "22.13.4",
     "@types/react": "^19.0.10",
     "@types/react-dom": "^19.0.4",
+    "@types/vscode": "^1.97.0",
     "eslint": "^9.8.0",
     "postcss": "^8.5.3",
     "tailwindcss": "^4.0.7",
