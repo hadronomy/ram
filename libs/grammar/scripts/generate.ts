@@ -175,14 +175,14 @@ function main(): void {
       config.noVisitor,
     );
 
-    generateAntlr(
-      config.grammarFile,
-      config.outputDirCS,
-      'CSharp',
-      config.cSharpNamespace,
-      config.noListener,
-      config.noVisitor,
-    );
+    // generateAntlr(
+    //   config.grammarFile,
+    //   config.outputDirCS,
+    //   'CSharp',
+    //   config.cSharpNamespace,
+    //   config.noListener,
+    //   config.noVisitor,
+    // );
 
     console.log(chalk.green.bold('All parsers generated successfully!'));
   }

@@ -5,7 +5,6 @@
   "license": "MIT",
   "keywords": [],
   "scripts": {
-    "postinstall": "nx g @nx-dotnet/core:restore",
     "build": "nx run-many --target=build --all"
   },
   "dependencies": {
@@ -19,7 +18,6 @@
     "@eslint/js": "^9.8.0",
     "@gitopslovers/nx-biome": "^1.5.0",
     "@hadronomy/eslint-config": "^4.1.2",
-    "@nx-dotnet/core": "^2.5.0",
     "@nx/eslint": "20.4.5",
     "@nx/eslint-plugin": "20.4.5",
     "@nx/js": "20.4.5",
