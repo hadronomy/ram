@@ -4,9 +4,6 @@
   "author": "Pablo Hernández <hadronomy@gmail.com> (https://hadronomy.com)",
   "license": "MIT",
   "keywords": [],
-  "scripts": {
-    "build": "nx run-many --target=build --all"
-  },
   "devDependencies": {
     "@hadronomy/eslint-config": "^4.1.2",
     "autoprefixer": "10.4.13",
