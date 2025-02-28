@@ -1,0 +1,119 @@
+%YAML 1.2
+---
+# Syntax definition for RAM (Random Access Machine) Assembly Language
+
+name: RAM Assembly
+file_extensions:
+  - ram
+
+scope: source.ram
+
+contexts:
+  main:
+    - include: comments
+    - include: labels
+    - include: instructions
+
+    - match: '\n'
+      scope: punctuation.terminator.ram
+
+  comments:
+    - match: '#.*?($|\n)'
+      scope: comment.line.number-sign.ram
+
+  labels:
+    - match: '([a-zA-Z][a-zA-Z0-9_]*)(\s*)(:)'
+      captures:
+        1: entity.name.function.ram
+        2: meta.whitespace.ram
+        3: punctuation.definition.label.ram
+      push: after_label
+
+  after_label:
+    - include: comments
+    - include: instructions
+    - match: '\n'
+      scope: punctuation.terminator.ram
+      pop: true
+
+  instructions:
+    # Standard instructions with distinct coloring
+    - match: '\b(?i:load|store|read|write|add|sub|mul|div|jmp|jgtz|jzero|halt)\b(\s+)'
+      captures:
+        1: keyword.control.instruction.ram
+        2: meta.whitespace.ram
+      push: instruction_args
+    # Any other instructions (user-defined)
+    - match: '\b[a-zA-Z][a-zA-Z0-9_]*\b(\s+)'
+      captures:
+        1: keyword.control.instruction.ram
+        2: meta.whitespace.ram
+      push: instruction_args
+    # Instructions with no args
+    - match: '\b(?i:halt)\b'
+      scope: keyword.control.instruction.ram
+
+  instruction_args:
+    - include: comments
+    - include: arguments
+    - match: '\n'
+      scope: punctuation.terminator.ram
+      pop: true
+    - match: '.*'
+      pop: true
+
+  line:
+    - include: comments
+    - include: arguments
+    - match: '\n'
+      scope: punctuation.terminator.ram
+      pop: true
+    - match: '.*'
+      scope: invalid.illegal.ram
+      pop: true
+
+  arguments:
+    # Comments (prioritize these before other patterns)
+    - include: comments
+
+    # Indirect operand (*5)
+    - match: '(\*)([0-9]+)'
+      captures:
+        1: keyword.operator.indirect.ram
+        2: constant.numeric.integer.ram
+
+    # Immediate operand (=5)
+    - match: '(=)([0-9]+)'
+      captures:
+        1: keyword.operator.immediate.ram
+        2: constant.numeric.integer.ram
+
+    # Array accessor with brackets
+    - match: '\['
+      scope: punctuation.section.brackets.begin.ram
+      push: array_accessor
+
+    # Numbers (direct addressing)
+    - match: '\b[0-9]+\b'
+      scope: constant.numeric.integer.ram
+
+    # Label references
+    - match: '\b[a-zA-Z][a-zA-Z0-9_]*\b'
+      scope: entity.name.function.ram
+
+  array_accessor:
+    # Handle comments inside array accessors
+    - include: comments
+
+    # Close bracket
+    - match: '\]'
+      scope: punctuation.section.brackets.end.ram
+      pop: true
+
+    # Handle newlines as error for unclosed brackets
+    - match: '\n'
+      scope: invalid.illegal.unclosed.brackets.ram
+      pop: true
+
+    # Include other arguments for nested expressions
+    - include: arguments

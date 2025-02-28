@@ -3,7 +3,7 @@
 # de salida (el valor 0 no se copia)
 
 lee:	read [1]
-			load 1
+			load 1[2
 			jzero fin
 			write [1
 			jump lee

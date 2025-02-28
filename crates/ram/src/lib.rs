@@ -30,6 +30,8 @@ where
                 .break_words(false)
                 .word_separator(textwrap::WordSeparator::AsciiSpace)
                 .word_splitter(textwrap::WordSplitter::NoHyphenation)
+                .with_syntax_highlighting(language::highlighter())
+                .tab_width(2)
                 .build(),
         )
     }))
