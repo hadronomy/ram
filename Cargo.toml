@@ -10,27 +10,34 @@ repository = "https://github.com/hadronomy/ram"
 version    = "0.1.0"
 
 [workspace.dependencies]
-anstream    = "0.6.18"
-anyhow      = "1.0.95"
-clap        = { version = "4.5.23", features = ["derive", "env", "string", "wrap_help"] }
-globset     = { version = "0.4.15", features = ["serde"] }
-human-panic = "2.0.2"
-miette      = "7.4.0"
-owo-colors  = "4.1.0"
-semver      = "1.0.24"
-tempfile    = "3.15.0"
-textwrap    = "0.16.1"
-thiserror   = "2.0.9"
-tokio       = "1.42.0"
-walkdir     = "2.5.0"
-chumsky     = "0.9.3"
-syntect = { version = "5.2.0", features = ["default-fancy"] }
+anstream              = "0.6.18"
+anyhow                = "1.0.95"
+chumsky               = "0.9.3"
+clap                  = { version = "4.5.23", features = ["derive", "env", "string", "wrap_help"] }
+globset               = { version = "0.4.15", features = ["serde"] }
+human-panic           = "2.0.2"
+miette                = "7.4.0"
+owo-colors            = "4.1.0"
+semver                = "1.0.24"
+syntect               = { version = "5.2.0", features = ["default-fancy"] }
+tempfile              = "3.15.0"
+textwrap              = "0.16.1"
+thiserror             = "2.0.9"
+tokio                 = "1.42.0"
+tokio-util            = { version = "0.7.13", features = ["compat"] }
+tower-lsp             = "0.20.0"
+tower-lsp-macros      = "0.9.0"
+tracing-subscriber    = { version = "0.3.19", features = ["env-filter"] }
+walkdir               = "2.5.0"
+ws_stream_tungstenite = { version = "0.14.0", features = ["tokio_io"] }
+async-tungstenite     = { version = "0.28", features = ["tokio-runtime"] }
+tracing = "0.1.41"
 
 # Optional serde dependencies
-itertools      = "0.14.0"
-serde          = "1.0.217"
-serde_derive   = "1.0.217"
-serde_json     = "1.0.134"
+itertools    = "0.14.0"
+serde        = "1.0.217"
+serde_derive = "1.0.217"
+serde_json   = "1.0.134"
 
 # Lint rules that I like taken from
 # https://github.com/rolldown/rolldown/blob/main/Cargo.toml
@@ -91,5 +98,4 @@ single_match_else = "allow"
 codegen-units = 1
 incremental   = true
 lto           = true
-opt-level     = 3  # Optimize for speed
-
+opt-level     = 3    # Optimize for speed

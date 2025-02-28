@@ -2,6 +2,7 @@ use std::process::ExitCode;
 
 use miette::*;
 
-fn main() -> Result<ExitCode> {
-    ram::main(std::env::args_os())
+#[tokio::main]
+async fn main() -> Result<ExitCode> {
+    ram::main(std::env::args_os()).await
 }

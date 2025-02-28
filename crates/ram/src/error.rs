@@ -14,6 +14,10 @@ pub enum Error {
     #[diagnostic(code(ram::setup_error))]
     SetupError(miette::Report),
 
+    #[error("LSP error: {0}")]
+    #[diagnostic(code(ram::lsp_error))]
+    LspError(miette::Report),
+
     #[error("Path not found: {0}")]
     #[diagnostic(code(ram::path_not_found))]
     PathNotFound(PathBuf),
