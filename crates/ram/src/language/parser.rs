@@ -1,84 +1,6 @@
-//! # RAM Assembly Language
-//!
-//! This module provides the parser, data structures, and utility functions for the RAM
-//! (Random Access Machine) assembly language. RAM is a simple, instruction-based language
-//! designed for educational purposes to simulate a basic computer architecture.
-//!
-//! ## Language Syntax
-//!
-//! RAM assembly consists of:
-//!
-//! - **Instructions**: Operations like `LOAD`, `ADD`, etc. with optional operands
-//! - **Labels**: Named positions in code (e.g., `loop:`)
-//! - **Comments**: Starting with `#`
-//!
-//! ## Operand Types
-//!
-//! - **Direct**: A memory address (e.g., `5`)
-//! - **Indirect**: Value at the memory address pointed by the operand (e.g., `*5`)
-//! - **Immediate**: The literal value (e.g., `=5`)
-//! - **Label**: Reference to a labeled position in code
-//!
-//! Operands can also include array-like accessors with the syntax `base[index]`.
-//!
-//! ## Example
-//!
-//! ```
-//! # Simple RAM program that adds two numbers
-//! LOAD 1    # Load value from address 1
-//! ADD 2     # Add value from address 2
-//! STORE 3   # Store result in address 3
-//! HALT      # Stop execution
-//! ```
-//!
-//! ## Implementation
-//!
-//! This module uses the Chumsky parser combinator library to parse RAM assembly code
-//! into an abstract syntax tree (AST). The AST can then be used for execution,
-//! analysis, or further processing.
-//!
-//! The main data structures include:
-//! - `Program`: The root AST node containing a sequence of lines
-//! - `Line`: Represents either an instruction, label definition, or comment
-//! - `Instruction`: Contains an opcode and optional operand
-//! - `Operand`: Represents different addressing modes (direct, indirect, immediate)
-//!
-//! The module also provides syntax highlighting definitions for integration with
-//! the Syntect library.
-
-use std::sync::OnceLock;
-
 use chumsky::prelude::*;
-use miette::highlighters::SyntectHighlighter;
 #[cfg(feature = "serde")]
 use serde::Serialize;
-use syntect::highlighting::ThemeSet;
-use syntect::parsing::{SyntaxDefinition, SyntaxSet, SyntaxSetBuilder};
-
-// --- Data Structures ---
-
-/// Holds the `.sublime-syntax` definition for RAM assembly language.
-pub static SUBLIME_SYNTAX: &str = include_str!("ram.sublime-syntax");
-
-/// Stores the loaded syntax definition for RAM assembly language.
-pub static SYNTAX_DEFINITION: OnceLock<SyntaxDefinition> = OnceLock::new();
-
-pub fn syntax_definition() -> &'static SyntaxDefinition {
-    SYNTAX_DEFINITION.get_or_init(|| {
-        SyntaxDefinition::load_from_str(SUBLIME_SYNTAX, false, Some("source.ram")).unwrap()
-    })
-}
-
-pub fn syntax_set() -> SyntaxSet {
-    let mut set = SyntaxSetBuilder::new();
-    set.add(syntax_definition().to_owned());
-    set.build()
-}
-
-pub fn highlighter() -> SyntectHighlighter {
-    let theme = &ThemeSet::load_defaults().themes["base16-mocha.dark"];
-    SyntectHighlighter::new(syntax_set(), theme.clone(), false)
-}
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
@@ -144,8 +66,6 @@ pub struct ImmediateOperand {
 pub struct Accessor {
     index: Box<Operand>,
 }
-
-// --- Parser ---
 
 pub fn parser() -> impl Parser<char, Program, Error = Simple<char>> {
     program_parser()

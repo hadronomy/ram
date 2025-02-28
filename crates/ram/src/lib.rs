@@ -4,9 +4,10 @@ use std::process::ExitCode;
 use chumsky::{Parser as ChumskyParser, stream};
 use clap::{CommandFactory, Parser};
 use cli::{Cli, Command};
-pub use error::Error;
 use error::handle_parser_errors;
 use miette::*;
+
+pub use crate::error::Error;
 
 pub mod cli;
 pub mod error;
