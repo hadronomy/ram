@@ -2,6 +2,7 @@ use async_tungstenite::tokio::accept_async;
 use miette::{IntoDiagnostic, Result};
 use serde_json::Value;
 use tokio::net::TcpListener;
+use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 use tower_lsp::jsonrpc::Result as LspResult;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
@@ -110,6 +111,7 @@ pub async fn run() -> Result<()> {
 
     // Use futures-util stream adapters that work with tower-lsp
     let (read, write) = tokio::io::split(ws_stream);
+    let (read, write) = (read.compat(), write.compat_write());
 
     let (service, socket) = LspService::new(|client| Backend { client });
     Server::new(read, write, socket).serve(service).await;

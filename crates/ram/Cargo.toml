@@ -33,7 +33,7 @@ textwrap              = { workspace = true }
 thiserror             = { workspace = true }
 tokio                 = { workspace = true, features = ["io-util", "io-std", "macros", "rt-multi-thread"] }
 tokio-util            = { workspace = true }
-tower                 = { version = "0.5.2", features = ["util"] }
+tower                 = { workspace = true, features = ["util"] }
 tower-lsp             = { workspace = true }
 tower-lsp-macros      = { workspace = true }
 tracing               = { workspace = true }

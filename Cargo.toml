@@ -12,6 +12,7 @@ version    = "0.1.0"
 [workspace.dependencies]
 anstream              = "0.6.18"
 anyhow                = "1.0.95"
+async-tungstenite     = { version = "0.28", features = ["tokio-runtime"] }
 chumsky               = "0.9.3"
 clap                  = { version = "4.5.23", features = ["derive", "env", "string", "wrap_help"] }
 globset               = { version = "0.4.15", features = ["serde"] }
@@ -24,14 +25,14 @@ tempfile              = "3.15.0"
 textwrap              = "0.16.1"
 thiserror             = "2.0.9"
 tokio                 = "1.42.0"
-tokio-util            = { version = "0.7.13", features = ["compat"] }
-tower-lsp             = "0.20.0"
+tokio-util            = { version = "0.7.13", features = ["codec", "compat"] }
+tower                 = { version = "0.5.2" }
+tower-lsp             = { version = "0.20.0", default-features = false, features = ["runtime-agnostic"] }
 tower-lsp-macros      = "0.9.0"
+tracing               = "0.1.41"
 tracing-subscriber    = { version = "0.3.19", features = ["env-filter"] }
 walkdir               = "2.5.0"
 ws_stream_tungstenite = { version = "0.14.0", features = ["tokio_io"] }
-async-tungstenite     = { version = "0.28", features = ["tokio-runtime"] }
-tracing = "0.1.41"
 
 # Optional serde dependencies
 itertools    = "0.14.0"
