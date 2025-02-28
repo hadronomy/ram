@@ -8,41 +8,25 @@
     "build": "nx run-many --target=build --all"
   },
   "devDependencies": {
-    "@eslint/compat": "^1.2.7",
-    "@eslint/eslintrc": "^3.3.0",
-    "@eslint/js": "^9.21.0",
     "@hadronomy/eslint-config": "^4.1.2",
-    "@openapitools/openapi-generator-cli": "^2.16.3",
-    "@swc-node/register": "~1.10.9",
-    "@swc/cli": "~0.6.0",
-    "@swc/core": "~1.11.4",
-    "@swc/helpers": "~0.5.15",
-    "@types/node": "22.13.4",
-    "@types/react": "18.3.1",
-    "@types/react-dom": "18.3.0",
     "autoprefixer": "10.4.13",
     "eslint": "^9.21.0",
-    "eslint-config-next": "14.2.16",
-    "eslint-config-prettier": "^10.0.2",
-    "eslint-plugin-format": "^1.0.1",
-    "eslint-plugin-import": "2.31.0",
-    "eslint-plugin-jsx-a11y": "6.10.1",
-    "eslint-plugin-react": "7.35.0",
-    "eslint-plugin-react-hooks": "5.0.0",
     "postcss": "8.4.38",
     "prettier": "^3.5.2",
     "tailwindcss": "3.4.3",
     "taze": "^18.6.0",
-    "tslib": "^2.8.1",
     "turbo": "^2.4.4",
-    "typescript": "~5.7.3",
-    "typescript-eslint": "^8.25.0"
+    "typescript": "~5.7.3"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
       "@nx-dotnet/core",
       "@swc/core",
       "nx"
-    ]
+    ],
+    "overrides": {
+      "@types/react": "19.0.10",
+      "@types/react-dom": "19.0.4"
+    }
   }
 }
