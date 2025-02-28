@@ -18,6 +18,8 @@
     "onlyBuiltDependencies": [
       "@nx-dotnet/core",
       "@swc/core",
+      "@vscode/vsce-sign",
+      "keytar",
       "nx"
     ],
     "overrides": {
