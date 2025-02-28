@@ -23,7 +23,7 @@
 //!
 //! ## Example
 //!
-//! ```
+//! ```ignore
 //! # Simple RAM program that adds two numbers
 //! LOAD 1    # Load value from address 1
 //! ADD 2     # Add value from address 2
