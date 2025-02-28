@@ -1,0 +1,97 @@
+{
+  "publisher": "hadronomy",
+  "name": "ram",
+  "displayName": "ram",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@10.5.2",
+  "description": "",
+  "funding": "https://github.com/sponsors/hadronomy",
+  "homepage": "https://github.com/hadronomy/ram#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hadronomy/ram"
+  },
+  "bugs": {
+    "url": "https://github.com/hadronomy/ram/issues"
+  },
+  "sponsor": {
+    "url": "https://github.com/sponsors/hadronomy"
+  },
+  "categories": [
+    "Other"
+  ],
+  "main": "./dist/index.js",
+  "icon": "res/icon.png",
+  "files": [
+    "LICENSE.md",
+    "dist/*",
+    "res/*"
+  ],
+  "engines": {
+    "vscode": "^1.97.0"
+  },
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [],
+    "configuration": {
+      "type": "object",
+      "title": "ram",
+      "properties": {}
+    },
+    "languages": [
+      {
+        "id": "ram",
+        "aliases": [
+          "RAM",
+          "ram"
+        ],
+        "extensions": [
+          ".ram"
+        ]
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --external vscode",
+    "dev": "nr build --watch --sourcemap",
+    "prepare": "nr update",
+    "update": "vscode-ext-gen --output src/generated/meta.ts",
+    "lint": "eslint .",
+    "vscode:prepublish": "nr build",
+    "publish": "vsce publish --no-dependencies",
+    "pack": "vsce package --no-dependencies",
+    "test": "vitest",
+    "typecheck": "tsc --noEmit",
+    "release": "bumpp && nr publish"
+  },
+  "devDependencies": {
+    "@antfu/ni": "^23.3.1",
+    "@hadronomy/eslint-config": "^4.1.2",
+    "@types/node": "^22.13.5",
+    "@types/vscode": "^1.97.0",
+    "@types/ws": "^8.5.14",
+    "@vscode/vsce": "^3.2.2",
+    "bumpp": "^10.0.3",
+    "eslint": "^9.21.0",
+    "esno": "^4.8.0",
+    "pnpm": "^10.5.2",
+    "reactive-vscode": "^0.2.13",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.3",
+    "vite": "^6.2.0",
+    "vitest": "^3.0.7",
+    "vscode-ext-gen": "^1.0.2",
+    "vscode-languageclient": "^9.0.1",
+    "web-streams-polyfill": "^4.1.0",
+    "ws": "^8.18.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@vscode/vsce-sign",
+      "esbuild"
+    ]
+  }
+}
