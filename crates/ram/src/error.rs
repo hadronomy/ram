@@ -91,6 +91,6 @@ pub fn handle_parser_errors(src: &str, errors: Vec<chumsky::error::Simple<char>>
             chumsky::error::SimpleReason::Custom(_) => report,
         };
 
-        report.finish().print(Source::from(&src)).unwrap();
+        report.finish().eprint(Source::from(&src)).unwrap();
     });
 }
