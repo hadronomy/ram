@@ -101,6 +101,41 @@ impl LanguageServer for Backend {
 }
 
 pub async fn run() -> Result<()> {
+    let mut restart_attempts = 0;
+    let max_restart_attempts = 5;
+    let mut backoff_seconds = 1;
+
+    loop {
+        info!("Starting LSP server (attempt {})", restart_attempts + 1);
+
+        match run_server().await {
+            Ok(_) => {
+                // Server exited normally
+                info!("LSP server shut down gracefully");
+                break Ok(());
+            }
+            Err(err) => {
+                restart_attempts += 1;
+                let error_msg = format!("LSP server crashed: {}", err);
+                tracing::error!("{}", error_msg);
+
+                if restart_attempts >= max_restart_attempts {
+                    return Err(miette::miette!(
+                        "LSP server failed to start after {} attempts",
+                        max_restart_attempts
+                    ));
+                }
+
+                // Exponential backoff to avoid rapid restart cycles
+                info!("Restarting server in {} seconds", backoff_seconds);
+                tokio::time::sleep(tokio::time::Duration::from_secs(backoff_seconds)).await;
+                backoff_seconds = std::cmp::min(backoff_seconds * 2, 30);
+            }
+        }
+    }
+}
+
+pub async fn run_server() -> Result<()> {
     let listener = TcpListener::bind("127.0.0.1:9257").await.into_diagnostic()?;
     info!("Listening on {}", listener.local_addr().into_diagnostic()?);
     let (stream, _) = listener.accept().await.into_diagnostic()?;
