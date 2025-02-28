@@ -1,22 +1,19 @@
-import { dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { fixupConfigRules } from '@eslint/compat';
 import { FlatCompat } from '@eslint/eslintrc';
-import js from '@eslint/js';
-import nx from '@nx/eslint-plugin';
-import baseConfig from '../../eslint.config.mjs';
 
 const compat = new FlatCompat({
-  baseDirectory: dirname(fileURLToPath(import.meta.url)),
-  recommendedConfig: js.configs.recommended,
+  // import.meta.dirname is available after Node.js v20.11.0
+  baseDirectory: import.meta.dirname,
 });
 
-export default [
-  ...fixupConfigRules(compat.extends('next')),
-  ...fixupConfigRules(compat.extends('next/core-web-vitals')),
-  ...baseConfig,
-  ...nx.configs['flat/react-typescript'],
-  {
-    ignores: ['.next/**/*'],
-  },
+const eslintConfig = [
+  ...compat.config({
+    extends: ['next'],
+    settings: {
+      next: {
+        rootDir: 'apps/web/',
+      },
+    },
+  }),
 ];
+
+export default eslintConfig;

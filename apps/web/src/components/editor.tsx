@@ -1,14 +1,14 @@
 'use client';
 
-import './editor-styles.css';
-
 import type * as Monaco from 'monaco-editor';
+
 import Editor, { useMonaco } from '@monaco-editor/react';
 import { useCallback, useState } from 'react';
-
 import { configureMonaco, EDITOR_OPTIONS } from '~/lib/config';
+
 import { EXAMPLE_FILE } from '~/lib/consts';
 import { useBreakpoints, useEditorDecorations } from '~/lib/hooks';
+import './editor-styles.css';
 
 export function LiveEditor() {
   const monaco = useMonaco();

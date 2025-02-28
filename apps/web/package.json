@@ -33,8 +33,6 @@
   "devDependencies": {
     "@eslint/compat": "^1.1.1",
     "@eslint/eslintrc": "3.2.0",
-    "@nx/eslint-plugin": "20.4.5",
-    "@nx/next": "20.4.5",
     "@tailwindcss/postcss": "^4.0.7",
     "@types/node": "22.13.4",
     "@types/react": "^19.0.10",

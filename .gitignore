@@ -184,3 +184,6 @@ target/
 
 # Enviroment variables
 .env*
+
+# Turborepo
+.turbo
