@@ -38,6 +38,7 @@ pub enum Error {
 
 #[derive(Error, Diagnostic, Debug)]
 #[error("another error")]
+#[diagnostic(code(ram::unknown_error))]
 pub struct UnknownError {
     #[label("here")]
     pub at: SourceSpan,
@@ -54,6 +55,7 @@ pub struct SingleParserError {
 
 #[derive(Error, Diagnostic, Debug)]
 #[error("Multiple parser errors")]
+#[diagnostic(code(ram::parse_error))]
 pub struct ParserError {
     // Source code for all errors
     #[source_code]
@@ -133,10 +135,8 @@ pub fn handle_parser_errors(src: &str, errors: Vec<chumsky::error::Simple<char>>
         .collect();
 
     // Create the collection error
-    let error_collection = ParserError {
-        src: NamedSource::new("input.ram", src.to_string()),
-        errors: parser_errors,
-    };
+    let error_collection =
+        ParserError { src: NamedSource::new("input.ram", src.to_string()), errors: parser_errors };
 
     // Report the errors using miette
     eprintln!("{:?}", miette::Report::new(error_collection));
