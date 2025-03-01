@@ -5,6 +5,7 @@ import type {
 } from 'vscode-languageclient/node';
 import { Readable, Writable } from 'node:stream';
 import { defineExtension } from 'reactive-vscode';
+import { workspace } from 'vscode';
 import {
   LanguageClient,
 } from 'vscode-languageclient/node';
@@ -61,6 +62,9 @@ const { activate, deactivate } = defineExtension(() => {
 
   const clientOptions: LanguageClientOptions = {
     documentSelector: [{ scheme: 'file', language: 'ram' }],
+    synchronize: {
+      fileEvents: workspace.createFileSystemWatcher('**/*.ram'),
+    },
   };
 
   client = new LanguageClient(
