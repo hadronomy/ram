@@ -1,5 +1,5 @@
 [workspace]
-members  = ["./crates/*", "crates/ram-parser"]
+members  = ["./crates/*", "crates/ram-error", "crates/ram-parser"]
 resolver = "2"
 
 [workspace.package]
@@ -41,6 +41,7 @@ tracing-subscriber    = { version = "0.3.19", features = ["env-filter"] }
 walkdir               = "2.5.0"
 ws_stream_tungstenite = { version = "0.14.0", features = ["tokio_io"] }
 
+ram-error  = { path = "crates/ram-error" }
 ram-parser = { path = "crates/ram-parser" }
 
 # Lint rules that I like taken from

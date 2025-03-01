@@ -44,6 +44,8 @@ tracing-subscriber    = { workspace = true }
 walkdir               = { workspace = true }
 ws_stream_tungstenite = { workspace = true, features = ["tokio_io"] }
 
+ram-error = { workspace = true }
+
 [[bin]]
 name              = "ram"
 required-features = ["serde"]
