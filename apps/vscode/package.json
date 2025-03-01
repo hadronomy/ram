@@ -26,7 +26,8 @@
   "files": [
     "LICENSE.md",
     "dist/*",
-    "res/*"
+    "res/*",
+    "syntaxes/*"
   ],
   "engines": {
     "vscode": "^1.97.0"
@@ -51,6 +52,13 @@
         "extensions": [
           ".ram"
         ]
+      }
+    ],
+    "grammars": [
+      {
+        "language": "ram",
+        "scopeName": "source.ram",
+        "path": "./syntaxes/ram.tmLanguage.json"
       }
     ]
   },
