@@ -48,7 +48,7 @@ pub struct UnknownError {
     pub at: SourceSpan,
 }
 
-#[derive(Error, Diagnostic, Debug)]
+#[derive(Error, Diagnostic, Debug, Clone, Eq, PartialEq)]
 #[error("Parse error: {message}")]
 pub struct SingleParserError {
     pub message: String,
@@ -57,7 +57,7 @@ pub struct SingleParserError {
     pub labels: Vec<LabeledSpan>,
 }
 
-#[derive(Error, Diagnostic, Debug)]
+#[derive(Error, Diagnostic, Debug, Clone, Eq, PartialEq)]
 #[error("Multiple parser errors")]
 #[diagnostic(code(ram::parse_error))]
 pub struct ParserError {
