@@ -51,14 +51,18 @@
         ],
         "extensions": [
           ".ram"
-        ]
+        ],
+        "icon": {
+          "light": "./res/icon.svg",
+          "dark": "./res/icon.svg"
+        }
       }
     ],
     "grammars": [
       {
         "language": "ram",
         "scopeName": "source.ram",
-        "path": "./syntaxes/ram.tmLanguage.json"
+        "path": "./syntax/ram.tmLanguage.json"
       }
     ]
   },
