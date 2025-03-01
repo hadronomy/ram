@@ -30,6 +30,12 @@
 
 </div>
 
+> [!CAUTION]
+> This project is under heavy development
+> It's not in any way stable or even functional in some cases.
+> **Until the first release** the `main` branch is not guaranteed
+> to work in any way.
+
 ## Requirements
 
 - mise - [Installation](https://mise.jdx.dev)
