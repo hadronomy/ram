@@ -27,7 +27,7 @@
     "LICENSE.md",
     "dist/*",
     "res/*",
-    "syntaxes/*"
+    "syntax/*"
   ],
   "engines": {
     "vscode": "^1.97.0"
