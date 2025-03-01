@@ -1,23 +1,15 @@
 [package]
-name = "ram"
-
 authors.workspace    = true
 edition.workspace    = true
 license.workspace    = true
+name                 = "ram-parser"
 repository.workspace = true
 version.workspace    = true
-
-[features]
-default = ["serde"]
-serde   = ["dep:serde", "serde_json", "serde_derive"]
 
 [dependencies]
 anstream              = { workspace = true }
 anyhow                = { workspace = true }
-async-tungstenite     = { workspace = true, features = ["tokio-runtime"] }
-chumsky               = { workspace = true }
 clap                  = { workspace = true }
-futures               = { version = "0.3.31", default-features = false, features = ["std", "async-await"] }
 globset               = { workspace = true, features = ["serde"] }
 human-panic           = { workspace = true }
 itertools             = { workspace = true }
@@ -34,16 +26,10 @@ syntect               = { workspace = true }
 tempfile              = { workspace = true }
 textwrap              = { workspace = true }
 thiserror             = { workspace = true }
-tokio                 = { workspace = true, features = ["io-util", "io-std", "macros", "rt-multi-thread", "time"] }
-tokio-util            = { workspace = true }
-tower                 = { workspace = true, features = ["util"] }
-tower-lsp             = { workspace = true }
-tower-lsp-macros      = { workspace = true }
 tracing               = { workspace = true }
 tracing-subscriber    = { workspace = true }
 walkdir               = { workspace = true }
 ws_stream_tungstenite = { workspace = true, features = ["tokio_io"] }
 
-[[bin]]
-name              = "ram"
-required-features = ["serde"]
+[lints]
+workspace = true

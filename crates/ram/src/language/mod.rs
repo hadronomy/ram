@@ -51,4 +51,3 @@ pub use parser::*;
 
 pub mod highlighting;
 pub mod parser;
-pub mod syntax_kind;

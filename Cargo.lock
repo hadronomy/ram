@@ -1360,6 +1360,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "ram-parser"
+version = "0.1.0"
+dependencies = [
+ "anstream",
+ "anyhow",
+ "clap",
+ "globset",
+ "human-panic",
+ "itertools",
+ "miette",
+ "num-derive",
+ "num-traits",
+ "owo-colors",
+ "salsa",
+ "semver",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "syntect",
+ "tempfile",
+ "textwrap",
+ "thiserror 2.0.11",
+ "tracing",
+ "tracing-subscriber",
+ "walkdir",
+ "ws_stream_tungstenite",
+]
+
+[[package]]
 name = "rand"
 version = "0.8.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -1,5 +1,5 @@
 [workspace]
-members  = ["./crates/*"]
+members  = ["./crates/*", "crates/ram-parser"]
 resolver = "2"
 
 [workspace.package]
@@ -17,9 +17,16 @@ chumsky               = "0.9.3"
 clap                  = { version = "4.5.23", features = ["derive", "env", "string", "wrap_help"] }
 globset               = { version = "0.4.15", features = ["serde"] }
 human-panic           = "2.0.2"
+itertools             = "0.14.0"
 miette                = "7.4.0"
+num-derive            = "0.4.2"
+num-traits            = "0.2.19"
 owo-colors            = "4.1.0"
+salsa                 = "0.18.0"
 semver                = "1.0.24"
+serde                 = "1.0.217"
+serde_derive          = "1.0.217"
+serde_json            = "1.0.134"
 syntect               = { version = "5.2.0", features = ["default-fancy"] }
 tempfile              = "3.15.0"
 textwrap              = "0.16.1"
@@ -34,11 +41,7 @@ tracing-subscriber    = { version = "0.3.19", features = ["env-filter"] }
 walkdir               = "2.5.0"
 ws_stream_tungstenite = { version = "0.14.0", features = ["tokio_io"] }
 
-# Optional serde dependencies
-itertools    = "0.14.0"
-serde        = "1.0.217"
-serde_derive = "1.0.217"
-serde_json   = "1.0.134"
+ram-parser = { path = "crates/ram-parser" }
 
 # Lint rules that I like taken from
 # https://github.com/rolldown/rolldown/blob/main/Cargo.toml
