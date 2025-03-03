@@ -145,11 +145,31 @@ fn init_tracing(cli: &Cli) {
         let file_subscriber = tracing_subscriber::fmt::layer()
             .with_writer(move || {
                 let log_path = file_path.clone();
-                std::fs::OpenOptions::new()
-                    .create(true)
-                    .append(true)
-                    .open(&log_path)
-                    .unwrap_or_else(|_| panic!("Failed to open log file: {}", log_path.display()))
+
+                // Ensure the parent directory exists
+                if let Some(parent) = log_path.parent() {
+                    if !parent.exists() {
+                        if let Err(err) = std::fs::create_dir_all(parent) {
+                            eprintln!(
+                                "Failed to create log directory '{}': {}",
+                                parent.display(),
+                                err
+                            );
+                            // Fallback to stdout if we can't create the directory
+                            return Box::new(std::io::stdout()) as Box<dyn std::io::Write + Send>;
+                        }
+                    }
+                }
+
+                // Try to open the log file
+                match std::fs::OpenOptions::new().create(true).append(true).open(&log_path) {
+                    Ok(file) => Box::new(file) as Box<dyn std::io::Write + Send>,
+                    Err(err) => {
+                        eprintln!("Failed to open log file '{}': {}", log_path.display(), err);
+                        // Fallback to stdout if we can't open the file
+                        Box::new(std::io::stdout()) as Box<dyn std::io::Write + Send>
+                    }
+                }
             })
             .with_ansi(false)
             .with_timer(UtcTime::rfc_3339());
