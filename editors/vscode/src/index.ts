@@ -12,9 +12,10 @@ let client: LanguageClient;
 
 const { activate, deactivate } = defineExtension((ctx) => {
   const serverPath = ctx.asAbsolutePath(path.join('..', '..', 'target', 'debug', 'ram'));
+  const logFilePath = ctx.asAbsolutePath(path.join('..', '..', 'logs', 'ram.log'));
   const run = {
     command: serverPath,
-    args: ['lsp', '-vvv', '--mirror', '/home/hadronomy/repos/ram/hey.log', '--no-stdout-log'],
+    args: ['lsp', '-vvv', '--mirror', logFilePath, '--no-stdout-log'],
     options: { env: { RUST_BACKTRACE: 1 } },
   };
 
