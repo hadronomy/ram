@@ -6,6 +6,10 @@ use clap::{CommandFactory, Parser};
 use cli::{Cli, Command};
 use error::handle_parser_errors;
 use miette::*;
+use tracing_subscriber::fmt::time::UtcTime;
+use tracing_subscriber::layer::SubscriberExt;
+use tracing_subscriber::util::SubscriberInitExt;
+use tracing_subscriber::{Layer, Registry};
 
 pub use crate::error::Error;
 
@@ -26,17 +30,7 @@ where
         }
     };
 
-    let level = cli.top_level.global_args.verbose;
-    tracing_subscriber::fmt()
-        .with_env_filter(tracing_subscriber::EnvFilter::from_default_env().add_directive(
-            match level {
-                0 => "warn".parse().unwrap(),
-                1 => "info".parse().unwrap(),
-                2 => "debug".parse().unwrap(),
-                _ => "trace".parse().unwrap(),
-            },
-        ))
-        .init();
+    init_tracing(&cli);
 
     miette::set_hook(Box::new(|_| {
         Box::new(
@@ -86,4 +80,56 @@ where
         _ => Err(Error::Unimplemented),
     }
     .wrap_err("Failed to execute command")
+}
+
+pub fn init_tracing(cli: &Cli) {
+    let log_path = &cli.top_level.global_args.mirror;
+    let level = cli.top_level.global_args.verbose;
+    let no_stdout_log = cli.top_level.global_args.no_stdout_log;
+
+    // Create a registry for our subscribers
+    let registry = Registry::default();
+
+    let mut stdout_subscriber = None;
+
+    // Always add the stdout subscriber
+    if !no_stdout_log {
+        stdout_subscriber = Some(
+            tracing_subscriber::fmt::layer()
+                .with_writer(std::io::stdout)
+                .with_ansi(true)
+                .with_timer(UtcTime::rfc_3339()),
+        );
+    }
+
+    let level_filter =
+        tracing_subscriber::EnvFilter::from_default_env().add_directive(match level {
+            0 => "warn".parse().unwrap(),
+            1 => "info".parse().unwrap(),
+            2 => "debug".parse().unwrap(),
+            _ => "trace".parse().unwrap(),
+        });
+
+    let registry = registry.with(stdout_subscriber.with_filter(level_filter));
+
+    // Only add the file subscriber if log_path is specified
+    if let Some(path) = log_path {
+        let file_path = path.clone();
+        let file_subscriber = tracing_subscriber::fmt::layer()
+            .with_writer(move || {
+                let log_path = file_path.clone();
+                std::fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(&log_path)
+                    .unwrap_or_else(|_| panic!("Failed to open log file: {}", log_path.display()))
+            })
+            .with_ansi(false)
+            .with_timer(UtcTime::rfc_3339());
+
+        registry.with(file_subscriber).init();
+        return;
+    }
+
+    registry.init();
 }

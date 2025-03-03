@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use clap::builder::Styles;
 use clap::builder::styling::{AnsiColor, Effects, Style};
 use clap::{Args, Parser, Subcommand};
@@ -56,6 +58,14 @@ pub struct GlobalArgs {
     /// (<https://docs.rs/tracing-subscriber/latest/tracing_subscriber/filter/struct.EnvFilter.html#directives>)
     #[arg(global = true, action = clap::ArgAction::Count, long, short, conflicts_with = "quiet")]
     pub verbose: u8,
+
+    /// Mirror logs to a specified file.
+    #[arg(global = true, long, value_name = "FILE")]
+    pub mirror: Option<PathBuf>,
+
+    /// Disable stdout logging (useful for LSP mode)
+    #[arg(global = true, long)]
+    pub no_stdout_log: bool
 }
 
 #[derive(Debug, Copy, Clone, clap::ValueEnum)]

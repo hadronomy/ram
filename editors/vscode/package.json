@@ -36,11 +36,21 @@
     "onStartupFinished"
   ],
   "contributes": {
-    "commands": [],
     "configuration": {
       "type": "object",
-      "title": "ram",
-      "properties": {}
+      "title": "RAM",
+      "properties": {
+        "ram.server.host": {
+          "type": "string",
+          "default": "localhost",
+          "description": "The host for the RAM language server"
+        },
+        "ram.server.port": {
+          "type": "number",
+          "default": 9257,
+          "description": "The port for the RAM language server"
+        }
+      }
     },
     "languages": [
       {
@@ -63,6 +73,16 @@
         "language": "ram",
         "scopeName": "source.ram",
         "path": "./syntax/ram.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "ram.lspStatus",
+        "title": "RAM: Show Status"
+      },
+      {
+        "command": "ram.restartServer",
+        "title": "RAM: Restart Server"
       }
     ]
   },

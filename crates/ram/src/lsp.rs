@@ -1,13 +1,9 @@
-use async_tungstenite::tokio::accept_async;
-use miette::{IntoDiagnostic, Result};
+use miette::Result;
 use serde_json::Value;
-use tokio::net::TcpListener;
-use tokio_util::compat::{TokioAsyncReadCompatExt, TokioAsyncWriteCompatExt};
 use tower_lsp::jsonrpc::Result as LspResult;
 use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 use tracing::info;
-use ws_stream_tungstenite::*;
 
 #[derive(Debug)]
 struct Backend {
@@ -17,8 +13,12 @@ struct Backend {
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, _: InitializeParams) -> LspResult<InitializeResult> {
+        self.client.log_message(MessageType::INFO, "Initializing server").await;
         Ok(InitializeResult {
-            server_info: None,
+            server_info: Some(ServerInfo {
+                name: "RAM Language Server".to_string(),
+                version: Some("0.1.0".to_string()),
+            }),
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
                     TextDocumentSyncKind::INCREMENTAL,
@@ -26,6 +26,8 @@ impl LanguageServer for Backend {
                 completion_provider: Some(CompletionOptions {
                     resolve_provider: Some(false),
                     trigger_characters: Some(vec![".".to_string()]),
+                    work_done_progress_options: Default::default(),
+                    all_commit_characters: None,
                     ..Default::default()
                 }),
                 execute_command_provider: Some(ExecuteCommandOptions {
@@ -49,6 +51,7 @@ impl LanguageServer for Backend {
     }
 
     async fn shutdown(&self) -> LspResult<()> {
+        self.client.log_message(MessageType::INFO, "shutdown!").await;
         Ok(())
     }
 
@@ -101,55 +104,14 @@ impl LanguageServer for Backend {
 }
 
 pub async fn run() -> Result<()> {
-    let mut restart_attempts = 0;
-    let max_restart_attempts = 5;
-    let mut backoff_seconds = 1;
-
-    loop {
-        info!("Starting LSP server (attempt {})", restart_attempts + 1);
-
-        match run_server().await {
-            Ok(_) => {
-                // Server exited normally
-                info!("LSP server shut down gracefully");
-                break Ok(());
-            }
-            Err(err) => {
-                restart_attempts += 1;
-                let error_msg = format!("LSP server crashed: {}", err);
-                tracing::error!("{}", error_msg);
-
-                if restart_attempts >= max_restart_attempts {
-                    return Err(miette::miette!(
-                        "LSP server failed to start after {} attempts",
-                        max_restart_attempts
-                    ));
-                }
-
-                // Exponential backoff to avoid rapid restart cycles
-                info!("Restarting server in {} seconds", backoff_seconds);
-                tokio::time::sleep(tokio::time::Duration::from_secs(backoff_seconds)).await;
-                backoff_seconds = std::cmp::min(backoff_seconds * 2, 30);
-            }
-        }
-    }
-}
-
-pub async fn run_server() -> Result<()> {
-    let listener = TcpListener::bind("127.0.0.1:9257").await.into_diagnostic()?;
-    info!("Listening on {}", listener.local_addr().into_diagnostic()?);
-    let (stream, _) = listener.accept().await.into_diagnostic()?;
-
-    // Use tower-lsp's built-in websocket helper if available, or fix the adapter chain
-    let websocket = accept_async(stream).await.into_diagnostic()?;
-    let ws_stream = WsStream::new(websocket);
-
-    // Use futures-util stream adapters that work with tower-lsp
-    let (read, write) = tokio::io::split(ws_stream);
-    let (read, write) = (read.compat(), write.compat_write());
+    info!("Starting LSP server");
+    let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());
 
     let (service, socket) = LspService::new(|client| Backend { client });
-    Server::new(read, write, socket).serve(service).await;
 
+    let server = Server::new(stdin, stdout, socket);
+
+    server.serve(service).await;
+    info!("LSP server shutting down");
     Ok(())
 }
