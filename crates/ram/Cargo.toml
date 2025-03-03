@@ -12,38 +12,44 @@ default = ["serde"]
 serde   = ["dep:serde", "serde_json", "serde_derive"]
 
 [dependencies]
-anstream              = { workspace = true }
-anyhow                = { workspace = true }
-async-tungstenite     = { workspace = true, features = ["tokio-runtime"] }
-chumsky               = { workspace = true }
-clap                  = { workspace = true }
-futures               = { version = "0.3.31", default-features = false, features = ["std", "async-await"] }
-globset               = { workspace = true, features = ["serde"] }
-human-panic           = { workspace = true }
-itertools             = { workspace = true }
-miette                = { workspace = true, features = ["fancy", "syntect-highlighter"] }
-num-derive            = { workspace = true }
-num-traits            = { workspace = true }
-owo-colors            = { workspace = true }
-salsa                 = { workspace = true }
-semver                = { workspace = true }
-serde                 = { workspace = true, optional = true }
-serde_derive          = { workspace = true, optional = true }
-serde_json            = { workspace = true, optional = true }
-syntect               = { workspace = true }
-tempfile              = { workspace = true }
-textwrap              = { workspace = true }
-thiserror             = { workspace = true }
-tokio                 = { workspace = true, features = ["io-util", "io-std", "macros", "rt-multi-thread", "time"] }
-tokio-util            = { workspace = true }
-tower                 = { workspace = true, features = ["util"] }
-tower-lsp             = { workspace = true }
-tower-lsp-macros      = { workspace = true }
-tracing               = { workspace = true }
-tracing-subscriber    = { workspace = true, features = ["time"] }
-walkdir               = { workspace = true }
+anstream           = { workspace = true }
+anyhow             = { workspace = true }
+async-tungstenite  = { workspace = true, features = ["tokio-runtime"] }
+chumsky            = { workspace = true }
+clap               = { workspace = true }
+futures            = { version = "0.3.31", default-features = false, features = ["std", "async-await"] }
+globset            = { workspace = true, features = ["serde"] }
+human-panic        = { workspace = true }
+itertools          = { workspace = true }
+miette             = { workspace = true, features = ["fancy", "syntect-highlighter"] }
+num-derive         = { workspace = true }
+num-traits         = { workspace = true }
+owo-colors         = { workspace = true }
+salsa              = { workspace = true }
+semver             = { workspace = true }
+serde              = { workspace = true, optional = true }
+serde_derive       = { workspace = true, optional = true }
+serde_json         = { workspace = true, optional = true }
+syntect            = { workspace = true }
+tempfile           = { workspace = true }
+textwrap           = { workspace = true }
+thiserror          = { workspace = true }
+tokio              = { workspace = true, features = ["io-util", "io-std", "macros", "rt-multi-thread", "time"] }
+tokio-util         = { workspace = true }
+tower              = { workspace = true, features = ["util"] }
+tower-lsp          = { workspace = true }
+tower-lsp-macros   = { workspace = true }
+tracing            = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["time"] }
+walkdir            = { workspace = true }
 
 ram-error = { workspace = true }
+shadow-rs = { workspace = true }
+taplo     = { workspace = true }
+toml      = { workspace = true }
+
+[build-dependencies]
+shadow-rs = "1.0.1"
 
 [[bin]]
 name              = "ram"

@@ -1,22 +1,28 @@
 use std::ffi::OsString;
 use std::process::ExitCode;
 
+use anstream::println;
 use chumsky::{Parser as ChumskyParser, stream};
 use clap::{CommandFactory, Parser};
-use cli::{Cli, Command};
+use cli::{Cli, ColorChoice, Command, VersionFormat};
 use error::handle_parser_errors;
 use miette::*;
+use shadow_rs::shadow;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{Layer, Registry};
 
 pub use crate::error::Error;
+pub use crate::version::*;
 
 pub mod cli;
 pub mod error;
 pub mod language;
 pub mod lsp;
+pub mod version;
+
+shadow!(build);
 
 pub async fn main<Args, T>(args: Args) -> Result<ExitCode>
 where
@@ -77,12 +83,33 @@ where
             .wrap_err("Failed to run LSP server")
             .map(|_| ExitCode::SUCCESS)
             .map_err(Error::LspError),
-        _ => Err(Error::Unimplemented),
+        Command::Version { output_format } => {
+            let version = VERSION
+                .clone()
+                .with_color_choice(cli.top_level.global_args.color.unwrap_or(ColorChoice::Auto));
+
+            match output_format {
+                VersionFormat::Text => println!("{}", Version::new()),
+                VersionFormat::Json => {
+                    #[cfg(feature = "serde")]
+                    {
+                        let json = serde_json::to_string_pretty(&Version::new()).unwrap();
+                        println!("{json}");
+                    }
+                    #[cfg(not(feature = "serde"))]
+                    {
+                        println!("JSON output is not supported in this build");
+                    }
+                }
+                VersionFormat::Toml => println!("{}", version),
+            }
+            Ok::<_, Error>(ExitCode::SUCCESS)
+        }
     }
     .wrap_err("Failed to execute command")
 }
 
-pub fn init_tracing(cli: &Cli) {
+fn init_tracing(cli: &Cli) {
     let log_path = &cli.top_level.global_args.mirror;
     let level = cli.top_level.global_args.verbose;
     let no_stdout_log = cli.top_level.global_args.no_stdout_log;

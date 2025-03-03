@@ -30,6 +30,44 @@ pub struct Cli {
     pub top_level: TopLevelArgs,
 }
 
+#[derive(Subcommand, Clone)]
+#[allow(clippy::large_enum_variant)]
+pub enum Command {
+    /// Display documentation for a command.
+    #[command(help_template = "\
+{about-with-newline}
+{usage-heading} {usage}{after-help}
+",
+        after_help = format!("\
+{heading}Options:{heading:#}
+  {option}--no-pager{option:#} Disable pager when printing help
+",
+            heading = Style::new().bold().underline(),
+            option = Style::new().bold(),
+        ),
+    )]
+    Help(HelpArgs),
+
+    /// Display the version.
+    Version {
+        #[arg(long, short = 'f', value_enum, default_value = "text")]
+        output_format: VersionFormat,
+    },
+
+    /// Run the Language Server Protocol (LSP) server.
+    Lsp,
+
+    /// Validate a RAM file.
+    Validate {
+        /// The file to validate.
+        program: String,
+
+        /// Output the ast as JSON.
+        #[arg(long, short, action)]
+        ast: bool,
+    },
+}
+
 #[derive(Parser)]
 #[command(disable_help_flag = true, disable_version_flag = true)]
 pub struct TopLevelArgs {
@@ -65,7 +103,18 @@ pub struct GlobalArgs {
 
     /// Disable stdout logging (useful for LSP mode)
     #[arg(global = true, long)]
-    pub no_stdout_log: bool
+    pub no_stdout_log: bool,
+
+    /// Control the use of color in output.
+    ///
+    /// By default, uv will automatically detect support for colors when writing to a terminal.
+    #[arg(
+        global = true,
+        long,
+        value_enum,
+        value_name = "COLOR_CHOICE"
+    )]
+    pub color: Option<ColorChoice>,
 }
 
 #[derive(Debug, Copy, Clone, clap::ValueEnum)]
@@ -106,44 +155,6 @@ impl From<ColorChoice> for anstream::ColorChoice {
             ColorChoice::Never => Self::Never,
         }
     }
-}
-
-#[derive(Subcommand, Clone)]
-#[allow(clippy::large_enum_variant)]
-pub enum Command {
-    /// Display documentation for a command.
-    #[command(help_template = "\
-{about-with-newline}
-{usage-heading} {usage}{after-help}
-",
-        after_help = format!("\
-{heading}Options:{heading:#}
-  {option}--no-pager{option:#} Disable pager when printing help
-",
-            heading = Style::new().bold().underline(),
-            option = Style::new().bold(),
-        ),
-    )]
-    Help(HelpArgs),
-
-    /// Display the version.
-    Version {
-        #[arg(long, value_enum, default_value = "text")]
-        output_format: VersionFormat,
-    },
-
-    /// Run the Language Server Protocol (LSP) server.
-    Lsp,
-
-    /// Validate a RAM file.
-    Validate {
-        /// The file to validate.
-        program: String,
-
-        /// Output the ast as JSON.
-        #[arg(long, short, action)]
-        ast: bool,
-    },
 }
 
 #[derive(Args, Clone)]
