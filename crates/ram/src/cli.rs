@@ -4,6 +4,7 @@ use clap::builder::Styles;
 use clap::builder::styling::{AnsiColor, Effects, Style};
 use clap::{Args, Parser, Subcommand};
 
+use crate::VERSION;
 use crate::color::ColorChoice;
 
 // Configures Clap v3-style help menu colors
@@ -14,7 +15,7 @@ const STYLES: Styles = Styles::styled()
     .placeholder(AnsiColor::Cyan.on_default());
 
 #[derive(Parser)]
-#[command(name = "ram", author, version = "0.1.0")]
+#[command(name = "ram", author, version = VERSION.pkg_version())]
 #[command(about = "The ram language toolkit")]
 #[command(propagate_version = true)]
 #[command(
