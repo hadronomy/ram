@@ -8,7 +8,7 @@ use taplo::formatter::Options;
 use taplo::rowan::{NodeOrToken, WalkEvent};
 
 use crate::build;
-use crate::cli::ColorChoice;
+use crate::color::ColorChoice;
 
 /// Global VERSION instance that can be accessed from anywhere
 pub static VERSION: LazyLock<Version<'static>> = LazyLock::new(Version::default);
@@ -91,6 +91,12 @@ impl Version<'_> {
     pub fn with_color_choice(mut self, choice: ColorChoice) -> Self {
         self.color_choice = choice;
         self
+    }
+
+    pub fn with_colorization(&self, should_colorize: bool) -> Self {
+        let mut clone = self.clone();
+        clone.color_choice = if should_colorize { ColorChoice::Always } else { ColorChoice::Never };
+        clone
     }
 
     /// Private helper to determine if we should colorize based on the context

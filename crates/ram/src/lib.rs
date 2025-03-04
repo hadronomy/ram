@@ -4,8 +4,6 @@ use std::process::ExitCode;
 use anstream::println;
 use chumsky::{Parser as ChumskyParser, stream};
 use clap::{CommandFactory, Parser};
-use cli::{Cli, ColorChoice, Command, VersionFormat};
-use error::handle_parser_errors;
 use miette::*;
 use shadow_rs::shadow;
 use tracing_subscriber::fmt::time::UtcTime;
@@ -13,10 +11,14 @@ use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
 use tracing_subscriber::{Layer, Registry};
 
+use crate::cli::{Cli, Command, VersionFormat};
+use crate::color::ColorChoice;
 pub use crate::error::Error;
+use crate::error::handle_parser_errors;
 pub use crate::version::*;
 
 pub mod cli;
+pub mod color;
 pub mod error;
 pub mod language;
 pub mod lsp;
@@ -80,6 +82,11 @@ async fn handle_command_iner(
     global_args: Box<cli::GlobalArgs>,
     command: Box<Command>,
 ) -> std::result::Result<ExitCode, ErrReport> {
+    use std::io::Write; // Add this import to bring Write trait into scope
+
+    // Create a color config from user preference
+    let color_config = color::ColorConfig::new(global_args.color.unwrap_or(ColorChoice::Auto));
+
     match *command {
         // execute help
         Command::Help(_) => {
@@ -113,23 +120,32 @@ async fn handle_command_iner(
             .map(|_| ExitCode::SUCCESS)
             .map_err(Error::LspError),
         Command::Version { output_format } => {
-            let version =
-                VERSION.clone().with_color_choice(global_args.color.unwrap_or(ColorChoice::Auto));
+            // Use the color config directly instead of setting it on VERSION
+            let version = VERSION.clone();
+            let should_colorize = color_config.should_colorize();
+
+            // Get a properly colorized stdout writer
+            let mut out = color_config.stdout();
 
             match output_format {
-                VersionFormat::Text => println!("{}", Version::new()),
+                VersionFormat::Text => {
+                    // Create a version instance that respects color settings
+                    let version_display = Version::new().with_colorization(should_colorize);
+                    writeln!(out, "{}", version_display).into_diagnostic()?;
+                }
                 VersionFormat::Json => {
                     #[cfg(feature = "serde")]
                     {
                         let json = serde_json::to_string_pretty(&Version::new()).unwrap();
-                        println!("{json}");
+                        writeln!(out, "{json}").into_diagnostic()?;
                     }
                     #[cfg(not(feature = "serde"))]
                     {
-                        println!("JSON output is not supported in this build");
+                        writeln!(out, "JSON output is not supported in this build")
+                            .into_diagnostic()?;
                     }
                 }
-                VersionFormat::Toml => println!("{}", version),
+                VersionFormat::Toml => writeln!(out, "{}", version).into_diagnostic()?,
             }
             Ok::<_, Error>(ExitCode::SUCCESS)
         }
@@ -142,6 +158,11 @@ fn init_tracing(cli: &Cli) {
     let level = cli.top_level.global_args.verbose;
     let no_stdout_log = cli.top_level.global_args.no_stdout_log;
 
+    // Get color choice from CLI arguments
+    let color_choice = cli.top_level.global_args.color.unwrap_or(ColorChoice::Auto);
+    let color_config = color::ColorConfig::new(color_choice);
+    let use_ansi = color_config.should_colorize();
+
     // Create a registry for our subscribers
     let registry = Registry::default();
 
@@ -152,7 +173,7 @@ fn init_tracing(cli: &Cli) {
         stdout_subscriber = Some(
             tracing_subscriber::fmt::layer()
                 .with_writer(std::io::stdout)
-                .with_ansi(true)
+                .with_ansi(use_ansi) // Use the color config here
                 .with_timer(UtcTime::rfc_3339()),
         );
     }

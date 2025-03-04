@@ -4,6 +4,8 @@ use clap::builder::Styles;
 use clap::builder::styling::{AnsiColor, Effects, Style};
 use clap::{Args, Parser, Subcommand};
 
+use crate::color::ColorChoice;
+
 // Configures Clap v3-style help menu colors
 const STYLES: Styles = Styles::styled()
     .header(AnsiColor::Green.on_default().effects(Effects::BOLD))
@@ -111,46 +113,6 @@ pub struct GlobalArgs {
     /// By default, uv will automatically detect support for colors when writing to a terminal.
     #[arg(global = true, long, value_enum, value_name = "COLOR_CHOICE")]
     pub color: Option<ColorChoice>,
-}
-
-#[derive(Debug, Copy, Clone, clap::ValueEnum)]
-pub enum ColorChoice {
-    /// Enables colored output only when the output is going to a terminal or TTY with support.
-    Auto,
-
-    /// Enables colored output regardless of the detected environment.
-    Always,
-
-    /// Disables colored output.
-    Never,
-}
-
-impl ColorChoice {
-    /// Combine self (higher priority) with an [`anstream::ColorChoice`] (lower priority).
-    ///
-    /// This method allows prioritizing the user choice, while using the inferred choice for a
-    /// stream as default.
-    #[must_use]
-    pub fn and_colorchoice(self, next: anstream::ColorChoice) -> Self {
-        match self {
-            Self::Auto => match next {
-                anstream::ColorChoice::Auto => Self::Auto,
-                anstream::ColorChoice::Always | anstream::ColorChoice::AlwaysAnsi => Self::Always,
-                anstream::ColorChoice::Never => Self::Never,
-            },
-            Self::Always | Self::Never => self,
-        }
-    }
-}
-
-impl From<ColorChoice> for anstream::ColorChoice {
-    fn from(value: ColorChoice) -> Self {
-        match value {
-            ColorChoice::Auto => Self::Auto,
-            ColorChoice::Always => Self::Always,
-            ColorChoice::Never => Self::Never,
-        }
-    }
 }
 
 #[derive(Args, Clone)]
