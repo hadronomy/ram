@@ -32,7 +32,16 @@ where
     let cli = match Cli::try_parse_from(args) {
         Ok(cli) => cli,
         Err(err) => {
-            err.exit();
+            // If error is --version or -V, we'll handle that specially
+            if err.kind() == clap::error::ErrorKind::DisplayVersion {
+                // Create a default CLI and run the version command
+                let default_cli = Cli::parse_from(["ram", "version"]);
+                handle_command(default_cli).await?;
+                return Ok(ExitCode::SUCCESS);
+            } else {
+                // For all other errors, just exit with the error
+                err.exit();
+            }
         }
     };
 
@@ -51,7 +60,27 @@ where
     }))
     .map_err(|err| Error::SetupError(err.into()))?;
 
-    match *cli.command {
+    handle_command(cli).await
+}
+
+async fn handle_command(cli: Cli) -> Result<ExitCode> {
+    if cli.top_level.version.is_some() {
+        handle_command_iner(
+            cli.top_level.global_args,
+            Box::new(Command::Version { output_format: VersionFormat::Text }),
+        )
+        .await?;
+        return Ok(ExitCode::SUCCESS);
+    }
+
+    handle_command_iner(cli.top_level.global_args, cli.command).await
+}
+
+async fn handle_command_iner(
+    global_args: Box<cli::GlobalArgs>,
+    command: Box<Command>,
+) -> std::result::Result<ExitCode, ErrReport> {
+    match *command {
         // execute help
         Command::Help(_) => {
             Cli::command().print_help().into_diagnostic()?;
@@ -78,15 +107,14 @@ where
             }
             Ok::<_, Error>(ExitCode::SUCCESS)
         }
-        Command::Lsp => lsp::run()
+        Command::Server => lsp::run()
             .await
             .wrap_err("Failed to run LSP server")
             .map(|_| ExitCode::SUCCESS)
             .map_err(Error::LspError),
         Command::Version { output_format } => {
-            let version = VERSION
-                .clone()
-                .with_color_choice(cli.top_level.global_args.color.unwrap_or(ColorChoice::Auto));
+            let version =
+                VERSION.clone().with_color_choice(global_args.color.unwrap_or(ColorChoice::Auto));
 
             match output_format {
                 VersionFormat::Text => println!("{}", Version::new()),

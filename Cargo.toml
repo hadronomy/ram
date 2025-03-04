@@ -1,5 +1,5 @@
 [workspace]
-members  = ["./crates/*", "crates/ram-error", "crates/ram-parser"]
+members  = ["./crates/*", "xtask"]
 resolver = "2"
 
 [workspace.package]
@@ -12,7 +12,6 @@ version    = "0.1.0"
 [workspace.dependencies]
 anstream           = "0.6.18"
 anyhow             = "1.0.95"
-async-tungstenite  = { version = "0.28", features = ["tokio-runtime"] }
 chumsky            = "0.9.3"
 clap               = { version = "4.5.23", features = ["derive", "env", "string", "wrap_help"] }
 globset            = { version = "0.4.15", features = ["serde"] }
@@ -24,24 +23,28 @@ num-traits         = "0.2.19"
 owo-colors         = "4.1.0"
 salsa              = "0.18.0"
 semver             = "1.0.24"
-serde              = "1.0.217"
-serde_derive       = "1.0.217"
-serde_json         = "1.0.134"
 shadow-rs          = "1.0.1"
 syntect            = { version = "5.2.0", features = ["default-fancy"] }
-taplo              = "0.13.2"
 tempfile           = "3.15.0"
 textwrap           = "0.16.1"
 thiserror          = "2.0.9"
 tokio              = "1.42.0"
 tokio-util         = { version = "0.7.13", features = ["codec", "compat"] }
-toml               = "0.8.20"
-tower              = { version = "0.5.2" }
-tower-lsp          = { version = "0.20.0" }
-tower-lsp-macros   = "0.9.0"
 tracing            = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 walkdir            = "2.5.0"
+
+# Serde and serialization
+serde              = "1.0.217"
+serde_derive       = "1.0.217"
+serde_json         = "1.0.134"
+taplo              = "0.13.2"
+toml               = "0.8.20"
+
+# Tower crates
+tower              = { version = "0.5.2" }
+tower-lsp          = { version = "0.20.0" }
+tower-lsp-macros   = "0.9.0"
 
 # Workspace crates
 ram-error  = { path = "crates/ram-error" }

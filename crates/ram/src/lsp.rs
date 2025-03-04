@@ -5,6 +5,8 @@ use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 use tracing::info;
 
+use crate::VERSION;
+
 #[derive(Debug)]
 struct Backend {
     client: Client,
@@ -17,7 +19,7 @@ impl LanguageServer for Backend {
         Ok(InitializeResult {
             server_info: Some(ServerInfo {
                 name: "RAM Language Server".to_string(),
-                version: Some("0.1.0".to_string()),
+                version: Some(VERSION.pkg_version().to_string()),
             }),
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(

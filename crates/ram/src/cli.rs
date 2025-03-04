@@ -55,7 +55,8 @@ pub enum Command {
     },
 
     /// Run the Language Server Protocol (LSP) server.
-    Lsp,
+    #[command(alias = "lsp")]
+    Server,
 
     /// Validate a RAM file.
     Validate {
@@ -80,7 +81,7 @@ pub struct TopLevelArgs {
 
     /// Display the version.
     #[arg(global = true, short = 'V', long, action = clap::ArgAction::Version, help_heading = "Global options")]
-    version: Option<bool>,
+    pub version: Option<bool>,
 }
 
 #[derive(Parser, Debug, Clone)]
@@ -108,12 +109,7 @@ pub struct GlobalArgs {
     /// Control the use of color in output.
     ///
     /// By default, uv will automatically detect support for colors when writing to a terminal.
-    #[arg(
-        global = true,
-        long,
-        value_enum,
-        value_name = "COLOR_CHOICE"
-    )]
+    #[arg(global = true, long, value_enum, value_name = "COLOR_CHOICE")]
     pub color: Option<ColorChoice>,
 }
 
