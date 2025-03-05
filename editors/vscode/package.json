@@ -99,6 +99,11 @@
     "typecheck": "tsc --noEmit",
     "release": "bumpp && nr publish"
   },
+  "dependencies": {
+    "reactive-vscode": "^0.2.13",
+    "vscode-ext-gen": "^1.0.2",
+    "vscode-languageclient": "^9.0.1"
+  },
   "devDependencies": {
     "@antfu/ni": "^23.3.1",
     "@hadronomy/eslint-config": "^4.1.2",
@@ -110,15 +115,10 @@
     "eslint": "^9.21.0",
     "esno": "^4.8.0",
     "pnpm": "^10.5.2",
-    "reactive-vscode": "^0.2.13",
     "tsup": "^8.4.0",
     "typescript": "^5.7.3",
     "vite": "^6.2.0",
-    "vitest": "^3.0.7",
-    "vscode-ext-gen": "^1.0.2",
-    "vscode-languageclient": "^9.0.1",
-    "web-streams-polyfill": "^4.1.0",
-    "ws": "^8.18.1"
+    "vitest": "^3.0.7"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
