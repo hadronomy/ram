@@ -105,10 +105,6 @@ pub struct GlobalArgs {
     #[arg(global = true, long, value_name = "FILE")]
     pub mirror: Option<PathBuf>,
 
-    /// Disable stdout logging (useful for LSP mode)
-    #[arg(global = true, long)]
-    pub no_stdout_log: bool,
-
     /// Control the use of color in output.
     ///
     /// By default, uv will automatically detect support for colors when writing to a terminal.
