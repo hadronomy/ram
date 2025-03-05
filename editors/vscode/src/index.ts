@@ -15,7 +15,7 @@ const { activate, deactivate } = defineExtension((ctx) => {
   const logFilePath = ctx.asAbsolutePath(path.join('..', '..', 'logs', 'ram.log'));
   const run = {
     command: serverPath,
-    args: ['lsp', '-vvv', '--no-stdout-log', '--mirror', logFilePath],
+    args: ['lsp', '-vvv', '--mirror', logFilePath],
     options: { env: { RUST_BACKTRACE: 1 } },
   };
 
