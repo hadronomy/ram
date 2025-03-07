@@ -1,8 +1,8 @@
-# Programa con una instrucción ilegal (STORE =2)
-# Debe producir un error en la ejecución
+# Program with an illegal instruction (STORE =2)
+# Should produce an error during execution
 
 	LOAD =3
-	STORE 1	
+	STORE 1
 	ADD =2
 	STORE =2
 	WRITE 1

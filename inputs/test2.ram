@@ -1,9 +1,9 @@
-# Programa que reconoce el lenguaje formado por las 
-# palabras que tienen el mismo número de 1 y 2.
-# Las palabras finalizan con el número 0. 
-# Los únicos símbolos posibles de entrada son 0, 1 y 2.
-# La cinta de salida contendrá un 1 si se reconoce la palabra
-# y un 0 si no pertenece al lenguaje
+# Program that recognizes the language formed by words
+# that have the same number of 1s and 2s.
+# Words end with the number 0.
+# The only possible input symbols are 0, 1, and 2.
+# The output tape will contain a 1 if the word is recognized
+# and a 0 if it does not belong to the language.
 
 					LOAD =0
 					STORE 2

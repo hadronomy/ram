@@ -1,13 +1,13 @@
-# Programa que lee los elementos de la cinta de entrada hasta
-# que encuentra un 0 y va guardando los valores en registros
-# sucesivos comenzando por el registro R3. Luego, multiplica
-# todos esos valores por 3 y los escribe en la cinta de salida
+# Program that reads elements from the input tape until
+# it finds a 0 and stores the values in successive registers
+# starting from register R3. Then, multiplies all those values
+# by 3 and writes them to the output tape.
 
-# Se usa direccionamiento indirecto mediante el registro R2
+# Indirect addressing is used via register R2
 
 				load =3
 				store 2
-			
+
 lee:		read 1
 				load 1
 				jzero fin
@@ -34,7 +34,7 @@ carga:	load *2
 				load 2
 				add =1
 				store 2
-			
+
 				jump carga
 
 fin2: 	halt

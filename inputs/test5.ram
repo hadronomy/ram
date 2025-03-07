@@ -1,6 +1,6 @@
-# Programa que lee los elementos la cinta de entrada hasta
-# que encuentre un 0 y escribe la suma de todos los elementos 
-# leídos a la cinta de salida
+# Program that reads elements from the input tape until
+# it finds a 0 and writes the sum of all read elements
+# to the output tape
 
 				READ 1
 				LOAD =0

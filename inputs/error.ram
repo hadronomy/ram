@@ -1,6 +1,6 @@
-# Programa que lee los elementos la cinta de entrada hasta
-# que encuentre un 0 y copia los valores leídos a la cinta
-# de salida (el valor 0 no se copia)
+# Program that reads the elements from the input tape until
+# it finds a 0 and copies the read values to the output tape
+# (the value 0 is not copied)
 
 lee:	read [1]
 			load 1[2

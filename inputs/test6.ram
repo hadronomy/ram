@@ -1,5 +1,5 @@
-# Programa con una instrucción ilegal (WRITE 0)
-# Debe producir un error en la ejecución
+# Program with an illegal instruction (WRITE 0)
+# Should produce an error during execution
 
 	LOAD =3
 	STORE 1
