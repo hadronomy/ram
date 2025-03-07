@@ -1,5 +1,6 @@
+min_version = "2024.1.1"
+
 [tools]
-uv = "latest"
 "cargo:ouch" = "latest"
 "pipx:antlr4-tools" = "latest"
 cargo-binstall = "1.10.17"
@@ -13,6 +14,7 @@ cargo-binstall = "1.10.17"
 "cargo:cargo-machete" = "latest"
 "cargo:cargo-nextest" = "latest"
 "cargo:cargo-show" = { version = "latest", os = ["linux", "macos"] }
+"cargo:cargo-shear" = "latest"
 "cargo:cross" = "latest"
 "cargo:git-cliff" = "latest"
 "cargo:just" = "latest"
@@ -22,5 +24,5 @@ jq = "latest"
 taplo = "latest"
 "cargo:typos-cli" = "latest"
 
-[tasks]
-tar = "ouch c . ram.tar.gz -g"
+[task_config]
+includes = ["tasks.toml", "xtasks"]
