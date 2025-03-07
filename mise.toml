@@ -11,7 +11,6 @@ cargo-binstall = "1.10.17"
 "cargo:cargo-feature" = "latest"
 "cargo:cargo-generate" = "latest"
 "cargo:cargo-insta" = "latest"
-"cargo:cargo-machete" = "latest"
 "cargo:cargo-nextest" = "latest"
 "cargo:cargo-show" = { version = "latest", os = ["linux", "macos"] }
 "cargo:cargo-shear" = "latest"
