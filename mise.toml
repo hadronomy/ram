@@ -20,6 +20,7 @@ cargo-binstall = "1.10.17"
 "cargo:usage-cli" = { version = "latest", os = ["linux", "macos"] }
 jq = "latest"
 taplo = "latest"
+"cargo:typos-cli" = "latest"
 
 [tasks]
 tar = "ouch c . ram.tar.gz -g"
