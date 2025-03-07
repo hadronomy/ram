@@ -8,7 +8,7 @@
       "runtimeExecutable": "${execPath}",
       "args": [
         "--extensionDevelopmentPath=${workspaceFolder}",
-        "--user-data-dir /tmp/vscode-clean-profile",
+        "--user-data-dir /tmp/vscode-clean-profile"
       ],
       "outFiles": [
         "${workspaceFolder}/dist/**/*.js"
