@@ -32,6 +32,8 @@ pub enum SyntaxKind {
     COMMENT_NODE,
     ACCESSOR,
     INDEX,
+    EOF,
+    IDENT,
     // Error
     ERROR,
     __LAST,
