@@ -22,6 +22,4 @@ cargo-binstall = "1.10.17"
 jq = "latest"
 taplo = "latest"
 "cargo:typos-cli" = "latest"
-
-[task_config]
-includes = ["tasks.toml", "xtasks"]
+just = "latest"
