@@ -2,7 +2,7 @@
   "name": "@ram/grammar",
   "type": "module",
   "version": "0.1.0",
-  "packageManager": "pnpm@10.4.1",
+  "packageManager": "pnpm@10.6.2",
   "description": "The grammar for the ram assembly language",
   "keywords": [],
   "exports": {
@@ -44,8 +44,8 @@
   },
   "devDependencies": {
     "@types/tmp": "^0.2.6",
-    "antlr-ng": "^0.7.0",
-    "antlr4ng": "^3.0.14",
+    "antlr-ng": "^1.0.9",
+    "antlr4ng": "^3.0.16",
     "chalk": "^5.4.1",
     "commander": "^13.1.0",
     "esno": "^4.8.0",

@@ -1,0 +1,22 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["import", "jsdoc", "unicorn", "typescript", "oxc", "react", "next"],
+  "ignorePatterns": [
+    "crates/**",
+    "**/generated/**"
+  ],
+  "rules": {
+    "no-unused-vars": [
+      "warn",
+      { "varsIgnorePattern": "^_", "argsIgnorePattern": "^_" }
+    ],
+    "unicorn/prefer-node-protocol": "error",
+    "import/namespace": [
+      "error",
+      {
+        "allowComputed": true
+      }
+    ],
+    "import/named": "allow"
+  }
+}

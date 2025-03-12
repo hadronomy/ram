@@ -1,5 +1,5 @@
 import type { Token } from 'antlr4ng';
-import type monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 import { BaseErrorListener } from 'antlr4ng';
 
 import { createLexer } from './utils';
