@@ -47,8 +47,8 @@ tower-lsp          = { version = "0.20.0" }
 tower-lsp-macros   = "0.9.0"
 
 # Workspace crates
-ram-error  = { path = "crates/ram-error" }
-ram-parser = { path = "crates/ram-parser" }
+ram_error  = { path = "crates/ram_error" }
+ram_parser = { path = "crates/ram_parser" }
 
 # Lint rules that I like taken from
 # https://github.com/rolldown/rolldown/blob/main/Cargo.toml
