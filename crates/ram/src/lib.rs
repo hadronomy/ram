@@ -5,7 +5,6 @@ use std::process::ExitCode;
 use std::sync::{Arc, RwLock};
 
 use anstream::println;
-use chumsky::{Parser as ChumskyParser, stream};
 use clap::{CommandFactory, Parser};
 use miette::*;
 use shadow_rs::shadow;
@@ -18,7 +17,6 @@ use tracing_subscriber::{EnvFilter, Registry, reload};
 use crate::cli::{Cli, Command, VersionFormat};
 use crate::color::ColorChoice;
 pub use crate::error::Error;
-use crate::error::handle_parser_errors;
 pub use crate::version::*;
 
 pub mod cli;
@@ -122,20 +120,16 @@ async fn handle_command_iner(
             let src = std::fs::read_to_string(program.clone())
                 .into_diagnostic()
                 .wrap_err(format!("Failed to read file: {}", program))?;
-            let (program, errors) =
-                language::parser().parse_recovery(stream::Stream::from(src.clone()));
-            handle_parser_errors(&src, errors);
+            let (program, errors) = language::parser()(&src);
+
+            // Report any errors
+            for error in errors {
+                eprintln!("{:?}", error);
+            }
 
             if ast {
-                #[cfg(feature = "serde")]
-                {
-                    let json = serde_json::to_string_pretty(&program).unwrap();
-                    println!("{json}");
-                }
-                #[cfg(not(feature = "serde"))]
-                {
-                    println!("{program:#?}");
-                }
+                // Just print the debug representation of the program
+                println!("{program:#?}");
             }
             Ok::<_, Error>(ExitCode::SUCCESS)
         }

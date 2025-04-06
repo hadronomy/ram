@@ -1,16 +1,15 @@
 [package]
 name = "ram_error"
-
-authors.workspace    = true
-edition.workspace    = true
-license.workspace    = true
+authors.workspace = true
+edition.workspace = true
+license.workspace = true
 repository.workspace = true
-version.workspace    = true
+version.workspace = true
 
 [dependencies]
-chumsky   = { workspace = true }
-miette    = { workspace = true, features = ["syntect-highlighter"] }
-thiserror = { workspace = true }
+chumsky               = { workspace = true }
+miette                = { workspace = true, features = ["syntect-highlighter"] }
+thiserror             = { workspace = true }
 
 [lints]
 workspace = true

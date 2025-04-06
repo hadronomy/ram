@@ -1,61 +1,35 @@
-use chumsky::prelude::*;
-#[cfg(feature = "serde")]
-use serde::Serialize;
+use ram_parser::{Program, SyntaxNode, build_tree, convert_errors, parse};
+use rowan::ast::AstNode;
 
-pub type Span = SimpleSpan;
-pub type Spanned<T> = (T, Span);
-
-#[derive(Debug, Clone, PartialEq)]
-enum Token<'src> {
-    Ident(&'src str),
-    Num(u64),
-    Str(&'src str),
-    Op(&'src str),
-    Ctrl(char),
-    Comment(&'src str),
+/// Create a parser for RAM assembly language.
+///
+/// This function returns a parser that can be used to parse RAM assembly code.
+pub fn parser() -> impl FnOnce(&str) -> (Program, Vec<miette::Error>) {
+    |source| parse_program(source)
 }
 
-impl<'src> std::fmt::Display for Token<'src> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Token::Ident(s) => write!(f, "Ident({s})"),
-            Token::Num(n) => write!(f, "Num({n})"),
-            Token::Str(s) => write!(f, "Str({s})"),
-            Token::Op(s) => write!(f, "Op({s})"),
-            Token::Ctrl(c) => write!(f, "Ctrl({c})"),
-        }
-    }
-}
+/// Parse RAM assembly code into a syntax tree.
+///
+/// This function uses the recursive descent parser to parse the input string
+/// and returns a syntax tree and any errors encountered during parsing.
+pub fn parse_program(source: &str) -> (Program, Vec<miette::Error>) {
+    // Parse the source text using our recursive descent parser
+    let (events, errors) = parse(source);
 
-pub fn lexer<'src>()
--> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>, extra::Err<Rich<'src, char, Span>>> {
-    let num = text::int(10)
-        .then(just('.').then(text::digits(10)).or_not())
-        .to_slice()
-        .from_str()
-        .unwrapped()
-        .map(Token::Num);
+    // Convert the events into a syntax tree
+    let green_node = build_tree(events);
+    let syntax_node = SyntaxNode::new_root(green_node);
+    let program = Program::cast(syntax_node).expect("Failed to cast root node to Program");
 
-    let op = one_of("=*").repeated().at_least(1).to_slice().map(Token::Op);
+    // Convert the errors into miette errors
+    let miette_errors = if errors.is_empty() {
+        // No errors, return an empty vector
+        Vec::new()
+    } else {
+        // Convert the errors to miette errors
+        let parser_error = convert_errors(source, errors);
+        vec![miette::Error::new(parser_error)]
+    };
 
-    let ctrl = one_of("()[]{};,").map(Token::Ctrl);
-
-    let ident = text::ident().map(Token::Ident);
-
-    let str = just('"')
-        .ignore_then(filter(|c: &char| *c != '"').repeated())
-        .then_ignore(just('"'))
-        .to_slice()
-        .map(Token::Str);
-
-    let comment = just('#')
-        .ignore_then(filter(|c: &char| *c != '\n').repeated())
-        .to_slice()
-        .map(Token::Comment);
-
-    comment.or(num).or(op).or(ctrl).or(ident).map_with_span(|tok, span| (tok, span))
-}
-
-pub fn parser() -> impl Parser<char, Program, Error = Simple<char>> {
-    program_parser()
+    (program, miette_errors)
 }

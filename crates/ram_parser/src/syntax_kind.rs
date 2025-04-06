@@ -1,67 +1,96 @@
 use num_derive::{FromPrimitive, ToPrimitive};
-use num_traits::FromPrimitive;
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, FromPrimitive, ToPrimitive)]
-#[allow(non_camel_case_types)]
-#[repr(u16)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, FromPrimitive, ToPrimitive)]
+#[repr(u16)] // Rowan requires a primitive representation
 pub enum SyntaxKind {
-    // Tokens
-    IDENTIFIER = 0,
-    NUMBER,
-    COLON,
-    EQUALS,
-    ASTERISK,
-    LBRACKET,
-    RBRACKET,
-    COMMENT,
-    WHITESPACE,
-    NEWLINE,
-
-    // Keywords (if any, add here)
-
     // Nodes
-    PROGRAM,
-    LINE,
-    LABEL_DEFINITION,
-    INSTRUCTION,
-    ARGUMENT,
-    DIRECT,
-    INDIRECT,
-    IMMEDIATE,
-    LABEL,
-    COMMENT_NODE,
-    ACCESSOR,
-    INDEX,
-    EOF,
-    IDENT,
-    // Error
-    ERROR,
-    __LAST,
+    Root = 0, // Start explicit numbering if using FromPrimitive
+    Line,
+    Instruction,
+    LabelDef,
+    Comment,
+    Operand,
+    DirectOperand,    // Direct addressing (e.g., 5)
+    IndirectOperand,  // Indirect addressing (e.g., *5)
+    ImmediateOperand, // Immediate addressing (e.g., =5)
+    OperandValue,
+    ArrayAccessor, // Array accessor [index]
+
+    // Error node
+    ErrorNode,
+
+    // --- TOKEN KINDS ---
+    // It's conventional in Rowan to include token kinds in the same enum
+    // for a unified SyntaxKind type used by the tree.
+    Whitespace = 100, // Start tokens at a higher offset
+    Newline,
+    Hash,        // '#' itself (distinct from Comment node/token text)
+    CommentText, // The text content of a comment token
+    Number,
+    Identifier,
+    LoadKw,
+    StoreKw,
+    AddKw,
+    SubKw,
+    MulKw,
+    DivKw,
+    JumpKw,
+    JgtzKw,
+    JzeroKw,
+    HaltKw,
+    Colon,
+    Star,     // '*' for indirect addressing
+    Equals,   // '=' for immediate addressing
+    LBracket, // '[' for array access
+    RBracket, // ']' for array access
+    ErrorTok, // Token for unrecognized characters
+    Eof,      // Not usually represented in the tree, but needed for parsing
 }
 
-impl From<u16> for SyntaxKind {
-    #[inline]
-    fn from(d: u16) -> SyntaxKind {
-        SyntaxKind::from_u16(d).unwrap_or(SyntaxKind::ERROR)
+// Implement conversion for Rowan
+impl From<SyntaxKind> for rowan::SyntaxKind {
+    fn from(kind: SyntaxKind) -> Self {
+        Self(num_traits::ToPrimitive::to_u16(&kind).unwrap())
     }
 }
 
-impl From<SyntaxKind> for u16 {
-    #[inline]
-    fn from(k: SyntaxKind) -> u16 {
-        k as u16
+// Implement conversion from rowan::SyntaxKind
+impl From<rowan::SyntaxKind> for SyntaxKind {
+    fn from(kind: rowan::SyntaxKind) -> Self {
+        match num_traits::FromPrimitive::from_u16(kind.0) {
+            Some(kind) => kind,
+            None => SyntaxKind::ErrorNode,
+        }
     }
 }
 
 impl SyntaxKind {
     #[inline]
     pub fn is_trivia(self) -> bool {
-        matches!(self, SyntaxKind::WHITESPACE | SyntaxKind::COMMENT)
+        matches!(self, SyntaxKind::Whitespace | SyntaxKind::Newline | SyntaxKind::Comment)
     }
 
     /// Returns true if this is an identifier or a keyword.
     #[inline]
     pub fn is_any_identifier(self) -> bool {
-        self == SyntaxKind::IDENTIFIER
+        self == SyntaxKind::Identifier
+    }
+
+    /// Returns true if this is a keyword.
+    #[inline]
+    pub fn is_keyword(self) -> bool {
+        matches!(
+            self,
+            SyntaxKind::LoadKw
+                | SyntaxKind::StoreKw
+                | SyntaxKind::AddKw
+                | SyntaxKind::SubKw
+                | SyntaxKind::MulKw
+                | SyntaxKind::DivKw
+                | SyntaxKind::JumpKw
+                | SyntaxKind::JgtzKw
+                | SyntaxKind::JzeroKw
+                | SyntaxKind::HaltKw
+        )
     }
 }
