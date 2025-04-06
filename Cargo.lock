@@ -1371,7 +1371,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "owo-colors",
- "ram-error",
+ "ram_error",
  "salsa",
  "semver",
  "serde",
@@ -1395,7 +1395,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ram-error"
+name = "ram_error"
 version = "0.1.0"
 dependencies = [
  "chumsky",
@@ -1404,7 +1404,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ram-parser"
+name = "ram_parser"
 version = "0.1.0"
 dependencies = [
  "anstream",
@@ -1417,7 +1417,7 @@ dependencies = [
  "num-derive",
  "num-traits",
  "owo-colors",
- "ram-error",
+ "ram_error",
  "salsa",
  "semver",
  "serde",
