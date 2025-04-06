@@ -12,7 +12,7 @@ version    = "0.1.0"
 [workspace.dependencies]
 anstream           = "0.6.18"
 anyhow             = "1.0.95"
-chumsky            = "0.9.3"
+chumsky            = "0.10.0"
 clap               = { version = "4.5.23", features = ["derive", "env", "string", "wrap_help"] }
 globset            = { version = "0.4.15", features = ["serde"] }
 human-panic        = "2.0.2"

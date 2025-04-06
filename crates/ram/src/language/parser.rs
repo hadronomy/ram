@@ -2,203 +2,60 @@ use chumsky::prelude::*;
 #[cfg(feature = "serde")]
 use serde::Serialize;
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-pub struct Program {
-    lines: Vec<Line>,
+pub type Span = SimpleSpan;
+pub type Spanned<T> = (T, Span);
+
+#[derive(Debug, Clone, PartialEq)]
+enum Token<'src> {
+    Ident(&'src str),
+    Num(u64),
+    Str(&'src str),
+    Op(&'src str),
+    Ctrl(char),
+    Comment(&'src str),
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-pub enum Line {
-    Instruction { instruction: Instruction, comment: Option<String> },
-    LabelDefinition { label: String, instruction: Instruction, comment: Option<String> },
-    Comment(String),
-    Invalid,
+impl<'src> std::fmt::Display for Token<'src> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Token::Ident(s) => write!(f, "Ident({s})"),
+            Token::Num(n) => write!(f, "Num({n})"),
+            Token::Str(s) => write!(f, "Str({s})"),
+            Token::Op(s) => write!(f, "Op({s})"),
+            Token::Ctrl(c) => write!(f, "Ctrl({c})"),
+        }
+    }
 }
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-pub enum Instruction {
-    Basic { opcode: String, arg: Option<Operand> },
-    Invalid,
-}
+pub fn lexer<'src>()
+-> impl Parser<'src, &'src str, Vec<Spanned<Token<'src>>>, extra::Err<Rich<'src, char, Span>>> {
+    let num = text::int(10)
+        .then(just('.').then(text::digits(10)).or_not())
+        .to_slice()
+        .from_str()
+        .unwrapped()
+        .map(Token::Num);
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-pub enum Operand {
-    Number(NumberOperand),
-    Indirect(IndirectOperand),
-    Immediate(ImmediateOperand),
-    Label(String),
-    Invalid,
-}
+    let op = one_of("=*").repeated().at_least(1).to_slice().map(Token::Op);
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-pub struct NumberOperand {
-    value: u64,
-    accessor: Option<Accessor>,
-}
+    let ctrl = one_of("()[]{};,").map(Token::Ctrl);
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-pub struct IndirectOperand {
-    value: u64,
-}
+    let ident = text::ident().map(Token::Ident);
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-pub struct ImmediateOperand {
-    value: u64,
-}
+    let str = just('"')
+        .ignore_then(filter(|c: &char| *c != '"').repeated())
+        .then_ignore(just('"'))
+        .to_slice()
+        .map(Token::Str);
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "serde", derive(Serialize))]
-#[cfg_attr(feature = "serde", serde(rename_all = "camelCase"))]
-pub struct Accessor {
-    index: Box<Operand>,
+    let comment = just('#')
+        .ignore_then(filter(|c: &char| *c != '\n').repeated())
+        .to_slice()
+        .map(Token::Comment);
+
+    comment.or(num).or(op).or(ctrl).or(ident).map_with_span(|tok, span| (tok, span))
 }
 
 pub fn parser() -> impl Parser<char, Program, Error = Simple<char>> {
     program_parser()
-}
-
-fn program_parser() -> impl Parser<char, Program, Error = Simple<char>> {
-    line_parser()
-        .padded()
-        .separated_by(newline_parser().or(inline_whitespace_parser()))
-        .allow_trailing()
-        .map(|lines| Program {
-            lines: lines.into_iter().filter(|line| !matches!(line, Line::Invalid)).collect(),
-        })
-        .recover_with(skip_parser(end().map(|_| Program { lines: vec![] })))
-        .labelled("program")
-}
-
-fn line_parser() -> impl Parser<char, Line, Error = Simple<char>> {
-    choice((
-        label_definition_parser(),
-        instruction_parser().map(|inst| Line::Instruction { instruction: inst, comment: None }),
-        comment_parser().map(Line::Comment),
-    ))
-    .padded()
-    // Modify the recovery to ensure it doesn't eat our unclosed bracket errors
-    .recover_with(skip_then_retry_until(['\n']))
-    .labelled("line")
-}
-
-fn label_definition_parser() -> impl Parser<char, Line, Error = Simple<char>> {
-    identifier_parser()
-        .then_ignore(just(':').padded())
-        .then(instruction_parser().padded())
-        .then(comment_parser().or_not())
-        .map(|((label, instruction), comment)| Line::LabelDefinition {
-            label,
-            instruction,
-            comment,
-        })
-        .labelled("label definition")
-}
-
-fn instruction_parser() -> impl Parser<char, Instruction, Error = Simple<char>> {
-    identifier_parser()
-        .padded()
-        .then(operand_parser().padded().or_not())
-        // Make sure we don't discard the operand errors
-        .map(|(opcode, arg)| Instruction::Basic { opcode, arg })
-        .labelled("instruction")
-}
-
-fn operand_parser() -> impl Parser<char, Operand, Error = Simple<char>> {
-    recursive(|operand: Recursive<'_, char, Operand, Simple<char>>| {
-        // We need to detect unclosed brackets
-        let opening_bracket = just('[').map_with_span(|_, span| span).labelled("opening bracket");
-
-        let closing_bracket = just(']').labelled("closing bracket");
-
-        // Create a more specific accessor parser that reports unclosed brackets
-        let accessor = opening_bracket
-            .then(operand.clone().padded())
-            // Using `then_with` to keep track of the opening bracket span
-            .then_with(move |state| {
-                let (opening_span, inner) = state;
-                closing_bracket
-                    // If closing bracket is missing, create an unclosed delimiter error
-                    .map_err(move |_| {
-                        Simple::unclosed_delimiter(
-                            opening_span.clone(),
-                            '[',
-                            opening_span.clone(),
-                            ']',
-                            None,
-                        )
-                    })
-                    .map(move |_| Accessor { index: Box::new(inner.clone()) })
-            })
-            .labelled("array accessor");
-
-        // Now ensure the direct number parser properly handles array accessors
-        let direct = number_parser()
-            .then(accessor.or_not())
-            .map(|(value, acc)| Operand::Number(NumberOperand { value, accessor: acc }))
-            .labelled("direct operand");
-
-        // Rest of the parsers remain the same
-        let indirect = just('*')
-            .padded()
-            .ignore_then(number_parser())
-            .map(|value| Operand::Indirect(IndirectOperand { value }))
-            .labelled("indirect operand");
-
-        let immediate = just('=')
-            .padded()
-            .ignore_then(number_parser())
-            .map(|value| Operand::Immediate(ImmediateOperand { value }))
-            .labelled("immediate operand");
-
-        let label_operand = identifier_parser().map(Operand::Label).labelled("label operand");
-
-        // Don't recover with nested_delimiters here - let the error propagate up
-        choice((direct, immediate, indirect, label_operand))
-            // Remove the nested_delimiters recovery which is consuming the unclosed bracket error
-            //.recover_with(nested_delimiters('[', ']', [], |_| Operand::Invalid))
-            .recover_with(skip_then_retry_until(['\n', ' ', '#']))
-            .labelled("operand")
-    })
-}
-
-fn comment_parser() -> impl Parser<char, String, Error = Simple<char>> {
-    just('#')
-        .then(take_until(newline_parser().or(end())))
-        .map(|(_, (chars, _))| chars.into_iter().collect::<String>().trim().to_string())
-        .labelled("comment")
-}
-
-fn identifier_parser() -> impl Parser<char, String, Error = Simple<char>> {
-    filter(|c: &char| c.is_alphabetic())
-        .chain(filter(|c: &char| c.is_alphanumeric() || *c == '_').repeated())
-        .collect::<String>()
-        .labelled("identifier")
-}
-
-fn number_parser() -> impl Parser<char, u64, Error = Simple<char>> {
-    text::int(10)
-        .map(|s: String| s.parse().unwrap()) // TODO: Handle parse errors properly
-        .labelled("number")
-}
-
-fn newline_parser() -> impl Parser<char, (), Error = Simple<char>> {
-    text::newline().repeated().at_least(1).ignored().labelled("newline")
-}
-
-fn inline_whitespace_parser() -> impl Parser<char, (), Error = Simple<char>> {
-    filter(|c: &char| c.is_whitespace()).repeated().ignored()
 }
