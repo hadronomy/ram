@@ -14,6 +14,7 @@ anstream           = "0.6.18"
 anyhow             = "1.0.95"
 chumsky            = "0.10.0"
 clap               = { version = "4.5.23", features = ["derive", "env", "string", "wrap_help"] }
+drop_bomb          = "0.1.5"
 globset            = { version = "0.4.15", features = ["serde"] }
 human-panic        = "2.0.2"
 itertools          = "0.14.0"
@@ -21,6 +22,7 @@ miette             = "7.4.0"
 num-derive         = "0.4.2"
 num-traits         = "0.2.19"
 owo-colors         = "4.1.0"
+rowan              = "0.15.11"
 salsa              = "0.18.0"
 semver             = "1.0.24"
 shadow-rs          = "1.0.1"
@@ -33,19 +35,18 @@ tokio-util         = { version = "0.7.13", features = ["codec", "compat"] }
 tracing            = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 walkdir            = "2.5.0"
-rowan              = "0.15.11"
 
 # Serde and serialization
-serde              = "1.0.217"
-serde_derive       = "1.0.217"
-serde_json         = "1.0.134"
-taplo              = "0.13.2"
-toml               = "0.8.20"
+serde        = "1.0.217"
+serde_derive = "1.0.217"
+serde_json   = "1.0.134"
+taplo        = "0.13.2"
+toml         = "0.8.20"
 
 # Tower crates
-tower              = { version = "0.5.2" }
-tower-lsp          = { version = "0.20.0" }
-tower-lsp-macros   = "0.9.0"
+tower            = { version = "0.5.2" }
+tower-lsp        = { version = "0.20.0" }
+tower-lsp-macros = "0.9.0"
 
 # Workspace crates
 ram_error  = { path = "crates/ram_error" }

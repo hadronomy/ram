@@ -1,7 +1,11 @@
 use num_derive::{FromPrimitive, ToPrimitive};
+#[cfg(feature = "serde")]
+use serde::Serialize;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, FromPrimitive, ToPrimitive)]
 #[repr(u16)] // Rowan requires a primitive representation
+#[cfg_attr(feature = "serde", derive(Serialize))]
+#[cfg_attr(feature = "serde", serde(rename_all = "SCREAMING_SNAKE_CASE"))]
 pub enum SyntaxKind {
     // Nodes
     Root = 0, // Start explicit numbering if using FromPrimitive
@@ -16,8 +20,9 @@ pub enum SyntaxKind {
     OperandValue,
     ArrayAccessor, // Array accessor [index]
 
-    // Error node
-    ErrorNode,
+    // Error nodes
+    Error,     // Error node used in parsing
+    ErrorNode, // Legacy error node type
 
     // --- TOKEN KINDS ---
     // It's conventional in Rowan to include token kinds in the same enum

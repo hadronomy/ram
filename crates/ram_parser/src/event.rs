@@ -14,10 +14,25 @@ use crate::SyntaxKind;
 pub enum Event {
     /// Start a new node with the specified kind
     StartNode { kind: SyntaxKind },
+
+    /// Start a new node that will be positioned before the node at the given position
+    StartNodeBefore { kind: SyntaxKind, before_pos: usize },
+
+    /// Placeholder for a future node (used during parsing)
+    Placeholder { kind_slot: SyntaxKind },
+
     /// Add a token with the specified kind, text, and span
     AddToken { kind: SyntaxKind, text: String, span: Range<usize> },
+
     /// Finish the current node
     FinishNode,
+
     /// Report an error at the specified position
-    Error { message: String, pos: usize },
+    Error { msg: String },
+
+    /// Special marker for nodes that have been abandoned
+    Tombstone,
+
+    /// Split a float token into parts
+    FloatSplitHack { ends_in_dot: bool },
 }
