@@ -839,10 +839,18 @@ impl<'t> Parser<'t> {
                         );
                     } else {
                         // Missing closing bracket
-                        self.error(
-                            "Unclosed array accessor".to_string(),
-                            "Add a closing bracket ']' to complete the array accessor".to_string(),
-                            open_bracket_span,
+                        let spans = vec![
+                            (open_bracket_span.clone(), "here".to_string()),
+                            (
+                                open_bracket_span.clone(),
+                                "accessing nothing".to_string(),
+                            ),
+                        ];
+
+                        self.labeled_error(
+                            "Unclosed array accessor to nowhere".to_string(),
+                            "Array accessors can only be used after an identifier or number and must be closed with ']'".to_string(),
+                            spans,
                         );
                     }
                 } else {
