@@ -151,7 +151,7 @@ fn build_from_balanced_events(events: &[Event]) -> GreenNode {
             Event::AddToken { kind, text, span: _ } => {
                 builder.token(RamLang::kind_to_raw(*kind), text);
             }
-            Event::Error { msg } => {
+            Event::Error { msg, span } => {
                 // Create an error node with the error message
                 builder.start_node(RamLang::kind_to_raw(SyntaxKind::Error));
                 builder.token(RamLang::kind_to_raw(SyntaxKind::ErrorTok), msg);

@@ -28,7 +28,7 @@ pub enum Event {
     FinishNode,
 
     /// Report an error at the specified position
-    Error { msg: String },
+    Error { msg: String, span: Range<usize> },
 
     /// Special marker for nodes that have been abandoned
     Tombstone,
