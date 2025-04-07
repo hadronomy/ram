@@ -6,50 +6,51 @@ use serde::Serialize;
 #[repr(u16)] // Rowan requires a primitive representation
 #[cfg_attr(feature = "serde", derive(Serialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "SCREAMING_SNAKE_CASE"))]
+#[allow(non_camel_case_types)]
 pub enum SyntaxKind {
     // Nodes
-    Root = 0, // Start explicit numbering if using FromPrimitive
-    Line,
-    Instruction,
-    LabelDef,
-    Comment,
-    Operand,
-    DirectOperand,    // Direct addressing (e.g., 5)
-    IndirectOperand,  // Indirect addressing (e.g., *5)
-    ImmediateOperand, // Immediate addressing (e.g., =5)
-    OperandValue,
-    ArrayAccessor, // Array accessor [index]
+    ROOT = 0, // Start explicit numbering if using FromPrimitive
+    LINE,
+    INSTRUCTION,
+    LABEL_DEF,
+    COMMENT,
+    OPERAND,
+    DIRECT_OPERAND,    // Direct addressing (e.g., 5)
+    INDIRECT_OPERAND,  // Indirect addressing (e.g., *5)
+    IMMEDIATE_OPERAND, // Immediate addressing (e.g., =5)
+    OPERAND_VALUE,
+    ARRAY_ACCESSOR, // Array accessor [index]
 
     // Error nodes
-    Error,     // Error node used in parsing
-    ErrorNode, // Legacy error node type
+    ERROR,      // Error node used in parsing
+    ERROR_NODE, // Legacy error node type
 
     // --- TOKEN KINDS ---
     // It's conventional in Rowan to include token kinds in the same enum
     // for a unified SyntaxKind type used by the tree.
-    Whitespace = 100, // Start tokens at a higher offset
-    Newline,
-    Hash,        // '#' itself (distinct from Comment node/token text)
-    CommentText, // The text content of a comment token
-    Number,
-    Identifier,
-    LoadKw,
-    StoreKw,
-    AddKw,
-    SubKw,
-    MulKw,
-    DivKw,
-    JumpKw,
-    JgtzKw,
-    JzeroKw,
-    HaltKw,
-    Colon,
-    Star,     // '*' for indirect addressing
-    Equals,   // '=' for immediate addressing
-    LBracket, // '[' for array access
-    RBracket, // ']' for array access
-    ErrorTok, // Token for unrecognized characters
-    Eof,      // Not usually represented in the tree, but needed for parsing
+    WHITESPACE = 100, // Start tokens at a higher offset
+    NEWLINE,
+    HASH,         // '#' itself (distinct from Comment node/token text)
+    COMMENT_TEXT, // The text content of a comment token
+    NUMBER,
+    IDENTIFIER,
+    LOAD_KW,
+    STORE_KW,
+    ADD_KW,
+    SUB_KW,
+    MUL_KW,
+    DIV_KW,
+    JUMP_KW,
+    JGTZ_KW,
+    JZERO_KW,
+    HALT_KW,
+    COLON,
+    STAR,        // '*' for indirect addressing
+    EQUALS,      // '=' for immediate addressing
+    LBRACKET,    // '[' for array access
+    RBRACKET,    // ']' for array access
+    ERROR_TOKEN, // Token for unrecognized characters
+    EOF,         // Not usually represented in the tree, but needed for parsing
 }
 
 // Implement conversion for Rowan
@@ -64,7 +65,7 @@ impl From<rowan::SyntaxKind> for SyntaxKind {
     fn from(kind: rowan::SyntaxKind) -> Self {
         match num_traits::FromPrimitive::from_u16(kind.0) {
             Some(kind) => kind,
-            None => SyntaxKind::ErrorNode,
+            None => SyntaxKind::ERROR_NODE,
         }
     }
 }
@@ -72,13 +73,13 @@ impl From<rowan::SyntaxKind> for SyntaxKind {
 impl SyntaxKind {
     #[inline]
     pub fn is_trivia(self) -> bool {
-        matches!(self, SyntaxKind::Whitespace | SyntaxKind::Newline | SyntaxKind::Comment)
+        matches!(self, SyntaxKind::WHITESPACE | SyntaxKind::NEWLINE | SyntaxKind::COMMENT)
     }
 
     /// Returns true if this is an identifier or a keyword.
     #[inline]
     pub fn is_any_identifier(self) -> bool {
-        self == SyntaxKind::Identifier
+        self == SyntaxKind::IDENTIFIER
     }
 
     /// Returns true if this is a keyword.
@@ -86,16 +87,16 @@ impl SyntaxKind {
     pub fn is_keyword(self) -> bool {
         matches!(
             self,
-            SyntaxKind::LoadKw
-                | SyntaxKind::StoreKw
-                | SyntaxKind::AddKw
-                | SyntaxKind::SubKw
-                | SyntaxKind::MulKw
-                | SyntaxKind::DivKw
-                | SyntaxKind::JumpKw
-                | SyntaxKind::JgtzKw
-                | SyntaxKind::JzeroKw
-                | SyntaxKind::HaltKw
+            SyntaxKind::LOAD_KW
+                | SyntaxKind::STORE_KW
+                | SyntaxKind::ADD_KW
+                | SyntaxKind::SUB_KW
+                | SyntaxKind::MUL_KW
+                | SyntaxKind::DIV_KW
+                | SyntaxKind::JUMP_KW
+                | SyntaxKind::JGTZ_KW
+                | SyntaxKind::JZERO_KW
+                | SyntaxKind::HALT_KW
         )
     }
 }

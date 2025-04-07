@@ -14,7 +14,7 @@ impl AstNode for Program {
     type Language = RamLang;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SyntaxKind::Root
+        kind == SyntaxKind::ROOT
     }
 
     fn cast(node: SyntaxNode) -> Option<Self> {
@@ -43,7 +43,7 @@ impl AstNode for Line {
     type Language = RamLang;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SyntaxKind::Line
+        kind == SyntaxKind::LINE
     }
 
     fn cast(node: SyntaxNode) -> Option<Self> {
@@ -82,7 +82,7 @@ impl AstNode for Instruction {
     type Language = RamLang;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SyntaxKind::Instruction
+        kind == SyntaxKind::INSTRUCTION
     }
 
     fn cast(node: SyntaxNode) -> Option<Self> {
@@ -124,7 +124,7 @@ impl AstNode for LabelDef {
     type Language = RamLang;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SyntaxKind::LabelDef
+        kind == SyntaxKind::LABEL_DEF
     }
 
     fn cast(node: SyntaxNode) -> Option<Self> {
@@ -144,7 +144,7 @@ impl LabelDef {
         self.0
             .children_with_tokens()
             .filter_map(SyntaxElement::into_token)
-            .find(|token| token.kind() == SyntaxKind::Identifier)
+            .find(|token| token.kind() == SyntaxKind::IDENTIFIER)
     }
 
     /// Returns the label name as a string.
@@ -161,7 +161,7 @@ impl AstNode for Comment {
     type Language = RamLang;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SyntaxKind::Comment
+        kind == SyntaxKind::COMMENT
     }
 
     fn cast(node: SyntaxNode) -> Option<Self> {
@@ -181,7 +181,7 @@ impl Comment {
         self.0
             .children_with_tokens()
             .filter_map(SyntaxElement::into_token)
-            .find(|token| token.kind() == SyntaxKind::Hash)
+            .find(|token| token.kind() == SyntaxKind::HASH)
     }
 
     /// Returns the comment text token (content after '#').
@@ -189,7 +189,7 @@ impl Comment {
         self.0
             .children_with_tokens()
             .filter_map(SyntaxElement::into_token)
-            .find(|token| token.kind() == SyntaxKind::CommentText)
+            .find(|token| token.kind() == SyntaxKind::COMMENT_TEXT)
     }
 
     /// Returns the comment text as a string.
@@ -206,7 +206,7 @@ impl AstNode for Operand {
     type Language = RamLang;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SyntaxKind::Operand
+        kind == SyntaxKind::OPERAND
     }
 
     fn cast(node: SyntaxNode) -> Option<Self> {
@@ -273,7 +273,7 @@ impl AstNode for DirectOperand {
     type Language = RamLang;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SyntaxKind::DirectOperand
+        kind == SyntaxKind::DIRECT_OPERAND
     }
 
     fn cast(node: SyntaxNode) -> Option<Self> {
@@ -302,7 +302,7 @@ impl AstNode for IndirectOperand {
     type Language = RamLang;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SyntaxKind::IndirectOperand
+        kind == SyntaxKind::INDIRECT_OPERAND
     }
 
     fn cast(node: SyntaxNode) -> Option<Self> {
@@ -322,7 +322,7 @@ impl IndirectOperand {
         self.0
             .children_with_tokens()
             .filter_map(SyntaxElement::into_token)
-            .find(|token| token.kind() == SyntaxKind::Star)
+            .find(|token| token.kind() == SyntaxKind::STAR)
     }
 
     /// Returns the core value node (Number or Identifier).
@@ -339,7 +339,7 @@ impl AstNode for ImmediateOperand {
     type Language = RamLang;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SyntaxKind::ImmediateOperand
+        kind == SyntaxKind::IMMEDIATE_OPERAND
     }
 
     fn cast(node: SyntaxNode) -> Option<Self> {
@@ -359,7 +359,7 @@ impl ImmediateOperand {
         self.0
             .children_with_tokens()
             .filter_map(SyntaxElement::into_token)
-            .find(|token| token.kind() == SyntaxKind::Equals)
+            .find(|token| token.kind() == SyntaxKind::EQUALS)
     }
 
     /// Returns the core value node (Number or Identifier).
@@ -376,7 +376,7 @@ impl AstNode for OperandValue {
     type Language = RamLang;
 
     fn can_cast(kind: SyntaxKind) -> bool {
-        kind == SyntaxKind::OperandValue
+        kind == SyntaxKind::OPERAND_VALUE
     }
 
     fn cast(node: SyntaxNode) -> Option<Self> {
@@ -394,7 +394,7 @@ impl OperandValue {
     /// Returns the underlying token (Number or Identifier).
     pub fn token(&self) -> Option<SyntaxToken> {
         self.0.children_with_tokens().filter_map(SyntaxElement::into_token).find(|token| {
-            token.kind() == SyntaxKind::Number || token.kind() == SyntaxKind::Identifier
+            token.kind() == SyntaxKind::NUMBER || token.kind() == SyntaxKind::IDENTIFIER
         })
     }
 

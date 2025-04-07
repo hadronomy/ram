@@ -10,7 +10,7 @@ pub fn build_tree(events: Vec<Event>) -> GreenNode {
     if events.is_empty() {
         // Create a minimal valid tree with just a root node
         let mut builder = GreenNodeBuilder::new();
-        builder.start_node(RamLang::kind_to_raw(SyntaxKind::Root));
+        builder.start_node(RamLang::kind_to_raw(SyntaxKind::ROOT));
         builder.finish_node();
         return builder.finish();
     }
@@ -96,7 +96,7 @@ fn balance_events(events: &[Event]) -> Vec<Event> {
     let mut has_root = false;
     for event in events {
         if let Event::StartNode { kind } = event {
-            if *kind == SyntaxKind::Root {
+            if *kind == SyntaxKind::ROOT {
                 has_root = true;
                 break;
             }
@@ -104,8 +104,8 @@ fn balance_events(events: &[Event]) -> Vec<Event> {
     }
 
     if !has_root {
-        result.push(Event::StartNode { kind: SyntaxKind::Root });
-        node_stack.push(SyntaxKind::Root);
+        result.push(Event::StartNode { kind: SyntaxKind::ROOT });
+        node_stack.push(SyntaxKind::ROOT);
     }
 
     // Process all events
@@ -153,8 +153,8 @@ fn build_from_balanced_events(events: &[Event]) -> GreenNode {
             }
             Event::Error { msg } => {
                 // Create an error node with the error message
-                builder.start_node(RamLang::kind_to_raw(SyntaxKind::Error));
-                builder.token(RamLang::kind_to_raw(SyntaxKind::ErrorTok), msg);
+                builder.start_node(RamLang::kind_to_raw(SyntaxKind::ERROR));
+                builder.token(RamLang::kind_to_raw(SyntaxKind::ERROR_TOKEN), msg);
                 builder.finish_node();
             }
             _ => {
