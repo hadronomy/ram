@@ -10,7 +10,6 @@ version.workspace    = true
 [dependencies]
 anstream           = { workspace = true }
 anyhow             = { workspace = true }
-chumsky            = { workspace = true }
 clap               = { workspace = true }
 drop_bomb          = { workspace = true }
 globset            = { workspace = true, features = ["serde"] }

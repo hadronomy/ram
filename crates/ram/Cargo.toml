@@ -16,7 +16,6 @@ serde   = ["dep:serde", "serde_json", "serde_derive"]
 [dependencies]
 anstream           = { workspace = true }
 anyhow             = { workspace = true }
-chumsky            = { workspace = true }
 clap               = { workspace = true }
 futures            = { version = "0.3.31", default-features = false, features = ["std", "async-await"] }
 globset            = { workspace = true, features = ["serde"] }
