@@ -148,7 +148,6 @@ mod stmt {
     /// │                            │
     /// └────────────────────────────┘
     /// ```
-    #[allow(clippy::too_many_lines)]
     pub(super) fn statement(p: &mut Parser<'_>) {
         // Skip leading whitespace
         whitespace::skip_ws(p);
@@ -194,63 +193,11 @@ mod stmt {
                     expr::instruction_expr(p);
                 } else {
                     // Error: Label must be followed by an instruction
-                    // Look ahead for any instruction that comes later in the file
-                    if let Some((_, instr_span)) =
-                        p.look_ahead_for(|kind| kind.is_keyword() || kind == IDENTIFIER)
-                    {
-                        // Found an instruction later in the file
-                        let spans = vec![
-                            (label_span.clone(), "label defined here".to_string()),
-                            (
-                                instr_span,
-                                "instruction found here - place the label directly above this"
-                                    .to_string(),
-                            ),
-                        ];
-
-                        p.labeled_error(
-                            "Label must be followed by an instruction".to_string(),
-                            "Place the label definition directly above an instruction".to_string(),
-                            spans,
-                        );
-                    } else {
-                        // No instruction found later in the file
-                        p.error(
-                            "Label must be followed by an instruction".to_string(),
-                            "Add an instruction after the label definition".to_string(),
-                            label_span,
-                        );
-                    }
+                    handle_missing_instruction_after_label(p, label_span);
                 }
             } else if !p.at(EOF) {
                 // Error: Label must be followed by an instruction
-                // Look ahead for any instruction that comes later in the file
-                if let Some((_, instr_span)) =
-                    p.look_ahead_for(|kind| kind.is_keyword() || kind == IDENTIFIER)
-                {
-                    // Found an instruction later in the file
-                    let spans = vec![
-                        (label_span.clone(), "label defined here".to_string()),
-                        (
-                            instr_span,
-                            "instruction found here - place the label directly above this"
-                                .to_string(),
-                        ),
-                    ];
-
-                    p.labeled_error(
-                        "Label must be followed by an instruction".to_string(),
-                        "Place the label definition directly above an instruction".to_string(),
-                        spans,
-                    );
-                } else {
-                    // No instruction found later in the file
-                    p.error(
-                        "Label must be followed by an instruction".to_string(),
-                        "Add an instruction after the label definition".to_string(),
-                        label_span,
-                    );
-                }
+                handle_missing_instruction_after_label(p, label_span);
             }
 
             m.complete(p, STMT);
@@ -259,36 +206,99 @@ mod stmt {
             let m = p.start();
             expr::instruction_expr(p);
             m.complete(p, STMT);
-        } else if p.at(RBRACKET) {
+        } else {
+            // Handle unexpected tokens or error situations
+            handle_unexpected_token_in_statement(p);
+        }
+
+        // Skip trailing whitespace and newlines
+        whitespace::skip_ws_and_nl(p);
+    }
+
+    /// Handles situations where a label is defined but not followed by an instruction.
+    ///
+    /// # Arguments
+    /// * `p` - The parser
+    /// * `label_span` - The span of the label definition for error reporting
+    ///
+    /// # Behavior
+    /// Looks ahead for any subsequent instruction and provides a helpful error message,
+    /// suggesting to place the label directly above an instruction.
+    pub(super) fn handle_missing_instruction_after_label(
+        p: &mut Parser<'_>,
+        label_span: std::ops::Range<usize>,
+    ) {
+        // Look ahead for any instruction that comes later in the file
+        if let Some((_, instr_span)) =
+            p.look_ahead_for(|kind| kind.is_keyword() || kind == IDENTIFIER)
+        {
+            // Found an instruction later in the file
+            let spans = vec![
+                (label_span.clone(), "label defined here".to_string()),
+                (
+                    instr_span,
+                    "instruction found here - place the label directly above this".to_string(),
+                ),
+            ];
+
+            p.labeled_error(
+                "Label must be followed by an instruction".to_string(),
+                "Place the label definition directly above an instruction".to_string(),
+                spans,
+            );
+        } else {
+            // No instruction found later in the file
+            p.error(
+                "Label must be followed by an instruction".to_string(),
+                "Add an instruction after the label definition".to_string(),
+                label_span,
+            );
+        }
+    }
+
+    /// Handles unexpected tokens encountered while parsing statements.
+    ///
+    /// # Arguments
+    /// * `p` - The parser
+    ///
+    /// # Behavior
+    /// Generates appropriate error messages based on the token type and
+    /// creates a statement node to allow parsing to continue.
+    ///
+    /// # Diagram
+    /// ```text
+    /// ┌─────────── STMT ───────────┐
+    /// │                            │
+    /// │  <unexpected token>        │ ← Error reported here
+    /// │                            │
+    /// └────────────────────────────┘
+    /// ```
+    pub(super) fn handle_unexpected_token_in_statement(p: &mut Parser<'_>) {
+        let m = p.start();
+
+        if p.at(RBRACKET) {
             // Unexpected closing bracket
-            let m = p.start();
             p.err_and_bump(
                 "Unexpected closing bracket ']'",
                 "This closing bracket doesn't match any opening bracket",
             );
-            m.complete(p, STMT);
         } else if p.at(ERROR_TOKEN) {
             // Error token
-            let m = p.start();
             let text = p.token_text().to_string();
             p.err_and_bump(
                 &format!("Unexpected character: {text}"),
                 "Remove or replace this character",
             );
-            m.complete(p, STMT);
         } else {
-            // Unexpected token
-            let m = p.start();
+            // Other unexpected token
             let text = p.token_text().to_string();
             p.err_and_bump(
                 &format!("Unexpected token: {text}"),
                 "Expected an instruction, label, or comment",
             );
-            m.complete(p, STMT);
         }
 
-        // Skip trailing whitespace and newlines
-        whitespace::skip_ws_and_nl(p);
+        m.complete(p, STMT);
     }
 }
 
