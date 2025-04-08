@@ -74,6 +74,11 @@ impl Statement {
         self.0.children().find_map(LabelDef::cast)
     }
 
+    /// Returns the import statement in this statement, if any.
+    pub fn import_stmt(&self) -> Option<ImportStmt> {
+        self.0.children().find_map(ImportStmt::cast)
+    }
+
     /// Returns the regular comment in this statement, if any.
     pub fn comment(&self) -> Option<Comment> {
         self.0.children().find_map(Comment::cast)
@@ -177,6 +182,66 @@ impl LabelDef {
         self.name_token().map(|t| t.text().to_string())
     }
 }
+
+// --- Import Statement ---
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ImportStmt(SyntaxNode);
+
+impl AstNode for ImportStmt {
+    type Language = RamLang;
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == SyntaxKind::IMPORT_STMT
+    }
+
+    fn cast(node: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(node.kind()) { Some(Self(node)) } else { None }
+    }
+
+    fn syntax(&self) -> &SyntaxNode {
+        &self.0
+    }
+}
+
+impl RamAstNode for ImportStmt {}
+
+impl ImportStmt {
+    /// Returns the import path in this import statement, if any.
+    pub fn path(&self) -> Option<ImportPath> {
+        self.0.children().find_map(ImportPath::cast)
+    }
+
+    /// Returns the path as a string, if available.
+    pub fn path_str(&self) -> Option<String> {
+        self.path().and_then(|p| {
+            // Extract the string literal content (removing quotes)
+            let text = p.syntax().text().to_string();
+            if text.len() >= 2 { Some(text[1..text.len() - 1].to_string()) } else { None }
+        })
+    }
+}
+
+// --- Import Path ---
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct ImportPath(SyntaxNode);
+
+impl AstNode for ImportPath {
+    type Language = RamLang;
+
+    fn can_cast(kind: SyntaxKind) -> bool {
+        kind == SyntaxKind::IMPORT_PATH
+    }
+
+    fn cast(node: SyntaxNode) -> Option<Self> {
+        if Self::can_cast(node.kind()) { Some(Self(node)) } else { None }
+    }
+
+    fn syntax(&self) -> &SyntaxNode {
+        &self.0
+    }
+}
+
+impl RamAstNode for ImportPath {}
 
 // --- Comment Types ---
 

@@ -382,6 +382,58 @@ fn test_comment_groups_different_types() {
 }
 
 #[test]
+fn test_import_statements() {
+    // Test simple import
+    let source = "import \"path/to/file\"\n";
+    let (events, errors) = parse_test(source);
+    assert_no_errors(&errors);
+
+    // Check that we have an import statement
+    let has_import_stmt = events.iter().any(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::IMPORT_STMT),
+    );
+    assert!(has_import_stmt, "Missing IMPORT_STMT node in events");
+
+    // Check that we have an import path
+    let has_import_path = events.iter().any(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::IMPORT_PATH),
+    );
+    assert!(has_import_path, "Missing IMPORT_PATH node in events");
+
+    // Test import with named specifiers
+    let source = "import { symbol1, symbol2 } from \"path/to/file\"\n";
+    let (_events, errors) = parse_test(source);
+    assert_no_errors(&errors);
+
+    // Test import all
+    let source = "import * from \"path/to/file\"\n";
+    let (_events, errors) = parse_test(source);
+    assert_no_errors(&errors);
+
+    // Test invalid import (missing path)
+    let source = "import\n";
+    let (_events, errors) = parse_test(source);
+    assert!(!errors.is_empty(), "Expected an error for invalid import");
+
+    // Test invalid import (missing from)
+    let source = "import { symbol1, symbol2 }\n";
+    let (_events, errors) = parse_test(source);
+    assert!(!errors.is_empty(), "Expected an error for missing 'from'");
+
+    // Test typo in 'from' keyword
+    let source = "import { symbol1 } fros \"path/to/file\"\n";
+    let (_events, errors) = parse_test(source);
+
+    // Should have exactly one error (for the typo in 'from')
+    assert_eq!(errors.len(), 1, "Expected exactly one error for typo in 'from'");
+
+    // The error message should mention 'from' or a typo of 'from'
+    let has_from_error =
+        errors.iter().any(|e| e.message.contains("from") || e.message.contains("fros"));
+    assert!(has_from_error, "Expected error message about 'from' or a typo of 'from'");
+}
+
+#[test]
 fn test_label_requires_instruction() {
     // Test with a label followed by an instruction on the same line
     let source = "label: LOAD 1\n";

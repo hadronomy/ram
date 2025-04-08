@@ -161,7 +161,12 @@ mod stmt {
             return;
         }
 
-        if p.at(HASH) || p.at(HASH_STAR) {
+        if p.at(IMPORT_KW) {
+            // Import statement
+            let m = p.start();
+            imports::import_stmt(p);
+            m.complete(p, STMT);
+        } else if p.at(HASH) || p.at(HASH_STAR) {
             // Comment statement
             let m = p.start();
             comments::comment_group(p);
@@ -299,6 +304,222 @@ mod stmt {
         }
 
         m.complete(p, STMT);
+    }
+}
+
+/// Import module - handles import statements
+mod imports {
+    use super::*;
+
+    /// Parse an import statement.
+    ///
+    /// # Syntax
+    /// ```text
+    /// import "path/to/file"
+    /// import { symbol1, symbol2 } from "path/to/file"
+    /// import * from "path/to/file"
+    /// ```
+    #[allow(clippy::too_many_lines)]
+    pub(super) fn import_stmt(p: &mut Parser<'_>) -> bool {
+        // Check if we're at an import keyword
+        if !p.at(IMPORT_KW) {
+            return false;
+        }
+
+        let m = p.start();
+        p.bump_any(); // Consume 'import'
+        whitespace::skip_ws(p);
+
+        // Handle different import syntaxes
+        if p.at(STRING) {
+            // Simple import: import "path/to/file"
+            import_path(p);
+        } else if p.at(STAR) {
+            // Import all: import * from "path/to/file"
+            p.bump_any(); // Consume '*'
+            whitespace::skip_ws(p);
+
+            if p.at(FROM_KW) {
+                p.bump_any(); // Consume 'from'
+                whitespace::skip_ws(p);
+                import_path(p);
+            } else {
+                // Check if the current token might be a typo of "from"
+                let is_possible_from_typo = p.at(IDENTIFIER)
+                    && p.token_text().len() >= 2
+                    && p.token_text().to_lowercase().starts_with('f');
+
+                let token_span = p.token_span().clone();
+
+                if is_possible_from_typo {
+                    // Likely a typo of "from"
+                    let typo_text = p.token_text().to_string();
+                    p.bump_any(); // Consume the typo token
+                    whitespace::skip_ws(p);
+
+                    p.error(
+                        format!("'{typo_text}' might be a typo of 'from'"),
+                        "Expected 'from' after '*' in import statement".to_string(),
+                        token_span,
+                    );
+
+                    // Check if the next token is a string literal for the import path
+                    if p.at(STRING) {
+                        import_path(p);
+                        m.complete(p, IMPORT_STMT);
+                        return true;
+                    }
+                } else {
+                    // Not a typo, just missing "from"
+                    p.error(
+                        "Expected 'from' after '*' in import statement".to_string(),
+                        "Add 'from' followed by the import path".to_string(),
+                        p.token_span(),
+                    );
+                }
+
+                // Skip the rest of the import statement to avoid multiple errors
+                skip_to_end_of_statement(p);
+            }
+        } else if p.at(LBRACE) {
+            // Named imports: import { symbol1, symbol2 } from "path/to/file"
+            p.bump_any(); // Consume '{'
+            whitespace::skip_ws(p);
+
+            // Parse comma-separated list of identifiers
+            let mut first = true;
+            while !p.at(RBRACE) && !p.at(EOF) {
+                if !first {
+                    // Expect a comma between identifiers
+                    if p.at(COMMA) {
+                        p.bump_any(); // Consume ','
+                        whitespace::skip_ws(p);
+                    } else {
+                        p.error(
+                            "Expected ',' between import specifiers".to_string(),
+                            "Add a comma between import specifiers".to_string(),
+                            p.token_span(),
+                        );
+                        break;
+                    }
+                }
+
+                if p.at(IDENTIFIER) {
+                    p.bump_any(); // Consume identifier
+                    whitespace::skip_ws(p);
+                    first = false;
+                } else if p.at(RBRACE) {
+                    // Allow trailing comma
+                    break;
+                } else {
+                    p.error(
+                        "Expected identifier in import specifier list".to_string(),
+                        "Add a valid identifier".to_string(),
+                        p.token_span(),
+                    );
+                    // Try to recover by skipping to the next comma or closing brace
+                    while !p.at(COMMA) && !p.at(RBRACE) && !p.at(EOF) {
+                        p.bump_any();
+                    }
+                }
+            }
+
+            // Expect closing brace
+            if p.at(RBRACE) {
+                p.bump_any(); // Consume '}'
+                whitespace::skip_ws(p);
+
+                // Expect 'from' keyword
+                if p.at(FROM_KW) {
+                    p.bump_any(); // Consume 'from'
+                    whitespace::skip_ws(p);
+                    import_path(p);
+                } else {
+                    // Check if the current token might be a typo of "from"
+                    let is_possible_from_typo = p.at(IDENTIFIER)
+                        && p.token_text().len() >= 2
+                        && p.token_text().to_lowercase().starts_with('f');
+
+                    let token_span = p.token_span().clone();
+
+                    if is_possible_from_typo {
+                        // Likely a typo of "from"
+                        let typo_text = p.token_text().to_string();
+                        p.bump_any(); // Consume the typo token
+                        whitespace::skip_ws(p);
+
+                        p.error(
+                            format!("'{typo_text}' might be a typo of 'from'"),
+                            "Expected 'from' after import specifiers".to_string(),
+                            token_span,
+                        );
+
+                        // Check if the next token is a string literal for the import path
+                        if p.at(STRING) {
+                            import_path(p);
+                            m.complete(p, IMPORT_STMT);
+                            return true;
+                        }
+                    } else {
+                        // Not a typo, just missing "from"
+                        p.error(
+                            "Expected 'from' after import specifiers".to_string(),
+                            "Add 'from' followed by the import path".to_string(),
+                            p.token_span(),
+                        );
+                    }
+
+                    // Skip the rest of the import statement to avoid multiple errors
+                    // This is important for error recovery - we want to report only one error
+                    // for a missing 'from' keyword, not multiple errors for each token after it
+                    skip_to_end_of_statement(p);
+                }
+            } else {
+                p.error(
+                    "Expected '}' to close import specifier list".to_string(),
+                    "Add a closing brace".to_string(),
+                    p.token_span(),
+                );
+            }
+        } else {
+            p.error(
+                "Invalid import statement syntax".to_string(),
+                "Use one of: import \"path\", import * from \"path\", or import { ... } from \"path\"".to_string(),
+                p.token_span(),
+            );
+
+            // Skip the rest of the import statement to avoid multiple errors
+            skip_to_end_of_statement(p);
+        }
+
+        m.complete(p, IMPORT_STMT);
+        true
+    }
+
+    /// Skip to the end of the current statement to avoid multiple error messages.
+    /// This is used for error recovery when we've already reported an error.
+    fn skip_to_end_of_statement(p: &mut Parser<'_>) {
+        // Skip until we find a newline, EOF, or the start of a new statement
+        while !p.at(NEWLINE) && !p.at(EOF) {
+            p.bump_any();
+        }
+    }
+
+    /// Parse an import path (string literal).
+    fn import_path(p: &mut Parser<'_>) {
+        let m = p.start();
+
+        if p.at(STRING) {
+            p.bump_any(); // Consume the string literal
+        } else {
+            p.error(
+                "Expected string literal for import path".to_string(),
+                "Add a string literal path in quotes".to_string(),
+                p.token_span(),
+            );
+        }
+
+        m.complete(p, IMPORT_PATH);
     }
 }
 

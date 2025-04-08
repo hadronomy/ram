@@ -192,6 +192,8 @@ impl<'a> Lexer<'a> {
             "JGTZ" => JGTZ_KW,
             "JZERO" => JZERO_KW,
             "HALT" => HALT_KW,
+            "IMPORT" => IMPORT_KW,
+            "FROM" => FROM_KW,
             _ => IDENTIFIER,
         };
 
@@ -205,6 +207,36 @@ impl<'a> Lexer<'a> {
         self.advance();
 
         Token { kind, text: c.to_string(), span: start..self.position }
+    }
+
+    /// Tokenize a string literal.
+    fn tokenize_string(&mut self, quote_char: char) -> Token {
+        let start = self.position;
+        self.advance(); // Consume the opening quote
+
+        // Read until closing quote or end of line/file
+        while let Some(c) = self.peek() {
+            if c == quote_char {
+                self.advance(); // Consume the closing quote
+                break;
+            } else if c == '\\' {
+                self.advance(); // Consume the escape character
+                if self.peek().is_some() {
+                    self.advance(); // Consume the escaped character
+                }
+            } else if c == '\n' {
+                // Unterminated string
+                break;
+            } else {
+                self.advance();
+            }
+        }
+
+        Token {
+            kind: STRING,
+            text: self.source[start..self.position].to_string(),
+            span: start..self.position,
+        }
     }
 
     /// Get the next token from the source text.
@@ -233,6 +265,12 @@ impl<'a> Lexer<'a> {
             Some('=') => Some(self.tokenize_single_char(EQUALS)),
             Some('[') => Some(self.tokenize_single_char(LBRACKET)),
             Some(']') => Some(self.tokenize_single_char(RBRACKET)),
+            Some('{') => Some(self.tokenize_single_char(LBRACE)),
+            Some('}') => Some(self.tokenize_single_char(RBRACE)),
+            Some(',') => Some(self.tokenize_single_char(COMMA)),
+
+            // String literals
+            Some(c @ ('"' | '\'')) => Some(self.tokenize_string(c)),
 
             // Numbers and identifiers
             Some(c) if c.is_ascii_digit() => Some(self.tokenize_number()),

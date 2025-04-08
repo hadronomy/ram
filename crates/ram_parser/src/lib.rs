@@ -1,7 +1,7 @@
 //! This code is heavily based on [rust-analyzer](https://github.com/rust-analyzer/rust-analyzer)
 //! implementation
 
-mod ast;
+pub mod ast;
 mod event;
 mod grammar;
 mod language;

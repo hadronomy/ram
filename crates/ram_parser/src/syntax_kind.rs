@@ -22,6 +22,8 @@ pub enum SyntaxKind {
     IMMEDIATE_OPERAND, // Immediate addressing (e.g., =5)
     OPERAND_VALUE,
     ARRAY_ACCESSOR, // Array accessor [index]
+    IMPORT_STMT,    // Import statement
+    IMPORT_PATH,    // Path in an import statement
 
     // Error nodes
     ERROR,      // Error node used in parsing
@@ -47,11 +49,17 @@ pub enum SyntaxKind {
     JGTZ_KW,
     JZERO_KW,
     HALT_KW,
+    IMPORT_KW, // 'import' keyword
+    FROM_KW,   // 'from' keyword
     COLON,
     STAR,        // '*' for indirect addressing
     EQUALS,      // '=' for immediate addressing
     LBRACKET,    // '[' for array access
     RBRACKET,    // ']' for array access
+    LBRACE,      // '{' for import specifiers
+    RBRACE,      // '}' for import specifiers
+    COMMA,       // ',' for separating import specifiers
+    STRING,      // String literal for import paths
     ERROR_TOKEN, // Token for unrecognized characters
     EOF,         // Not usually represented in the tree, but needed for parsing
 }
