@@ -1,6 +1,5 @@
 use std::path::PathBuf;
 
-use chumsky::prelude::*;
 use miette::{Diagnostic, LabeledSpan, NamedSource, SourceSpan};
 use thiserror::Error;
 
