@@ -290,7 +290,7 @@ impl<'t> Parser<'t> {
 
     /// Parse a program (the root of the AST).
     ///
-    /// ## Deprecated
+    /// # Deprecated
     ///
     /// This function is deprecated and will be removed use
     /// [`crate::grammar::entry::top::program`] instead.
