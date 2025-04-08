@@ -23,6 +23,297 @@ const PARSER_STEP_LIMIT: usize = 100_000;
 /// EOF (end of file) token is used to indicate that there are no more tokens.
 const EOF: SyntaxKind = SyntaxKind::EOF;
 
+
+/// Parse RAM assembly code into a sequence of events and errors.
+///
+/// The events can be used to build a syntax tree using the `build_tree` function.
+pub fn parse(source: &str) -> (Vec<Event>, Vec<SyntaxError>) {
+    // Tokenize the source text
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize();
+
+    // Create the input and parser
+    let input = Input::new(tokens);
+    let mut parser = Parser::new(&input);
+
+    grammar::entry::top::program(&mut parser);
+
+    // Return the events and errors
+    parser.finish()
+}
+
+/// Convert internal ParseError to ram_error types.
+///
+/// This function converts our internal ParseError to the ram_error types
+/// that can be used with miette for nice error reporting.
+pub fn convert_errors(source: &str, errors: Vec<SyntaxError>) -> ram_error::ParserError {
+    use miette::LabeledSpan;
+    use ram_error::{ParserError, SingleParserError};
+
+    // Convert each ParseError to a SingleParserError
+    let single_errors = errors
+        .into_iter()
+        .map(|e| {
+            // Convert labeled spans to miette LabeledSpans
+            let labels = e
+                .labeled_spans
+                .iter()
+                .map(|(span, label)| {
+                    LabeledSpan::new(Some(label.clone()), span.start, span.end - span.start)
+                })
+                .collect::<Vec<_>>();
+
+            // Create a SingleParserError
+            SingleParserError { message: e.message, labels }
+        })
+        .collect();
+
+    // Create a ParserError with all the SingleParserErrors
+    ParserError {
+        src: miette::NamedSource::new("input.ram", source.to_string()),
+        errors: single_errors,
+    }
+}
+
+
+/// `Parser` struct provides the low-level API for
+/// navigating through the stream of tokens and
+/// constructing the parse tree.
+pub(crate) struct Parser<'t> {
+    /// The input tokens.
+    inp: &'t Input,
+    /// Current position in the token stream.
+    pos: usize,
+    /// The events produced by the parser.
+    events: Vec<Event>,
+    /// The errors encountered during parsing.
+    errors: Vec<SyntaxError>,
+    /// The number of steps the parser has taken.
+    steps: Cell<u32>,
+}
+
+impl<'t> Parser<'t> {
+    /// Create a new parser for the given tokens.
+    pub(crate) fn new(inp: &'t Input) -> Parser<'t> {
+        Parser { inp, pos: 0, events: Vec::new(), errors: Vec::new(), steps: Cell::new(0) }
+    }
+
+    /// Extract the events produced by the parser.
+    pub(crate) fn finish(self) -> (Vec<Event>, Vec<SyntaxError>) {
+        (self.events, self.errors)
+    }
+
+    /// Returns the kind of the current token.
+    /// If parser has already reached the end of input,
+    /// the special `EOF` kind is returned.
+    pub(crate) fn current(&self) -> SyntaxKind {
+        self.nth(0)
+    }
+
+    /// Lookahead operation: returns the kind of the next nth
+    /// token.
+    pub(crate) fn nth(&self, n: usize) -> SyntaxKind {
+        let steps = self.steps.get();
+        assert!((steps as usize) < PARSER_STEP_LIMIT, "the parser seems stuck");
+        self.steps.set(steps + 1);
+
+        self.inp.kind(self.pos + n)
+    }
+
+    /// Returns the text of the current token.
+    pub(crate) fn token_text(&self) -> &str {
+        self.inp.token(self.pos).map_or("", |t| &t.text)
+    }
+
+    /// Returns the span of the current token.
+    pub(crate) fn token_span(&self) -> Range<usize> {
+        self.inp.token(self.pos).map_or(0..0, |t| t.span.clone())
+    }
+
+    /// Checks if the current token is `kind`.
+    pub(crate) fn at(&self, kind: SyntaxKind) -> bool {
+        self.current() == kind
+    }
+
+    /// Checks if the nth token is `kind`.
+    pub(crate) fn nth_at(&self, n: usize, kind: SyntaxKind) -> bool {
+        self.nth(n) == kind
+    }
+
+    /// Checks if the current token is in `kinds`.
+    pub(crate) fn at_ts(&self, kinds: TokenSet) -> bool {
+        kinds.contains(self.current())
+    }
+
+    /// Consume the next token if `kind` matches.
+    pub(crate) fn eat(&mut self, kind: SyntaxKind) -> bool {
+        if !self.at(kind) {
+            return false;
+        }
+        self.do_bump();
+        true
+    }
+
+    /// Skip tokens until a token with one of the given kinds is found.
+    pub(crate) fn skip_until(&mut self, kinds: TokenSet) {
+        while !self.at(EOF) && !self.at_ts(kinds) {
+            self.bump_any();
+        }
+    }
+
+    /// Consume the next token if `kind` matches or emit an error
+    /// otherwise.
+    pub(crate) fn expect(&mut self, kind: SyntaxKind) -> bool {
+        if self.eat(kind) {
+            return true;
+        }
+        let token_text = self.token_text().to_string();
+        let span = self.token_span();
+        self.error(
+            format!("Expected {kind:?}, got {token_text:?}"),
+            format!("Try using {kind:?} here"),
+            span,
+        );
+        false
+    }
+
+    /// Add an error with a single labeled span.
+    pub(crate) fn error(&mut self, message: String, help: String, span: Range<usize>) {
+        self.errors.push(SyntaxError {
+            message,
+            help,
+            labeled_spans: vec![(span, "here".to_string())],
+        });
+    }
+
+    /// Add an error with multiple labeled spans.
+    pub(crate) fn labeled_error(
+        &mut self,
+        message: String,
+        help: String,
+        spans: Vec<(Range<usize>, String)>,
+    ) {
+        if !spans.is_empty() {
+            return self.errors.push(SyntaxError { message, help, labeled_spans: spans });
+        }
+        // Fallback if no spans provided
+        self.error(message, help, 0..0);
+    }
+
+    /// Starts a new node in the syntax tree. All nodes and tokens
+    /// consumed between the `start` and the corresponding `Marker::complete`
+    /// belong to the same node.
+    pub(crate) fn start(&mut self) -> Marker {
+        let pos = u32::try_from(self.events.len()).expect("Too many parser events");
+        self.push_event(Event::Placeholder { kind_slot: ROOT });
+        Marker::new(pos)
+    }
+
+    /// Advances the parser by one token
+    pub(crate) fn bump_any(&mut self) {
+        if self.at(EOF) {
+            return;
+        }
+        self.do_bump();
+    }
+
+    /// Consume the next token. Panics if the parser isn't currently at `kind`.
+    pub(crate) fn bump(&mut self, kind: SyntaxKind) {
+        assert!(self.eat(kind));
+    }
+
+    /// Create an error node and consume the next token.
+    pub(crate) fn err_and_bump(&mut self, message: &str, help: &str) {
+        let m = self.start();
+        let span = self.token_span();
+        self.error(message.to_string(), help.to_string(), span);
+        self.bump_any();
+        m.complete(self, ERROR);
+    }
+
+    /// Create an error node and recover until a token in the recovery set.
+    pub(crate) fn err_recover(&mut self, message: &str, help: &str, recovery: TokenSet) -> bool {
+        if self.at_ts(recovery) {
+            let span = self.token_span();
+            self.error(message.to_string(), help.to_string(), span);
+            return true;
+        }
+
+        let m = self.start();
+        let span = self.token_span();
+        self.error(message.to_string(), help.to_string(), span);
+
+        // Consume tokens until we hit recovery point or EOF
+        while !self.at(EOF) && !self.at_ts(recovery) {
+            self.bump_any();
+        }
+
+        m.complete(self, ERROR);
+        false
+    }
+
+    fn do_bump(&mut self) {
+        // Get the current token and create an AddToken event
+        if let Some(token) = self.inp.token(self.pos) {
+            self.push_event(Event::AddToken {
+                kind: token.kind,
+                text: token.text.clone(),
+                span: token.span.clone(),
+            });
+        }
+        self.pos += 1;
+        self.steps.set(0);
+    }
+
+    fn push_event(&mut self, event: Event) {
+        self.events.push(event);
+    }
+
+    /// Returns true if the current token looks like the start of an instruction.
+    pub(crate) fn at_instruction_start(&self) -> bool {
+        let kind = self.current();
+        kind.is_keyword() || kind == IDENTIFIER
+    }
+
+    /// Returns true if the current token looks like the start of a label definition.
+    pub(crate) fn at_label_definition_start(&self) -> bool {
+        if self.at(IDENTIFIER) {
+            // Look ahead for a colon, skipping whitespace
+            let mut n = 1;
+            loop {
+                match self.nth(n) {
+                    WHITESPACE => n += 1,
+                    COLON => return true,
+                    _ => return false,
+                }
+            }
+        }
+        false
+    }
+
+    /// Parse a program (the root of the AST).
+    ///
+    /// ## Deprecated
+    ///
+    /// This function is deprecated and will be removed use
+    /// [`crate::grammar::entry::top::program`] instead.
+    ///
+    /// Example:
+    ///
+    /// ```rust ignore
+    /// use ram_parser::{Parser, SyntaxKind, grammar};
+    ///
+    /// let source = "LOAD 1 # Load value\nHALT\n";
+    /// let mut parser = Parser::new(&source);
+    /// grammar::entry::top::program(&mut parser);
+    /// ```
+    #[deprecated(note = "Use [`crate::grammar::entry::top::program`] instead")]
+    pub(crate) fn parse_program(&mut self) {
+        grammar::entry::top::program(self);
+    }
+}
+
+
 /// A token produced by the lexer.
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(Serialize))]
@@ -414,290 +705,3 @@ impl CompletedMarker {
     }
 }
 
-/// `Parser` struct provides the low-level API for
-/// navigating through the stream of tokens and
-/// constructing the parse tree.
-pub(crate) struct Parser<'t> {
-    /// The input tokens.
-    inp: &'t Input,
-    /// Current position in the token stream.
-    pos: usize,
-    /// The events produced by the parser.
-    events: Vec<Event>,
-    /// The errors encountered during parsing.
-    errors: Vec<SyntaxError>,
-    /// The number of steps the parser has taken.
-    steps: Cell<u32>,
-}
-
-impl<'t> Parser<'t> {
-    /// Create a new parser for the given tokens.
-    pub(crate) fn new(inp: &'t Input) -> Parser<'t> {
-        Parser { inp, pos: 0, events: Vec::new(), errors: Vec::new(), steps: Cell::new(0) }
-    }
-
-    /// Extract the events produced by the parser.
-    pub(crate) fn finish(self) -> (Vec<Event>, Vec<SyntaxError>) {
-        (self.events, self.errors)
-    }
-
-    /// Returns the kind of the current token.
-    /// If parser has already reached the end of input,
-    /// the special `EOF` kind is returned.
-    pub(crate) fn current(&self) -> SyntaxKind {
-        self.nth(0)
-    }
-
-    /// Lookahead operation: returns the kind of the next nth
-    /// token.
-    pub(crate) fn nth(&self, n: usize) -> SyntaxKind {
-        let steps = self.steps.get();
-        assert!((steps as usize) < PARSER_STEP_LIMIT, "the parser seems stuck");
-        self.steps.set(steps + 1);
-
-        self.inp.kind(self.pos + n)
-    }
-
-    /// Returns the text of the current token.
-    pub(crate) fn token_text(&self) -> &str {
-        self.inp.token(self.pos).map_or("", |t| &t.text)
-    }
-
-    /// Returns the span of the current token.
-    pub(crate) fn token_span(&self) -> Range<usize> {
-        self.inp.token(self.pos).map_or(0..0, |t| t.span.clone())
-    }
-
-    /// Checks if the current token is `kind`.
-    pub(crate) fn at(&self, kind: SyntaxKind) -> bool {
-        self.current() == kind
-    }
-
-    /// Checks if the nth token is `kind`.
-    pub(crate) fn nth_at(&self, n: usize, kind: SyntaxKind) -> bool {
-        self.nth(n) == kind
-    }
-
-    /// Checks if the current token is in `kinds`.
-    pub(crate) fn at_ts(&self, kinds: TokenSet) -> bool {
-        kinds.contains(self.current())
-    }
-
-    /// Consume the next token if `kind` matches.
-    pub(crate) fn eat(&mut self, kind: SyntaxKind) -> bool {
-        if !self.at(kind) {
-            return false;
-        }
-        self.do_bump();
-        true
-    }
-
-    /// Skip tokens until a token with one of the given kinds is found.
-    pub(crate) fn skip_until(&mut self, kinds: TokenSet) {
-        while !self.at(EOF) && !self.at_ts(kinds) {
-            self.bump_any();
-        }
-    }
-
-    /// Consume the next token if `kind` matches or emit an error
-    /// otherwise.
-    pub(crate) fn expect(&mut self, kind: SyntaxKind) -> bool {
-        if self.eat(kind) {
-            return true;
-        }
-        let token_text = self.token_text().to_string();
-        let span = self.token_span();
-        self.error(
-            format!("Expected {kind:?}, got {token_text:?}"),
-            format!("Try using {kind:?} here"),
-            span,
-        );
-        false
-    }
-
-    /// Add an error with a single labeled span.
-    pub(crate) fn error(&mut self, message: String, help: String, span: Range<usize>) {
-        self.errors.push(SyntaxError {
-            message,
-            help,
-            labeled_spans: vec![(span, "here".to_string())],
-        });
-    }
-
-    /// Add an error with multiple labeled spans.
-    pub(crate) fn labeled_error(
-        &mut self,
-        message: String,
-        help: String,
-        spans: Vec<(Range<usize>, String)>,
-    ) {
-        if !spans.is_empty() {
-            return self.errors.push(SyntaxError { message, help, labeled_spans: spans });
-        }
-        // Fallback if no spans provided
-        self.error(message, help, 0..0);
-    }
-
-    /// Starts a new node in the syntax tree. All nodes and tokens
-    /// consumed between the `start` and the corresponding `Marker::complete`
-    /// belong to the same node.
-    pub(crate) fn start(&mut self) -> Marker {
-        let pos = u32::try_from(self.events.len()).expect("Too many parser events");
-        self.push_event(Event::Placeholder { kind_slot: ROOT });
-        Marker::new(pos)
-    }
-
-    /// Advances the parser by one token
-    pub(crate) fn bump_any(&mut self) {
-        if self.at(EOF) {
-            return;
-        }
-        self.do_bump();
-    }
-
-    /// Consume the next token. Panics if the parser isn't currently at `kind`.
-    pub(crate) fn bump(&mut self, kind: SyntaxKind) {
-        assert!(self.eat(kind));
-    }
-
-    /// Create an error node and consume the next token.
-    pub(crate) fn err_and_bump(&mut self, message: &str, help: &str) {
-        let m = self.start();
-        let span = self.token_span();
-        self.error(message.to_string(), help.to_string(), span);
-        self.bump_any();
-        m.complete(self, ERROR);
-    }
-
-    /// Create an error node and recover until a token in the recovery set.
-    pub(crate) fn err_recover(&mut self, message: &str, help: &str, recovery: TokenSet) -> bool {
-        if self.at_ts(recovery) {
-            let span = self.token_span();
-            self.error(message.to_string(), help.to_string(), span);
-            return true;
-        }
-
-        let m = self.start();
-        let span = self.token_span();
-        self.error(message.to_string(), help.to_string(), span);
-
-        // Consume tokens until we hit recovery point or EOF
-        while !self.at(EOF) && !self.at_ts(recovery) {
-            self.bump_any();
-        }
-
-        m.complete(self, ERROR);
-        false
-    }
-
-    fn do_bump(&mut self) {
-        // Get the current token and create an AddToken event
-        if let Some(token) = self.inp.token(self.pos) {
-            self.push_event(Event::AddToken {
-                kind: token.kind,
-                text: token.text.clone(),
-                span: token.span.clone(),
-            });
-        }
-        self.pos += 1;
-        self.steps.set(0);
-    }
-
-    fn push_event(&mut self, event: Event) {
-        self.events.push(event);
-    }
-
-    /// Returns true if the current token looks like the start of an instruction.
-    pub(crate) fn at_instruction_start(&self) -> bool {
-        let kind = self.current();
-        kind.is_keyword() || kind == IDENTIFIER
-    }
-
-    /// Returns true if the current token looks like the start of a label definition.
-    pub(crate) fn at_label_definition_start(&self) -> bool {
-        if self.at(IDENTIFIER) {
-            // Look ahead for a colon, skipping whitespace
-            let mut n = 1;
-            loop {
-                match self.nth(n) {
-                    WHITESPACE => n += 1,
-                    COLON => return true,
-                    _ => return false,
-                }
-            }
-        }
-        false
-    }
-
-    /// Parse a program (the root of the AST).
-    ///
-    /// ## Deprecated
-    ///
-    /// This function is deprecated and will be removed use
-    /// [`crate::grammar::entry::top::program`] instead.
-    ///
-    /// Example:
-    ///
-    /// ```rust ignore
-    /// use ram_parser::{Parser, SyntaxKind, grammar};
-    ///
-    /// let source = "LOAD 1 # Load value\nHALT\n";
-    /// let mut parser = Parser::new(&source);
-    /// grammar::entry::top::program(&mut parser);
-    /// ```
-    #[deprecated(note = "Use [`crate::grammar::entry::top::program`] instead")]
-    pub(crate) fn parse_program(&mut self) {
-        grammar::entry::top::program(self);
-    }
-}
-
-/// Parse RAM assembly code into a sequence of events and errors.
-///
-/// The events can be used to build a syntax tree using the `build_tree` function.
-pub fn parse(source: &str) -> (Vec<Event>, Vec<SyntaxError>) {
-    // Tokenize the source text
-    let mut lexer = Lexer::new(source);
-    let tokens = lexer.tokenize();
-
-    // Create the input and parser
-    let input = Input::new(tokens);
-    let mut parser = Parser::new(&input);
-
-    grammar::entry::top::program(&mut parser);
-
-    // Return the events and errors
-    parser.finish()
-}
-
-/// Convert internal ParseError to ram_error types.
-///
-/// This function converts our internal ParseError to the ram_error types
-/// that can be used with miette for nice error reporting.
-pub fn convert_errors(source: &str, errors: Vec<SyntaxError>) -> ram_error::ParserError {
-    use miette::LabeledSpan;
-    use ram_error::{ParserError, SingleParserError};
-
-    // Convert each ParseError to a SingleParserError
-    let single_errors = errors
-        .into_iter()
-        .map(|e| {
-            // Convert labeled spans to miette LabeledSpans
-            let labels = e
-                .labeled_spans
-                .iter()
-                .map(|(span, label)| {
-                    LabeledSpan::new(Some(label.clone()), span.start, span.end - span.start)
-                })
-                .collect::<Vec<_>>();
-
-            // Create a SingleParserError
-            SingleParserError { message: e.message, labels }
-        })
-        .collect();
-
-    // Create a ParserError with all the SingleParserErrors
-    ParserError {
-        src: miette::NamedSource::new("input.ram", source.to_string()),
-        errors: single_errors,
-    }
-}
