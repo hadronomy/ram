@@ -397,8 +397,35 @@ fn test_label_requires_instruction() {
     let source = "label:\n";
     let (_events, errors) = parse_test(source);
 
+    // Test with a label not followed by an instruction, but with an instruction later in the file
+    let source = "label:\n\n\nLOAD 1\n";
+    let (_events, errors_with_later_instr) = parse_test(source);
+
     // Should have an error
     assert!(!errors.is_empty(), "Expected an error for label without instruction");
+    assert!(
+        !errors_with_later_instr.is_empty(),
+        "Expected an error for label without immediate instruction"
+    );
+
+    // Check that the error with a later instruction has multiple labeled spans
+    let error_with_later = errors_with_later_instr
+        .iter()
+        .find(|e| e.message.contains("Label must be followed by an instruction"))
+        .unwrap();
+
+    // Should have at least two labeled spans (one for the label, one for the instruction)
+    assert!(
+        error_with_later.labeled_spans.len() >= 2,
+        "Error should have at least two labeled spans when there's an instruction later in the file"
+    );
+
+    // The second span should mention the instruction
+    let has_instruction_span = error_with_later
+        .labeled_spans
+        .iter()
+        .any(|(_, label)| label.contains("instruction found here"));
+    assert!(has_instruction_span, "Error should have a span pointing to the later instruction");
 
     // Check that the error message is correct
     let has_correct_error =

@@ -294,6 +294,37 @@ impl<'t> Parser<'t> {
         self.pos
     }
 
+    /// Looks ahead in the token stream to find a token that matches the predicate.
+    /// Returns the position and span of the first matching token, if found.
+    ///
+    /// This is useful for finding specific tokens ahead in the stream without consuming them.
+    pub(crate) fn look_ahead_for<F>(&self, predicate: F) -> Option<(usize, Range<usize>)>
+    where
+        F: Fn(SyntaxKind) -> bool,
+    {
+        let mut pos = self.pos;
+        let mut depth = 0;
+
+        // Look ahead up to a reasonable limit
+        while depth < 1000 {
+            let kind = self.inp.kind(pos);
+            if kind == EOF {
+                return None;
+            }
+
+            if predicate(kind) {
+                if let Some(token) = self.inp.token(pos) {
+                    return Some((pos, token.span.clone()));
+                }
+            }
+
+            pos += 1;
+            depth += 1;
+        }
+
+        None
+    }
+
     /// Parse a program (the root of the AST).
     ///
     /// # Deprecated

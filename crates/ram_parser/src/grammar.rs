@@ -148,6 +148,7 @@ mod stmt {
     /// │                            │
     /// └────────────────────────────┘
     /// ```
+    #[allow(clippy::too_many_lines)]
     pub(super) fn statement(p: &mut Parser<'_>) {
         // Skip leading whitespace
         whitespace::skip_ws(p);
@@ -193,19 +194,63 @@ mod stmt {
                     expr::instruction_expr(p);
                 } else {
                     // Error: Label must be followed by an instruction
+                    // Look ahead for any instruction that comes later in the file
+                    if let Some((_, instr_span)) =
+                        p.look_ahead_for(|kind| kind.is_keyword() || kind == IDENTIFIER)
+                    {
+                        // Found an instruction later in the file
+                        let spans = vec![
+                            (label_span.clone(), "label defined here".to_string()),
+                            (
+                                instr_span,
+                                "instruction found here - place the label directly above this"
+                                    .to_string(),
+                            ),
+                        ];
+
+                        p.labeled_error(
+                            "Label must be followed by an instruction".to_string(),
+                            "Place the label definition directly above an instruction".to_string(),
+                            spans,
+                        );
+                    } else {
+                        // No instruction found later in the file
+                        p.error(
+                            "Label must be followed by an instruction".to_string(),
+                            "Add an instruction after the label definition".to_string(),
+                            label_span,
+                        );
+                    }
+                }
+            } else if !p.at(EOF) {
+                // Error: Label must be followed by an instruction
+                // Look ahead for any instruction that comes later in the file
+                if let Some((_, instr_span)) =
+                    p.look_ahead_for(|kind| kind.is_keyword() || kind == IDENTIFIER)
+                {
+                    // Found an instruction later in the file
+                    let spans = vec![
+                        (label_span.clone(), "label defined here".to_string()),
+                        (
+                            instr_span,
+                            "instruction found here - place the label directly above this"
+                                .to_string(),
+                        ),
+                    ];
+
+                    p.labeled_error(
+                        "Label must be followed by an instruction".to_string(),
+                        "Place the label definition directly above an instruction".to_string(),
+                        spans,
+                    );
+                } else {
+                    // No instruction found later in the file
                     p.error(
                         "Label must be followed by an instruction".to_string(),
                         "Add an instruction after the label definition".to_string(),
                         label_span,
                     );
                 }
-            } else if !p.at(EOF) {
-                // Error: Label must be followed by an instruction
-                p.error(
-                    "Label must be followed by an instruction".to_string(),
-                    "Add an instruction after the label definition".to_string(),
-                    label_span,
-                );
             }
 
             m.complete(p, STMT);
