@@ -2,8 +2,8 @@
 
 use crate::SyntaxKind;
 use crate::event::Event;
-use crate::parser::{Input, Parser, SyntaxError};
 use crate::lexer::{Lexer, Token};
+use crate::parser::{Input, Parser, SyntaxError};
 
 /// Helper function to parse a string and return the events
 fn parse_test(source: &str) -> (Vec<Event>, Vec<SyntaxError>) {
@@ -176,13 +176,13 @@ fn test_label_with_newline() {
 
     assert_no_errors(&errors);
 
-    // Check that we have at least two lines
-    let line_count = events
+    // Check that we have at least two statements
+    let stmt_count = events
         .iter()
-        .filter(|e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::LINE))
+        .filter(|e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::STMT))
         .count();
 
-    assert!(line_count >= 2, "Expected at least 2 lines");
+    assert!(stmt_count >= 2, "Expected at least 2 statements");
 }
 
 #[test]
@@ -274,4 +274,139 @@ fn test_precede_marker() {
     // Verify we have a StartNodeBefore event
     let has_start_before = events.iter().any(|e| matches!(e, Event::StartNodeBefore { .. }));
     assert!(has_start_before, "Missing StartNodeBefore event");
+}
+
+#[test]
+fn test_doc_comment() {
+    let source = "#* Documentation comment\nLOAD 1\n";
+    let (events, errors) = parse_test(source);
+
+    assert_no_errors(&errors);
+
+    // Check for DocComment node
+    let has_doc_comment = events.iter().any(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::DOC_COMMENT),
+    );
+    assert!(has_doc_comment, "Missing DocComment node in events");
+
+    // Verify the lexer correctly identified the #* token
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize();
+
+    // Find the HASH_STAR token
+    let has_hash_star = tokens.iter().any(|t| t.kind == SyntaxKind::HASH_STAR);
+    assert!(has_hash_star, "Missing HASH_STAR token");
+}
+
+#[test]
+fn test_comment_group_same_type() {
+    // Test with consecutive doc comments
+    let source = "#* First doc comment\n#* Second doc comment\nLOAD 1\n";
+    let (events, errors) = parse_test(source);
+
+    assert_no_errors(&errors);
+
+    // Check for CommentGroup node
+    let has_comment_group = events.iter().any(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::COMMENT_GROUP),
+    );
+    assert!(has_comment_group, "Missing CommentGroup node in events");
+
+    // Count doc comments - should be 2
+    let doc_comment_count = events.iter().filter(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::DOC_COMMENT),
+    ).count();
+    assert_eq!(doc_comment_count, 2, "Expected exactly 2 doc comments");
+
+    // Test with consecutive regular comments
+    let source = "# First regular comment\n# Second regular comment\nLOAD 1\n";
+    let (events, errors) = parse_test(source);
+
+    assert_no_errors(&errors);
+
+    // Check for CommentGroup node
+    let has_comment_group = events.iter().any(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::COMMENT_GROUP),
+    );
+    assert!(has_comment_group, "Missing CommentGroup node in events");
+
+    // Count regular comments - should be 2
+    let regular_comment_count = events
+        .iter()
+        .filter(
+            |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::COMMENT),
+        )
+        .count();
+    assert_eq!(regular_comment_count, 2, "Expected exactly 2 regular comments");
+}
+
+#[test]
+fn test_comment_groups_different_types() {
+    // Test with mixed comment types - should create separate groups
+    let source = "#* Doc comment\n# Regular comment\n#* Another doc comment\nLOAD 1\n";
+    let (events, errors) = parse_test(source);
+
+    assert_no_errors(&errors);
+
+    // Count CommentGroup nodes - should be at least 2 (one for each type)
+    let comment_group_count = events.iter().filter(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::COMMENT_GROUP),
+    ).count();
+    assert!(
+        comment_group_count >= 2,
+        "Expected at least 2 comment groups for different comment types"
+    );
+
+    // Check that we have both types of comments
+    let has_doc_comment = events.iter().any(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::DOC_COMMENT),
+    );
+    assert!(has_doc_comment, "Missing DocComment node in events");
+
+    let has_regular_comment = events.iter().any(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::COMMENT),
+    );
+    assert!(has_regular_comment, "Missing Comment node in events");
+}
+
+#[test]
+fn test_multiline_comment_grouping() {
+    // Test with multiple consecutive comments of the same type across multiple lines
+    let source = "# First comment\n# Second comment\n# Third comment\nLOAD 1\n";
+    let (events, errors) = parse_test(source);
+
+    assert_no_errors(&errors);
+
+    // Count CommentGroup nodes - should be exactly 1 for all regular comments
+    let comment_group_count = events.iter().filter(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::COMMENT_GROUP),
+    ).count();
+    assert_eq!(comment_group_count, 1, "Expected exactly 1 comment group for all regular comments");
+
+    // Count regular comments - should be 3
+    let regular_comment_count = events
+        .iter()
+        .filter(
+            |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::COMMENT),
+        )
+        .count();
+    assert_eq!(regular_comment_count, 3, "Expected exactly 3 regular comments");
+
+    // Test with multiple consecutive doc comments across multiple lines
+    let source = "#* First doc comment\n#* Second doc comment\n#* Third doc comment\nLOAD 1\n";
+    let (events, errors) = parse_test(source);
+
+    assert_no_errors(&errors);
+
+    // Count CommentGroup nodes - should be exactly 1 for all doc comments
+    let comment_group_count = events.iter().filter(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::COMMENT_GROUP),
+    ).count();
+    assert_eq!(comment_group_count, 1, "Expected exactly 1 comment group for all doc comments");
+
+    // Count doc comments - should be 3
+    let doc_comment_count = events.iter().filter(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::DOC_COMMENT),
+    ).count();
+    assert_eq!(doc_comment_count, 3, "Expected exactly 3 doc comments");
 }

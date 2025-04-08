@@ -14,10 +14,7 @@ mod tests;
 mod syntax_kind;
 mod tree_builder;
 
-pub use ast::{
-    Comment, DirectOperand, ImmediateOperand, IndirectOperand, Instruction, LabelDef, Line,
-    Operand, OperandValue, Program, RamAstNode,
-};
+pub use ast::*;
 pub use event::Event;
 pub use language::{
     RamLang, SyntaxElement, SyntaxElementChildren, SyntaxNode, SyntaxNodeChildren, SyntaxToken,

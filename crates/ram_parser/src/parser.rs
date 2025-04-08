@@ -288,6 +288,12 @@ impl<'t> Parser<'t> {
         false
     }
 
+    /// Returns the current position in the token stream.
+    /// This is useful for tracking progress in the parser.
+    pub(crate) fn current_pos(&self) -> usize {
+        self.pos
+    }
+
     /// Parse a program (the root of the AST).
     ///
     /// # Deprecated

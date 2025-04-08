@@ -10,10 +10,12 @@ use serde::Serialize;
 pub enum SyntaxKind {
     // Nodes
     ROOT = 0, // Start explicit numbering if using FromPrimitive
-    LINE,
+    STMT,     // Statement node
     INSTRUCTION,
     LABEL_DEF,
     COMMENT,
+    DOC_COMMENT,   // Documentation comment (#*)
+    COMMENT_GROUP, // Group of consecutive comments
     OPERAND,
     DIRECT_OPERAND,    // Direct addressing (e.g., 5)
     INDIRECT_OPERAND,  // Indirect addressing (e.g., *5)
@@ -31,6 +33,7 @@ pub enum SyntaxKind {
     WHITESPACE = 100, // Start tokens at a higher offset
     NEWLINE,
     HASH,         // '#' itself (distinct from Comment node/token text)
+    HASH_STAR,    // '#*' documentation comment marker
     COMMENT_TEXT, // The text content of a comment token
     NUMBER,
     IDENTIFIER,
@@ -73,7 +76,14 @@ impl From<rowan::SyntaxKind> for SyntaxKind {
 impl SyntaxKind {
     #[inline]
     pub fn is_trivia(self) -> bool {
-        matches!(self, SyntaxKind::WHITESPACE | SyntaxKind::NEWLINE | SyntaxKind::COMMENT)
+        matches!(
+            self,
+            SyntaxKind::WHITESPACE
+                | SyntaxKind::NEWLINE
+                | SyntaxKind::COMMENT
+                | SyntaxKind::DOC_COMMENT
+                | SyntaxKind::COMMENT_GROUP
+        )
     }
 
     /// Returns true if this is an identifier or a keyword.

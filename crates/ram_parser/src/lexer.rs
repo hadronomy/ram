@@ -95,12 +95,29 @@ impl<'a> Lexer<'a> {
     }
 
     /// Tokenize a comment (# followed by text until end of line).
+    ///
+    /// Returns a tuple containing:
+    /// - The comment marker token (HASH or HASH_STAR)
+    /// - An optional comment text token (if there is any text after the marker)
     fn tokenize_comment(&mut self) -> (Token, Option<Token>) {
         let hash_start = self.position;
         self.advance(); // Consume '#'
 
-        let hash_token =
-            Token { kind: HASH, text: "#".to_string(), span: hash_start..self.position };
+        // Check if this is a documentation comment (#*)
+        let is_doc_comment = self.peek() == Some('*');
+        let marker_kind = if is_doc_comment {
+            self.advance(); // Consume '*'
+            HASH_STAR
+        } else {
+            HASH
+        };
+
+        let marker_text = if is_doc_comment { "#*" } else { "#" };
+        let marker_token = Token {
+            kind: marker_kind,
+            text: marker_text.to_string(),
+            span: hash_start..self.position,
+        };
 
         let comment_start = self.position;
         while let Some(c) = self.peek() {
@@ -121,7 +138,7 @@ impl<'a> Lexer<'a> {
             })
         };
 
-        (hash_token, comment_token)
+        (marker_token, comment_token)
     }
 
     /// Tokenize a number.
@@ -206,8 +223,8 @@ impl<'a> Lexer<'a> {
             // Special characters
             Some('\n') => Some(self.tokenize_newline()),
             Some('#') => {
-                let (hash_token, _) = self.tokenize_comment();
-                Some(hash_token)
+                let (marker_token, _) = self.tokenize_comment();
+                Some(marker_token)
             }
 
             // Single character tokens
@@ -241,10 +258,10 @@ impl<'a> Lexer<'a> {
         let mut tokens = Vec::new();
 
         while self.position < self.source.len() {
-            // Handle comments specially to include both the hash and the comment text
+            // Handle comments specially to include both the marker and the comment text
             if self.peek() == Some('#') {
-                let (hash_token, comment_token) = self.tokenize_comment();
-                tokens.push(hash_token);
+                let (marker_token, comment_token) = self.tokenize_comment();
+                tokens.push(marker_token);
                 if let Some(token) = comment_token {
                     tokens.push(token);
                 }
