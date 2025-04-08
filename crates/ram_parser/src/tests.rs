@@ -2,7 +2,8 @@
 
 use crate::SyntaxKind;
 use crate::event::Event;
-use crate::parser::{Input, Lexer, Parser, SyntaxError, Token};
+use crate::parser::{Input, Parser, SyntaxError};
+use crate::lexer::{Lexer, Token};
 
 /// Helper function to parse a string and return the events
 fn parse_test(source: &str) -> (Vec<Event>, Vec<SyntaxError>) {

@@ -5,6 +5,7 @@ mod ast;
 mod event;
 mod grammar;
 mod language;
+mod lexer;
 mod parser;
 
 #[cfg(test)]
@@ -21,6 +22,7 @@ pub use event::Event;
 pub use language::{
     RamLang, SyntaxElement, SyntaxElementChildren, SyntaxNode, SyntaxNodeChildren, SyntaxToken,
 };
-pub use parser::{SyntaxError, Token, convert_errors, parse};
+pub use lexer::Token;
+pub use parser::{SyntaxError, convert_errors, parse};
 pub use syntax_kind::SyntaxKind;
 pub use tree_builder::build_tree;
