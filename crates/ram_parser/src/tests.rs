@@ -176,13 +176,25 @@ fn test_label_with_newline() {
 
     assert_no_errors(&errors);
 
-    // Check that we have at least two statements
+    // Check that we have at least one statement
     let stmt_count = events
         .iter()
         .filter(|e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::STMT))
         .count();
 
-    assert!(stmt_count >= 2, "Expected at least 2 statements");
+    assert!(stmt_count >= 1, "Expected at least 1 statement");
+
+    // Check that we have a label definition
+    let has_label = events.iter().any(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::LABEL_DEF),
+    );
+    assert!(has_label, "Missing LABEL_DEF node in events");
+
+    // Check that we have an instruction
+    let has_instruction = events.iter().any(
+        |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::INSTRUCTION),
+    );
+    assert!(has_instruction, "Missing INSTRUCTION node in events");
 }
 
 #[test]
@@ -367,6 +379,49 @@ fn test_comment_groups_different_types() {
         |e| matches!(e, Event::Placeholder { kind_slot } if *kind_slot == SyntaxKind::COMMENT),
     );
     assert!(has_regular_comment, "Missing Comment node in events");
+}
+
+#[test]
+fn test_label_requires_instruction() {
+    // Test with a label followed by an instruction on the same line
+    let source = "label: LOAD 1\n";
+    let (_events, errors) = parse_test(source);
+    assert_no_errors(&errors);
+
+    // Test with a label followed by an instruction on the next line
+    let source = "label:\nLOAD 1\n";
+    let (_events, errors) = parse_test(source);
+    assert_no_errors(&errors);
+
+    // Test with a label not followed by an instruction
+    let source = "label:\n";
+    let (_events, errors) = parse_test(source);
+
+    // Should have an error
+    assert!(!errors.is_empty(), "Expected an error for label without instruction");
+
+    // Check that the error message is correct
+    let has_correct_error =
+        errors.iter().any(|e| e.message.contains("Label must be followed by an instruction"));
+    assert!(has_correct_error, "Expected error message about label requiring instruction");
+
+    // Check that the error span points to the label, not the end of the file
+    let error = errors
+        .iter()
+        .find(|e| e.message.contains("Label must be followed by an instruction"))
+        .unwrap();
+
+    // The error should have at least one labeled span
+    assert!(!error.labeled_spans.is_empty(), "Error should have at least one labeled span");
+
+    // The first labeled span should be the label
+    let span = &error.labeled_spans[0].0;
+
+    // The error span should start at the beginning of the line (where "label:" is)
+    assert_eq!(span.start, 0, "Error span should start at the beginning of the line");
+
+    // The error span should not be empty
+    assert!(span.end > 0, "Error span should not be empty");
 }
 
 #[test]

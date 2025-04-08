@@ -114,7 +114,7 @@ mod stmt {
     ///
     /// # Structure
     /// A statement can be one of:
-    /// - A label definition (optionally followed by an instruction)
+    /// - A label definition (must be followed by an instruction, either on the same line or a subsequent line)
     /// - An instruction
     /// - A comment group
     ///
@@ -126,7 +126,7 @@ mod stmt {
     /// │  │ identifier:          │  │
     /// │  └──────────────────────┘  │
     /// │                            │
-    /// │  ┌─── INSTRUCTION ───────┐ │ ← Optional after label
+    /// │  ┌─── INSTRUCTION ───────┐ │ ← Required after label (can be on next line)
     /// │  │ ...                   │ │
     /// │  └───────────────────────┘ │
     /// │                            │
@@ -169,14 +169,43 @@ mod stmt {
         } else if p.at(IDENTIFIER) && p.at_label_definition_start() {
             // Label definition
             let m = p.start();
+
+            // Store the span of the label for error reporting
+            let label_span = p.token_span().clone();
+
             labels::label_definition(p);
 
             // Skip whitespace after label
             whitespace::skip_ws(p);
 
-            // Check for instruction after label
+            // Check for instruction after label on the same line
             if p.at_instruction_start() {
                 expr::instruction_expr(p);
+            } else if p.at(NEWLINE) {
+                // If we have a newline, we need to check if the next line has an instruction
+                p.bump_any(); // Consume the newline
+
+                // Skip whitespace at the beginning of the next line
+                whitespace::skip_ws(p);
+
+                // Check if the next line starts with an instruction
+                if p.at_instruction_start() {
+                    expr::instruction_expr(p);
+                } else {
+                    // Error: Label must be followed by an instruction
+                    p.error(
+                        "Label must be followed by an instruction".to_string(),
+                        "Add an instruction after the label definition".to_string(),
+                        label_span,
+                    );
+                }
+            } else if !p.at(EOF) {
+                // Error: Label must be followed by an instruction
+                p.error(
+                    "Label must be followed by an instruction".to_string(),
+                    "Add an instruction after the label definition".to_string(),
+                    label_span,
+                );
             }
 
             m.complete(p, STMT);
@@ -534,6 +563,8 @@ mod labels {
     ///
     /// # Structure
     /// A label definition consists of an identifier followed by a colon.
+    /// A label definition must be followed by an instruction, either on the same line
+    /// or on a subsequent line.
     ///
     /// # Returns
     /// Completes a [`LABEL_DEF`] syntax node.
@@ -548,6 +579,19 @@ mod labels {
     /// │  label     colon                 │
     /// │                                  │
     /// └──────────────────────────────────┘
+    /// ```
+    ///
+    /// # Note
+    /// A label definition must be followed by an instruction. This can be on the same line
+    /// or on the next line. For example:
+    ///
+    /// ```text
+    /// label: LOAD 1    # Valid: instruction on same line
+    ///
+    /// label:           # Valid: instruction on next line
+    ///     LOAD 1
+    ///
+    /// label:           # Invalid: no instruction follows the label
     /// ```
     pub(super) fn label_definition(p: &mut Parser<'_>) {
         let m = p.start();

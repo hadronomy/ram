@@ -138,6 +138,10 @@ impl Instruction {
 }
 
 // --- Label Definition ---
+/// A label definition in the program.
+///
+/// A label definition must be followed by an instruction, either on the same line
+/// or on a subsequent line.
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct LabelDef(SyntaxNode);
 
