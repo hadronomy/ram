@@ -80,6 +80,7 @@ where
         Box::new(
             miette::MietteHandlerOpts::new()
                 .break_words(false)
+                .show_related_errors_as_nested()
                 .word_separator(textwrap::WordSeparator::AsciiSpace)
                 .word_splitter(textwrap::WordSplitter::NoHyphenation)
                 .with_syntax_highlighting(language::highlighter())
