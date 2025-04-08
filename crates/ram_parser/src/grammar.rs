@@ -23,8 +23,30 @@ pub(crate) mod entry {
     pub(crate) mod top {
         use super::*;
 
-        /// Program is the root of the AST
-        /// A program consists of a sequence of statements
+        /// Parses a complete RAM program.
+        ///
+        /// # Structure
+        /// A program consists of a sequence of statements until EOF.
+        ///
+        /// # Returns
+        /// Completes a [`ROOT`] syntax node
+        ///
+        /// # Diagram
+        /// ```text
+        /// ┌─────────── ROOT ───────────┐
+        /// │                            │
+        /// │  ┌─────── STMT ────────┐   │
+        /// │  │ ...                 │   │
+        /// │  └─────────────────────┘   │
+        /// │                            │
+        /// │  ┌─────── STMT ────────┐   │
+        /// │  │ ...                 │   │
+        /// │  └─────────────────────┘   │
+        /// │                            │
+        /// │           ...              │
+        /// │                            │
+        /// └────────────────────────────┘
+        /// ```
         pub(crate) fn program(p: &mut Parser<'_>) {
             let m = p.start();
 
@@ -47,6 +69,16 @@ mod whitespace {
     use super::*;
 
     /// Skip whitespace and newlines
+    ///
+    /// # Behavior
+    /// Consumes all consecutive [`WHITESPACE`] and [`NEWLINE`] tokens.
+    ///
+    /// # Diagram
+    /// ```text
+    /// ┌────┬────┬────┬─────────┐
+    /// │ WS │ WS │ NL │ ...     │ => All consumed
+    /// └────┴────┴────┴─────────┘
+    /// ```
     pub(super) fn skip_ws_and_nl(p: &mut Parser<'_>) {
         while p.at(WHITESPACE) || p.at(NEWLINE) {
             p.bump_any();
@@ -54,6 +86,19 @@ mod whitespace {
     }
 
     /// Skip only whitespace (not newlines)
+    ///
+    /// # Behavior
+    /// Consumes all consecutive [`WHITESPACE`] tokens but preserves newlines.
+    ///
+    /// # Diagram
+    /// ```text
+    /// ┌────┬────┬────┬────┬─────────┐
+    /// │ WS │ WS │ NL │ WS │ ...     │
+    /// └────┴────┴────┴────┴─────────┘
+    ///   ^    ^         ^
+    ///   |____|         |
+    ///   consumed    preserved
+    /// ```
     pub(super) fn skip_ws(p: &mut Parser<'_>) {
         while p.at(WHITESPACE) {
             p.bump_any();
@@ -65,8 +110,44 @@ mod whitespace {
 mod stmt {
     use super::*;
 
-    /// Parse a statement
-    /// A statement can be a label definition, an instruction, or a comment group
+    /// Parses a statement.
+    ///
+    /// # Structure
+    /// A statement can be one of:
+    /// - A label definition (optionally followed by an instruction)
+    /// - An instruction
+    /// - A comment group
+    ///
+    /// # Diagram
+    /// ```text
+    /// ┌─────────── STMT ───────────┐
+    /// │                            │
+    /// │  ┌─── LABEL_DEF ────────┐  │
+    /// │  │ identifier:          │  │
+    /// │  └──────────────────────┘  │
+    /// │                            │
+    /// │  ┌─── INSTRUCTION ───────┐ │ ← Optional after label
+    /// │  │ ...                   │ │
+    /// │  └───────────────────────┘ │
+    /// │                            │
+    /// └────────────────────────────┘
+    ///
+    /// ┌─────────── STMT ───────────┐
+    /// │                            │
+    /// │  ┌─── INSTRUCTION ───────┐ │
+    /// │  │ ...                   │ │
+    /// │  └───────────────────────┘ │
+    /// │                            │
+    /// └────────────────────────────┘
+    ///
+    /// ┌─────────── STMT ───────────┐
+    /// │                            │
+    /// │  ┌─── COMMENT_GROUP ─────┐ │
+    /// │  │ ...                   │ │
+    /// │  └───────────────────────┘ │
+    /// │                            │
+    /// └────────────────────────────┘
+    /// ```
     pub(super) fn statement(p: &mut Parser<'_>) {
         // Skip leading whitespace
         whitespace::skip_ws(p);
@@ -141,7 +222,28 @@ mod stmt {
 mod expr {
     use super::*;
 
-    /// Parse an instruction expression
+    /// Parses an instruction expression.
+    ///
+    /// # Structure
+    /// An instruction consists of an opcode followed by an optional operand.
+    ///
+    /// # Returns
+    /// Completes an [`INSTRUCTION`] syntax node
+    ///
+    /// # Diagram
+    /// ```text
+    /// ┌───────── INSTRUCTION ───────────┐
+    /// │                                 │
+    /// │  ┌─── Opcode ─────┐             │
+    /// │  │ identifier     │             │
+    /// │  └────────────────┘             │
+    /// │                                 │
+    /// │  ┌─── OPERAND ────┐             │
+    /// │  │ ...            │  ← Optional │
+    /// │  └────────────────┘             │
+    /// │                                 │
+    /// └─────────────────────────────────┘
+    /// ```
     pub(super) fn instruction_expr(p: &mut Parser<'_>) {
         let m = p.start();
 
@@ -179,7 +281,20 @@ mod expr {
         m.complete(p, INSTRUCTION);
     }
 
-    /// Handle unexpected array accessor that isn't attached to any operand
+    /// Handle unexpected array accessor that isn't attached to any operand.
+    ///
+    /// # Behavior
+    /// Reports an appropriate error when an array accessor appears in an invalid position.
+    ///
+    /// # Diagram
+    /// ```text
+    /// ┌──────────────────────────┐
+    /// │ LOAD [5]                 │ ← Error: Array accessor to nowhere
+    /// └──────────────────────────┘
+    ///       ^^^^^
+    ///       |||||
+    ///       Error: should be after an identifier/number
+    /// ```
     pub(super) fn unexpected_array_accessor(p: &mut Parser<'_>) {
         let open_bracket_span = p.token_span();
         p.bump_any(); // Consume the opening bracket
@@ -235,7 +350,40 @@ mod expr {
         }
     }
 
-    /// Parse an operand expression
+    /// Parses an operand expression.
+    ///
+    /// # Structure
+    /// An operand consists of an optional addressing mode indicator followed by a value.
+    ///
+    /// # Returns
+    /// Completes an [`OPERAND`] syntax node with the appropriate addressing mode.
+    ///
+    /// # Diagram
+    /// ```text
+    /// ┌────────── OPERAND ────────────┐
+    /// │                               │
+    /// │  ┌─── DIRECT_OPERAND ──────┐  │
+    /// │  │ value                   │  │
+    /// │  └─────────────────────────┘  │
+    /// │                               │
+    /// └───────────────────────────────┘
+    ///
+    /// ┌────────── OPERAND ────────────┐
+    /// │                               │
+    /// │  ┌─── IMMEDIATE_OPERAND ────┐ │
+    /// │  │ =value                   │ │
+    /// │  └──────────────────────────┘ │
+    /// │                               │
+    /// └───────────────────────────────┘
+    ///
+    /// ┌────────── OPERAND ────────────┐
+    /// │                               │
+    /// │  ┌─── INDIRECT_OPERAND ─────┐ │
+    /// │  │ *value                   │ │
+    /// │  └──────────────────────────┘ │
+    /// │                               │
+    /// └───────────────────────────────┘
+    /// ```
     pub(super) fn operand_expr(p: &mut Parser<'_>) {
         let m = p.start();
 
@@ -266,7 +414,38 @@ mod expr {
         m.complete(p, OPERAND);
     }
 
-    /// Parse an operand value (number or identifier, possibly with array accessor)
+    /// Parses an operand value.
+    ///
+    /// # Structure
+    /// An operand value is a number or identifier, optionally followed by an array accessor.
+    ///
+    /// # Returns
+    /// Completes an [`OPERAND_VALUE`] syntax node.
+    ///
+    /// # Diagram
+    /// ```text
+    /// ┌──────── OPERAND_VALUE ────────┐
+    /// │                               │
+    /// │  identifier                   │
+    /// │                               │
+    /// └───────────────────────────────┘
+    ///
+    /// ┌──────── OPERAND_VALUE ────────┐
+    /// │                               │
+    /// │  number                       │
+    /// │                               │
+    /// └───────────────────────────────┘
+    ///
+    /// ┌──────── OPERAND_VALUE ────────┐
+    /// │                               │
+    /// │  identifier                   │
+    /// │                               │
+    /// │  ┌─── ARRAY_ACCESSOR ──────┐  │
+    /// │  │ [index]                 │  │
+    /// │  └─────────────────────────┘  │
+    /// │                               │
+    /// └───────────────────────────────┘
+    /// ```
     pub(super) fn operand_value(p: &mut Parser<'_>) {
         let m = p.start();
 
@@ -290,7 +469,24 @@ mod expr {
         m.complete(p, OPERAND_VALUE);
     }
 
-    /// Parse an array accessor [index]
+    /// Parses an array accessor.
+    ///
+    /// # Structure
+    /// An array accessor is a pair of square brackets containing an index expression.
+    ///
+    /// # Returns
+    /// Completes an [`ARRAY_ACCESSOR`] syntax node.
+    ///
+    /// # Diagram
+    /// ```text
+    /// ┌────── ARRAY_ACCESSOR ─────────┐
+    /// │                               │
+    /// │  [ index ]                    │
+    /// │    ^                          │
+    /// │    └── number or identifier   │
+    /// │                               │
+    /// └───────────────────────────────┘
+    /// ```
     pub(super) fn array_accessor(p: &mut Parser<'_>) {
         let m = p.start();
 
@@ -334,7 +530,25 @@ mod expr {
 mod labels {
     use super::*;
 
-    /// Parse a label definition.
+    /// Parses a label definition.
+    ///
+    /// # Structure
+    /// A label definition consists of an identifier followed by a colon.
+    ///
+    /// # Returns
+    /// Completes a [`LABEL_DEF`] syntax node.
+    ///
+    /// # Diagram
+    /// ```text
+    /// ┌─────────── LABEL_DEF ────────────┐
+    /// │                                  │
+    /// │  identifier:                     │
+    /// │  ^         ^                     │
+    /// │  |         |                     │
+    /// │  label     colon                 │
+    /// │                                  │
+    /// └──────────────────────────────────┘
+    /// ```
     pub(super) fn label_definition(p: &mut Parser<'_>) {
         let m = p.start();
 
@@ -371,35 +585,57 @@ mod labels {
     }
 }
 
-// Comments module
+/// Comments handling module for RAM assembly language comments
 mod comments {
     use super::*;
 
-    /// Parse a single comment (either regular or documentation).
+    /// Parses a single comment (either regular or documentation).
+    ///
+    /// # Structure
+    /// This function handles two types of comments:
+    /// - Regular comments starting with `#`
+    /// - Documentation comments starting with `#*`
+    ///
+    /// # Returns
+    /// Completes a [`COMMENT`] or [`DOC_COMMENT`] syntax node
+    ///
+    /// # Diagram
+    /// ```text
+    /// # Regular comment:
+    /// ┌────┬───────────────┐
+    /// │ #  │ Comment text  │
+    /// └────┴───────────────┘
+    ///   ^         ^
+    ///   |         └── Optional comment text
+    ///   └── Comment marker
+    ///
+    /// # Documentation comment:
+    /// ┌─────┬───────────────┐
+    /// │ #*  │ Comment text  │
+    /// └─────┴───────────────┘
+    ///   ^          ^
+    ///   |          └── Optional comment text
+    ///   └── Doc comment marker
+    /// ```
     pub(super) fn comment(p: &mut Parser<'_>) {
         let m = p.start();
 
-        // Determine the type of comment
         let comment_kind = if p.at(HASH_STAR) {
-            // Documentation comment
-            p.bump_any(); // Consume the #* marker
+            p.bump_any();
             DOC_COMMENT
         } else if p.at(HASH) {
-            // Regular comment
-            p.bump_any(); // Consume the # marker
+            p.bump_any();
             COMMENT
         } else {
-            // Error case
             let span = p.token_span();
             p.error(
                 "Expected a comment starting with # or #*".to_string(),
                 "Comments must start with # or #*".to_string(),
                 span,
             );
-            COMMENT // Default to regular comment in error case
+            COMMENT
         };
 
-        // Parse the comment text if present
         if p.at(COMMENT_TEXT) {
             p.bump_any();
         }
@@ -407,10 +643,64 @@ mod comments {
         m.complete(p, comment_kind);
     }
 
-    /// Parse a group of consecutive comments of the same type.
-    /// This will create a COMMENT_GROUP node that contains one or more comments of the same type.
-    /// Comments are grouped even across line breaks.
-    /// Returns the type of comments that were parsed (true for doc comments, false for regular comments).
+    /// Parses a group of consecutive comments of the same type.
+    ///
+    /// # Overview
+    /// Creates a [`COMMENT_GROUP`] node containing one or more comments
+    /// of the same type, grouped even across line breaks.
+    ///
+    /// # Returns
+    /// `bool` - Whether the parsed comments were documentation comments (`true`)
+    /// or regular comments (`false`).
+    ///
+    /// # Structure
+    ///
+    /// ```text
+    /// ┌─────────────── COMMENT_GROUP ───────────────────┐
+    /// │                                                 │
+    /// │  ┌─ COMMENT ─┐  ┌─ COMMENT ─┐                   │
+    /// │  │ # Text 1  │  │ # Text 2  │  ← Same line      │
+    /// │  └───────────┘  └───────────┘                   │
+    /// │                                                 │
+    /// │  ┌─ COMMENT ─┐                                  │
+    /// │  │ # Text 3  │  ← After line break              │
+    /// │  └───────────┘                                  │
+    /// │                                                 │
+    /// └─────────────────────────────────────────────────┘
+    /// ```
+    ///
+    /// # Algorithm
+    ///
+    /// ```text
+    /// ┌────────────────────┐
+    /// │ Start Comment Group│
+    /// └──────────┬─────────┘
+    ///            │
+    ///            ▼
+    /// ┌──────────────────────┐
+    /// │Parse 1st Comment     │
+    /// │Remember Comment Type │
+    /// └──────────┬───────────┘
+    ///            │
+    ///            ▼
+    /// ┌──────────────────────┐
+    /// │Skip Whitespace/      │◄─────┐
+    /// │Newlines              │      │
+    /// └──────────┬───────────┘      │
+    ///            │                  │
+    ///            ▼                  │
+    /// ┌──────────────────────┐      │
+    /// │More Comments of      │ Yes  │
+    /// │Same Type?            ├──────┘
+    /// └──────────┬───────────┘
+    ///            │ No
+    ///            ▼
+    /// ┌──────────────────────┐
+    /// │Complete Comment Group│
+    /// └──────────────────────┘
+    /// ```
+    ///
+    /// See [`comment`] for details on how individual comments are parsed.
     pub(super) fn comment_group(p: &mut Parser<'_>) -> bool {
         // Start a comment group marker
         let group_marker = p.start();
