@@ -6,6 +6,7 @@ use std::sync::{Arc, RwLock};
 
 use anstream::println;
 use clap::{CommandFactory, Parser};
+use human_panic::{Metadata, setup_panic};
 use miette::*;
 use shadow_rs::shadow;
 use tracing::level_filters::LevelFilter;
@@ -50,6 +51,13 @@ where
     Args: Iterator<Item = T>,
     T: Into<OsString> + Clone,
 {
+    setup_panic!(
+        Metadata::new(build::PROJECT_NAME, VERSION.pkg_version())
+            .authors("Pablo Hernandez <hadronomy@gmail.com>")
+            .homepage("hadronomy.com")
+            .support("- Open an issue on GitHub: https://github.com/hadronomy/ram/issues/new")
+    );
+
     let tracing_controls = init_tracing();
 
     let cli = match Cli::try_parse_from(args) {
