@@ -80,7 +80,7 @@ impl Backend {
     fn convert_errors_to_diagnostics(
         &self,
         source: &str,
-        errors: Vec<ram_parser::ParseError>,
+        errors: Vec<ram_parser::SyntaxError>,
     ) -> Vec<Diagnostic> {
         errors
             .into_iter()
