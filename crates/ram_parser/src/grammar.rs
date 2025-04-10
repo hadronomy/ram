@@ -246,29 +246,37 @@ mod stmt {
         p: &mut Parser<'_>,
         label_span: std::ops::Range<usize>,
     ) {
+        use crate::diagnostic::{Diagnostic, DiagnosticKind};
+
         if let Some((_, instr_span)) =
             p.look_ahead_for(|kind| kind.is_keyword() || kind == IDENTIFIER)
         {
             // Found an instruction later in the file
-            let spans = vec![
-                (label_span, "label defined here".to_string()),
-                (
-                    instr_span,
-                    "instruction found here - place the label directly above this".to_string(),
-                ),
-            ];
-
-            p.labeled_error(
-                "Label must be followed by an instruction".to_string(),
-                "Place the label definition directly above an instruction".to_string(),
-                spans,
+            p.add_diagnostic(
+                Diagnostic::builder()
+                    .with_message("Label must be followed by an instruction")
+                    .with_help("Place the label definition directly above an instruction")
+                    .with_primary_span(label_span, "label defined here")
+                    .with_secondary_span(
+                        instr_span,
+                        "instruction found here - place the label directly above this",
+                    )
+                    .with_code("E001")
+                    .with_note("Labels must be followed by an instruction, either on the same line or the next line.")
+                    .with_note("Consider moving this label directly above the instruction."),
+                DiagnosticKind::Error
             );
         } else {
             // No instruction found later in the file
-            p.error(
-                "Label must be followed by an instruction".to_string(),
-                "Add an instruction after the label definition".to_string(),
-                label_span,
+            p.add_diagnostic(
+                Diagnostic::builder()
+                    .with_message("Label must be followed by an instruction")
+                    .with_help("Add an instruction after the label definition")
+                    .with_primary_span(label_span, "label defined here")
+                    .with_code("E001")
+                    .with_note("Labels must be followed by an instruction, either on the same line or the next line.")
+                    .with_note("Add an instruction like 'LOAD', 'STORE', 'ADD', etc. after this label."),
+                DiagnosticKind::Error
             );
         }
     }
@@ -291,6 +299,8 @@ mod stmt {
     /// └────────────────────────────┘
     /// ```
     fn handle_unexpected_token_in_statement(p: &mut Parser<'_>) {
+        use crate::diagnostic::{Diagnostic, DiagnosticKind};
+
         let m = p.start();
 
         let (message, help) = match p.current() {
@@ -315,7 +325,17 @@ mod stmt {
         };
 
         let span = p.token_span().clone();
-        p.error(message, help, span);
+        let builder = Diagnostic::builder()
+            .with_message(message)
+            .with_help(help)
+            .with_primary_span(span, "here")
+            .with_code("E002");
+
+        // Use a warning for unexpected closing brackets, error for other cases
+        let kind =
+            if p.current() == RBRACKET { DiagnosticKind::Warning } else { DiagnosticKind::Error };
+
+        p.add_diagnostic(builder, kind);
         p.bump_any(); // Consume the unexpected token
 
         // Try to recover by skipping to a token we know how to handle

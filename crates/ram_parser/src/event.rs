@@ -7,9 +7,12 @@ use std::ops::Range;
 
 use crate::SyntaxKind;
 
-/// [`crate::Parser`] produces a flat list of [`Event`]s.
+/// The [Parser](`crate::Parser`) produces a flat list of [`Event`]s.
 /// They are converted to a tree-structure in
-/// a separate pass, via `TreeBuilder`
+/// a separate pass, via `TreeBuilder`.
+///
+/// This allows the ast to evolve
+/// independently from the parser.
 #[derive(Debug, Clone, PartialEq)]
 pub enum Event {
     /// Start a new node with the specified kind

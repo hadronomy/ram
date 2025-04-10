@@ -12,6 +12,7 @@ use std::ops::Range;
 use drop_bomb::DropBomb;
 
 use crate::SyntaxKind::*;
+use crate::diagnostic::{Diagnostic, DiagnosticBuilder, DiagnosticKind};
 use crate::event::Event;
 use crate::lexer::{Lexer, Token};
 use crate::{SyntaxKind, grammar};
@@ -22,10 +23,10 @@ const PARSER_STEP_LIMIT: usize = 100_000;
 /// EOF (end of file) token is used to indicate that there are no more tokens.
 const EOF: SyntaxKind = SyntaxKind::EOF;
 
-/// Parse RAM assembly code into a sequence of events and errors.
+/// Parse RAM assembly code into a sequence of events and diagnostics.
 ///
 /// The events can be used to build a syntax tree using the `build_tree` function.
-pub fn parse(source: &str) -> (Vec<Event>, Vec<SyntaxError>) {
+pub fn parse(source: &str) -> (Vec<Event>, Vec<Diagnostic>) {
     // Tokenize the source text
     let mut lexer = Lexer::new(source);
     let tokens = lexer.tokenize();
@@ -40,37 +41,12 @@ pub fn parse(source: &str) -> (Vec<Event>, Vec<SyntaxError>) {
     parser.finish()
 }
 
-/// Convert internal ParseError to ram_error types.
+/// Convert internal Diagnostic to ram_error types.
 ///
-/// This function converts our internal ParseError to the ram_error types
+/// This function converts our internal Diagnostic to the ram_error types
 /// that can be used with miette for nice error reporting.
-pub fn convert_errors(source: &str, errors: Vec<SyntaxError>) -> ram_error::ParserError {
-    use miette::LabeledSpan;
-    use ram_error::{ParserError, SingleParserError};
-
-    // Convert each ParseError to a SingleParserError
-    let single_errors = errors
-        .into_iter()
-        .map(|e| {
-            // Convert labeled spans to miette LabeledSpans
-            let labels = e
-                .labeled_spans
-                .iter()
-                .map(|(span, label)| {
-                    LabeledSpan::new(Some(label.clone()), span.start, span.end - span.start)
-                })
-                .collect::<Vec<_>>();
-
-            // Create a SingleParserError
-            SingleParserError { message: e.message, labels }
-        })
-        .collect();
-
-    // Create a ParserError with all the SingleParserErrors
-    ParserError {
-        src: miette::NamedSource::new("input.ram", source.to_string()),
-        errors: single_errors,
-    }
+pub fn convert_errors(source: &str, errors: Vec<Diagnostic>) -> ram_error::ParserError {
+    crate::diagnostic::convert_errors(source, errors)
 }
 
 /// `Parser` struct provides the low-level API for
@@ -83,8 +59,8 @@ pub(crate) struct Parser<'t> {
     pos: usize,
     /// The events produced by the parser.
     events: Vec<Event>,
-    /// The errors encountered during parsing.
-    errors: Vec<SyntaxError>,
+    /// The diagnostics encountered during parsing.
+    errors: Vec<Diagnostic>,
     /// The number of steps the parser has taken.
     steps: Cell<u32>,
 }
@@ -96,7 +72,7 @@ impl<'t> Parser<'t> {
     }
 
     /// Extract the events produced by the parser.
-    pub(crate) fn finish(self) -> (Vec<Event>, Vec<SyntaxError>) {
+    pub(crate) fn finish(self) -> (Vec<Event>, Vec<Diagnostic>) {
         (self.events, self.errors)
     }
 
@@ -175,26 +151,89 @@ impl<'t> Parser<'t> {
     }
 
     /// Add an error with a single labeled span.
+    ///
+    /// This is a legacy method kept for backward compatibility.
     pub(crate) fn error(&mut self, message: String, help: String, span: Range<usize>) {
-        self.errors.push(SyntaxError {
-            message,
-            help,
-            labeled_spans: vec![(span, "here".to_string())],
-        });
+        self.errors.push(Diagnostic::error(message, help, span));
+    }
+
+    /// Add a diagnostic using the builder API.
+    ///
+    /// This method takes a diagnostic builder and a kind, and adds the resulting diagnostic
+    /// to the parser's error list.
+    pub(crate) fn add_diagnostic(
+        &mut self,
+        builder: DiagnosticBuilder,
+        kind: DiagnosticKind,
+    ) {
+        match kind {
+            DiagnosticKind::Error => self.errors.push(builder.build_error()),
+            DiagnosticKind::Warning => self.errors.push(builder.build_warning()),
+            DiagnosticKind::Advice => self.errors.push(builder.build_advice()),
+            DiagnosticKind::Custom(_, _) => {
+                self.errors.push(builder.with_kind(kind).build());
+            }
+        }
+    }
+
+    /// Add an error diagnostic using the builder API.
+    ///
+    /// This is a convenience method that calls `add_diagnostic` with `DiagnosticKind::Error`.
+    pub(crate) fn error_with_builder(&mut self, builder: DiagnosticBuilder) {
+        self.add_diagnostic(builder, DiagnosticKind::Error);
+    }
+
+    /// Add a warning diagnostic using the builder API.
+    ///
+    /// This is a convenience method that calls `add_diagnostic` with `DiagnosticKind::Warning`.
+    pub(crate) fn warning_with_builder(&mut self, builder: DiagnosticBuilder) {
+        self.add_diagnostic(builder, DiagnosticKind::Warning);
+    }
+
+    /// Add an advice diagnostic using the builder API.
+    ///
+    /// This is a convenience method that calls `add_diagnostic` with `DiagnosticKind::Advice`.
+    pub(crate) fn advice_with_builder(&mut self, builder: DiagnosticBuilder) {
+        self.add_diagnostic(builder, DiagnosticKind::Advice);
+    }
+
+    /// Add a diagnostic with multiple labeled spans.
+    pub(crate) fn add_labeled_diagnostic(
+        &mut self,
+        message: String,
+        help: String,
+        spans: Vec<(Range<usize>, String)>,
+        kind: DiagnosticKind,
+    ) {
+        if !spans.is_empty() {
+            let builder =
+                Diagnostic::builder().with_message(message).with_help(help).with_spans(spans);
+            self.add_diagnostic(builder, kind);
+            return;
+        }
+        // Fallback if no spans provided
+        match kind {
+            DiagnosticKind::Error => self.error(message, help, 0..0),
+            _ => {
+                let builder = Diagnostic::builder()
+                    .with_message(message)
+                    .with_help(help)
+                    .with_primary_span(0..0, "here");
+                self.add_diagnostic(builder, kind);
+            }
+        }
     }
 
     /// Add an error with multiple labeled spans.
+    ///
+    /// This is a legacy method kept for backward compatibility.
     pub(crate) fn labeled_error(
         &mut self,
         message: String,
         help: String,
         spans: Vec<(Range<usize>, String)>,
     ) {
-        if !spans.is_empty() {
-            return self.errors.push(SyntaxError { message, help, labeled_spans: spans });
-        }
-        // Fallback if no spans provided
-        self.error(message, help, 0..0);
+        self.add_labeled_diagnostic(message, help, spans, DiagnosticKind::Error);
     }
 
     /// Starts a new node in the syntax tree. All nodes and tokens
@@ -220,6 +259,8 @@ impl<'t> Parser<'t> {
     }
 
     /// Create an error node and consume the next token.
+    ///
+    /// This is a legacy method kept for backward compatibility.
     pub(crate) fn err_and_bump(&mut self, message: &str, help: &str) {
         let m = self.start();
         let span = self.token_span();
@@ -228,7 +269,27 @@ impl<'t> Parser<'t> {
         m.complete(self, ERROR);
     }
 
+    /// Create an error node with a diagnostic and consume the next token.
+    pub(crate) fn diagnostic_and_bump(
+        &mut self,
+        message: &str,
+        help: &str,
+        kind: DiagnosticKind,
+    ) {
+        let m = self.start();
+        let span = self.token_span();
+        let builder = Diagnostic::builder()
+            .with_message(message.to_string())
+            .with_help(help.to_string())
+            .with_primary_span(span, "here");
+        self.add_diagnostic(builder, kind);
+        self.bump_any();
+        m.complete(self, ERROR);
+    }
+
     /// Create an error node and recover until a token in the recovery set.
+    ///
+    /// This is a legacy method kept for backward compatibility.
     pub(crate) fn err_recover(&mut self, message: &str, help: &str, recovery: TokenSet) -> bool {
         if self.at_ts(recovery) {
             let span = self.token_span();
@@ -239,6 +300,41 @@ impl<'t> Parser<'t> {
         let m = self.start();
         let span = self.token_span();
         self.error(message.to_string(), help.to_string(), span);
+
+        // Consume tokens until we hit recovery point or EOF
+        while !self.at(EOF) && !self.at_ts(recovery) {
+            self.bump_any();
+        }
+
+        m.complete(self, ERROR);
+        false
+    }
+
+    /// Create an error node with a diagnostic and recover until a token in the recovery set.
+    pub(crate) fn diagnostic_recover(
+        &mut self,
+        message: &str,
+        help: &str,
+        recovery: TokenSet,
+        kind: DiagnosticKind,
+    ) -> bool {
+        if self.at_ts(recovery) {
+            let span = self.token_span();
+            let builder = Diagnostic::builder()
+                .with_message(message.to_string())
+                .with_help(help.to_string())
+                .with_primary_span(span, "here");
+            self.add_diagnostic(builder, kind);
+            return true;
+        }
+
+        let m = self.start();
+        let span = self.token_span();
+        let builder = Diagnostic::builder()
+            .with_message(message.to_string())
+            .with_help(help.to_string())
+            .with_primary_span(span, "here");
+        self.add_diagnostic(builder, kind);
 
         // Consume tokens until we hit recovery point or EOF
         while !self.at(EOF) && !self.at_ts(recovery) {
@@ -345,18 +441,6 @@ impl<'t> Parser<'t> {
     pub(crate) fn parse_program(&mut self) {
         grammar::entry::top::program(self);
     }
-}
-
-/// A simple error type used during parsing.
-/// This will be converted to ram_error::SingleParserError later.
-#[derive(Debug, Clone)]
-pub struct SyntaxError {
-    /// The error message.
-    pub message: String,
-    /// Additional help text.
-    pub help: String,
-    /// The labeled spans for this error.
-    pub labeled_spans: Vec<(Range<usize>, String)>,
 }
 
 /// Input to the parser - a sequence of tokens.

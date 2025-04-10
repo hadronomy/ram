@@ -1,17 +1,18 @@
 //! Tests for the RAM parser.
 
 use crate::SyntaxKind;
+use crate::diagnostic::Diagnostic;
 use crate::event::Event;
 use crate::lexer::{Lexer, Token};
-use crate::parser::{Input, Parser, SyntaxError};
+use crate::parser::{Input, Parser};
 
 /// Helper function to parse a string and return the events
-fn parse_test(source: &str) -> (Vec<Event>, Vec<SyntaxError>) {
+fn parse_test(source: &str) -> (Vec<Event>, Vec<Diagnostic>) {
     crate::parse(source)
 }
 
 /// Helper function to check if parsing succeeded without errors
-fn assert_no_errors(errors: &[SyntaxError]) {
+fn assert_no_errors(errors: &[Diagnostic]) {
     assert!(errors.is_empty(), "Expected no errors, got: {errors:?}");
 }
 
