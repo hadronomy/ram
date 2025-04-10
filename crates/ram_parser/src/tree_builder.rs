@@ -1,167 +1,186 @@
-use rowan::{GreenNode, GreenNodeBuilder, Language};
+use cstree::interning::Interner;
+use cstree::prelude::*;
 
 use crate::SyntaxKind;
 use crate::event::Event;
-use crate::language::RamLang;
+use crate::syntax_kind::Ram;
 
-/// Builds a Rowan Green Tree from a list of events
-pub fn build_tree(events: Vec<Event>) -> GreenNode {
-    // Make sure we have at least one node to work with
-    if events.is_empty() {
-        // Create a minimal valid tree with just a root node
-        let mut builder = GreenNodeBuilder::new();
-        builder.start_node(RamLang::kind_to_raw(SyntaxKind::ROOT));
-        builder.finish_node();
-        return builder.finish();
-    }
-
-    // Remove any Tombstones and convert Placeholders to proper StartNode events
-    let mut cleaned_events = Vec::with_capacity(events.len());
-
-    for event in events {
-        match event {
-            Event::Tombstone => {
-                // Skip tombstones
-                continue;
-            }
-            Event::Placeholder { kind_slot } => {
-                // Convert placeholder to proper StartNode
-                cleaned_events.push(Event::StartNode { kind: kind_slot });
-            }
-            Event::StartNodeBefore { .. } => {
-                // StartNodeBefore needs special handling, which we'll do later
-                cleaned_events.push(event);
-            }
-            _ => {
-                // Keep all other events as-is
-                cleaned_events.push(event);
-            }
-        }
-    }
-
-    // First pass: Process StartNodeBefore events and build a properly balanced event stream
-    let processed_events = process_start_node_before(&cleaned_events);
-
-    // Second pass: Ensure the event stream is balanced
-    let balanced_events = balance_events(&processed_events);
-
-    // Third pass: Build the tree from the balanced events
-    build_from_balanced_events(&balanced_events)
+/// A builder for creating syntax trees from parser events
+///
+/// This struct encapsulates the process of transforming parser events
+/// into a proper syntax tree structure. It handles several phases:
+///
+/// 1. Cleaning events (removing tombstones, converting placeholders)
+/// 2. Processing hierarchical node relationships (StartNodeBefore events)
+/// 3. Ensuring the event stream is properly balanced
+/// 4. Building the final green tree
+pub struct TreeBuilder {
+    events: Vec<Event>,
+    builder: GreenNodeBuilder<'static, 'static, Ram>,
 }
 
-/// Process StartNodeBefore events and convert them to regular StartNode/FinishNode pairs
-fn process_start_node_before(events: &[Event]) -> Vec<Event> {
-    let mut result = Vec::with_capacity(events.len() * 2); // Allocate extra space
-    let mut i = 0;
+impl TreeBuilder {
+    /// Create a new TreeBuilder from a list of parser events
+    pub fn new(events: Vec<Event>) -> Self {
+        Self { events, builder: GreenNodeBuilder::new() }
+    }
 
-    while i < events.len() {
-        match &events[i] {
-            Event::StartNodeBefore { kind, before_pos } => {
-                let before_pos = *before_pos;
-                let kind = *kind;
-
-                // Insert a StartNode at the current position
-                result.push(Event::StartNode { kind });
-
-                // Copy all subsequent events until we reach before_pos
-                let mut j = i + 1;
-                while j < events.len() && j < before_pos {
-                    result.push(events[j].clone());
-                    j += 1;
-                }
-
-                // Add the FinishNode for our StartNode
-                result.push(Event::FinishNode);
-
-                // Skip ahead to before_pos
-                i = before_pos;
-            }
-            _ => {
-                // Copy the event as-is
-                result.push(events[i].clone());
-                i += 1;
-            }
+    /// Build the tree from the events
+    ///
+    /// This is the main entry point that processes all events and builds
+    /// the final syntax tree.
+    pub fn build(mut self) -> (GreenNode, impl Interner) {
+        // Process the events in multiple passes to build a proper tree
+        if !self.events.is_empty() {
+            self.clean_events();
+            self.process_start_node_before();
+            self.balance_events();
         }
+
+        self.build_tree()
     }
 
-    result
-}
-
-/// Ensure the event stream is balanced with matching StartNode and FinishNode events
-fn balance_events(events: &[Event]) -> Vec<Event> {
-    let mut result = Vec::with_capacity(events.len() * 2); // Allocate extra space
-    let mut node_stack = Vec::new();
-
-    // Ensure the event stream starts with a root node
-    let mut has_root = false;
-    for event in events {
-        if let Event::StartNode { kind } = event {
-            if *kind == SyntaxKind::ROOT {
-                has_root = true;
-                break;
-            }
-        }
+    /// Cleans the event stream by removing tombstones and converting placeholders
+    fn clean_events(&mut self) {
+        self.events = self
+            .events
+            .drain(..)
+            .filter_map(|event| match event {
+                Event::Tombstone => None, // Skip tombstones
+                Event::Placeholder { kind_slot } => Some(Event::StartNode { kind: kind_slot }),
+                _ => Some(event), // Keep all other events as-is
+            })
+            .collect();
     }
 
-    if !has_root {
-        result.push(Event::StartNode { kind: SyntaxKind::ROOT });
-        node_stack.push(SyntaxKind::ROOT);
-    }
+    /// Process StartNodeBefore events and convert them to regular StartNode/FinishNode pairs
+    ///
+    /// Handles the conversion of StartNodeBefore events (which represent nodes that should
+    /// "wrap around" previously created nodes) into proper StartNode/FinishNode pairs.
+    fn process_start_node_before(&mut self) {
+        let mut result = Vec::with_capacity(self.events.len() * 2); // Allocate extra space
+        let mut i = 0;
+        let events = std::mem::take(&mut self.events);
 
-    // Process all events
-    for event in events {
-        match event {
-            Event::StartNode { kind } => {
-                result.push(Event::StartNode { kind: *kind });
-                node_stack.push(*kind);
-            }
-            Event::FinishNode => {
-                if !node_stack.is_empty() {
+        while i < events.len() {
+            match &events[i] {
+                Event::StartNodeBefore { kind, before_pos } => {
+                    let before_pos = *before_pos;
+                    let kind = *kind;
+
+                    // Insert a StartNode at the current position
+                    result.push(Event::StartNode { kind });
+
+                    // Copy all subsequent events until we reach before_pos
+                    let events_to_include = &events[i + 1..before_pos.min(events.len())];
+                    result.extend_from_slice(events_to_include);
+
+                    // Add the FinishNode for our StartNode
                     result.push(Event::FinishNode);
-                    node_stack.pop();
+
+                    // Skip ahead to before_pos
+                    i = before_pos;
                 }
-                // Skip unmatched FinishNode events
-            }
-            _ => {
-                result.push(event.clone());
+                _ => {
+                    // Copy the event as-is
+                    result.push(events[i].clone());
+                    i += 1;
+                }
             }
         }
+
+        self.events = result;
     }
 
-    // Close any remaining open nodes
-    while let Some(_kind) = node_stack.pop() {
-        result.push(Event::FinishNode);
+    /// Ensure the event stream is balanced with matching StartNode and FinishNode events
+    ///
+    /// Guarantees that every StartNode event has a corresponding FinishNode,
+    /// and that the stream starts with a ROOT node.
+    fn balance_events(&mut self) {
+        let mut result = Vec::with_capacity(self.events.len() * 2);
+        let mut node_stack = Vec::new();
+
+        // Check if we need to insert a root node at the beginning
+        let has_root = self
+            .events
+            .iter()
+            .any(|event| matches!(event, Event::StartNode { kind } if *kind == SyntaxKind::ROOT));
+
+        if !has_root {
+            result.push(Event::StartNode { kind: SyntaxKind::ROOT });
+            node_stack.push(SyntaxKind::ROOT);
+        }
+
+        // Process all events
+        for event in &self.events {
+            match event {
+                Event::StartNode { kind } => {
+                    result.push(Event::StartNode { kind: *kind });
+                    node_stack.push(*kind);
+                }
+                Event::FinishNode => {
+                    if !node_stack.is_empty() {
+                        result.push(Event::FinishNode);
+                        node_stack.pop();
+                    }
+                    // Skip unmatched FinishNode events
+                }
+                _ => {
+                    result.push(event.clone());
+                }
+            }
+        }
+
+        // Close any remaining open nodes
+        while node_stack.pop().is_some() {
+            result.push(Event::FinishNode);
+        }
+
+        self.events = result;
     }
 
-    result
+    /// Build the tree from the processed events
+    fn build_tree(mut self) -> (GreenNode, impl Interner) {
+        // Handle empty events by creating a minimal valid tree
+        if self.events.is_empty() {
+            self.builder.start_node(SyntaxKind::ROOT);
+            self.builder.finish_node();
+        } else {
+            for event in &self.events {
+                match event {
+                    Event::StartNode { kind } => {
+                        self.builder.start_node(*kind);
+                    }
+                    Event::FinishNode => {
+                        self.builder.finish_node();
+                    }
+                    Event::AddToken { kind, text, span: _ } => {
+                        self.builder.token(*kind, text);
+                    }
+                    Event::Error { msg, span: _ } => {
+                        // Create an error node with the error message
+                        self.builder.start_node(Ram::ERROR);
+                        self.builder.token(Ram::ERROR_TOKEN, msg);
+                        self.builder.finish_node();
+                    }
+                    _ => {
+                        // Other events should have been processed in earlier passes
+                    }
+                }
+            }
+        }
+
+        let (tree, cache) = self.builder.finish();
+        (tree, cache.unwrap().into_interner().unwrap())
+    }
 }
 
-/// Build the tree from the balanced events
-fn build_from_balanced_events(events: &[Event]) -> GreenNode {
-    let mut builder = GreenNodeBuilder::new();
-
-    for event in events {
-        match event {
-            Event::StartNode { kind } => {
-                builder.start_node(RamLang::kind_to_raw(*kind));
-            }
-            Event::FinishNode => {
-                builder.finish_node();
-            }
-            Event::AddToken { kind, text, span: _ } => {
-                builder.token(RamLang::kind_to_raw(*kind), text);
-            }
-            Event::Error { msg, span } => {
-                // Create an error node with the error message
-                builder.start_node(RamLang::kind_to_raw(SyntaxKind::ERROR));
-                builder.token(RamLang::kind_to_raw(SyntaxKind::ERROR_TOKEN), msg);
-                builder.finish_node();
-            }
-            _ => {
-                // Ignore other events - they should have been processed already
-            }
-        }
-    }
-
-    builder.finish()
+/// Builds a [GreenNode](`cstree::green::node::GreenNode`) from a list of events
+///
+/// This function takes the events produced by the parser and transforms them
+/// into a proper syntax tree structure by using the TreeBuilder struct.
+///
+/// **NOTE:** This is a convenience function
+pub fn build_tree(events: Vec<Event>) -> (GreenNode, impl Interner) {
+    TreeBuilder::new(events).build()
 }
