@@ -5,51 +5,51 @@ use crate::event::Event;
 use crate::language::RamLang;
 
 /// Builds a Rowan Green Tree from a list of events
+///
+/// This function takes the events produced by the parser and transforms them
+/// into a proper syntax tree structure. It handles several phases of processing:
+///
+/// 1. Cleaning events (removing tombstones, converting placeholders)
+/// 2. Processing hierarchical node relationships (StartNodeBefore events)
+/// 3. Ensuring the event stream is properly balanced
+/// 4. Building the final green tree
 pub fn build_tree(events: Vec<Event>) -> GreenNode {
-    // Make sure we have at least one node to work with
+    // Handle the empty events case by creating a minimal valid tree
     if events.is_empty() {
-        // Create a minimal valid tree with just a root node
-        let mut builder = GreenNodeBuilder::new();
-        builder.start_node(RamLang::kind_to_raw(SyntaxKind::ROOT));
-        builder.finish_node();
-        return builder.finish();
+        return create_minimal_tree();
     }
 
-    // Remove any Tombstones and convert Placeholders to proper StartNode events
-    let mut cleaned_events = Vec::with_capacity(events.len());
-
-    for event in events {
-        match event {
-            Event::Tombstone => {
-                // Skip tombstones
-                continue;
-            }
-            Event::Placeholder { kind_slot } => {
-                // Convert placeholder to proper StartNode
-                cleaned_events.push(Event::StartNode { kind: kind_slot });
-            }
-            Event::StartNodeBefore { .. } => {
-                // StartNodeBefore needs special handling, which we'll do later
-                cleaned_events.push(event);
-            }
-            _ => {
-                // Keep all other events as-is
-                cleaned_events.push(event);
-            }
-        }
-    }
-
-    // First pass: Process StartNodeBefore events and build a properly balanced event stream
+    // Process the events in multiple passes to build a proper tree
+    let cleaned_events = clean_events(events);
     let processed_events = process_start_node_before(&cleaned_events);
-
-    // Second pass: Ensure the event stream is balanced
     let balanced_events = balance_events(&processed_events);
-
-    // Third pass: Build the tree from the balanced events
     build_from_balanced_events(&balanced_events)
 }
 
+/// Creates a minimal valid syntax tree with just a root node
+fn create_minimal_tree() -> GreenNode {
+    let mut builder = GreenNodeBuilder::new();
+    builder.start_node(RamLang::kind_to_raw(SyntaxKind::ROOT));
+    builder.finish_node();
+    builder.finish()
+}
+
+/// Cleans the event stream by removing tombstones and converting placeholders
+fn clean_events(events: Vec<Event>) -> Vec<Event> {
+    events
+        .into_iter()
+        .filter_map(|event| match event {
+            Event::Tombstone => None, // Skip tombstones
+            Event::Placeholder { kind_slot } => Some(Event::StartNode { kind: kind_slot }),
+            _ => Some(event), // Keep all other events as-is
+        })
+        .collect()
+}
+
 /// Process StartNodeBefore events and convert them to regular StartNode/FinishNode pairs
+///
+/// Handles the conversion of StartNodeBefore events (which represent nodes that should
+/// "wrap around" previously created nodes) into proper StartNode/FinishNode pairs.
 fn process_start_node_before(events: &[Event]) -> Vec<Event> {
     let mut result = Vec::with_capacity(events.len() * 2); // Allocate extra space
     let mut i = 0;
@@ -64,11 +64,8 @@ fn process_start_node_before(events: &[Event]) -> Vec<Event> {
                 result.push(Event::StartNode { kind });
 
                 // Copy all subsequent events until we reach before_pos
-                let mut j = i + 1;
-                while j < events.len() && j < before_pos {
-                    result.push(events[j].clone());
-                    j += 1;
-                }
+                let events_to_include = &events[i + 1..before_pos.min(events.len())];
+                result.extend_from_slice(events_to_include);
 
                 // Add the FinishNode for our StartNode
                 result.push(Event::FinishNode);
@@ -88,20 +85,17 @@ fn process_start_node_before(events: &[Event]) -> Vec<Event> {
 }
 
 /// Ensure the event stream is balanced with matching StartNode and FinishNode events
+///
+/// Guarantees that every StartNode event has a corresponding FinishNode,
+/// and that the stream starts with a ROOT node.
 fn balance_events(events: &[Event]) -> Vec<Event> {
-    let mut result = Vec::with_capacity(events.len() * 2); // Allocate extra space
+    let mut result = Vec::with_capacity(events.len() * 2);
     let mut node_stack = Vec::new();
 
-    // Ensure the event stream starts with a root node
-    let mut has_root = false;
-    for event in events {
-        if let Event::StartNode { kind } = event {
-            if *kind == SyntaxKind::ROOT {
-                has_root = true;
-                break;
-            }
-        }
-    }
+    // Check if we need to insert a root node at the beginning
+    let has_root = events
+        .iter()
+        .any(|event| matches!(event, Event::StartNode { kind } if *kind == SyntaxKind::ROOT));
 
     if !has_root {
         result.push(Event::StartNode { kind: SyntaxKind::ROOT });
@@ -129,7 +123,7 @@ fn balance_events(events: &[Event]) -> Vec<Event> {
     }
 
     // Close any remaining open nodes
-    while let Some(_kind) = node_stack.pop() {
+    while node_stack.pop().is_some() {
         result.push(Event::FinishNode);
     }
 
@@ -158,7 +152,7 @@ fn build_from_balanced_events(events: &[Event]) -> GreenNode {
                 builder.finish_node();
             }
             _ => {
-                // Ignore other events - they should have been processed already
+                // Other events should have been processed in earlier passes
             }
         }
     }
