@@ -13,7 +13,7 @@
 #![allow(clippy::enum_glob_use)]
 
 use crate::SyntaxKind::*;
-use crate::parser::Parser;
+use crate::parser::{Parser, TokenSet};
 
 /// Entry point for the grammar
 pub(crate) mod entry {
@@ -110,6 +110,12 @@ mod whitespace {
 mod stmt {
     use super::*;
 
+    // Recovery token set for error handling
+    const RECOVERY_SET: TokenSet = TokenSet::new(&[
+        NEWLINE, HASH, HASH_STAR, IDENTIFIER, LOAD_KW, STORE_KW, ADD_KW, SUB_KW, MUL_KW, DIV_KW,
+        JUMP_KW, JGTZ_KW, JZERO_KW, HALT_KW, IMPORT_KW,
+    ]);
+
     /// Parses a statement.
     ///
     /// # Structure
@@ -161,63 +167,70 @@ mod stmt {
             return;
         }
 
-        if p.at(IMPORT_KW) {
-            // Import statement
-            let m = p.start();
-            imports::import_stmt(p);
-            m.complete(p, STMT);
-        } else if p.at(HASH) || p.at(HASH_STAR) {
-            // Comment statement
-            let m = p.start();
-            comments::comment_group(p);
-            m.complete(p, STMT);
-        } else if p.at(IDENTIFIER) && p.at_label_definition_start() {
-            // Label definition
-            let m = p.start();
-
-            // Store the span of the label for error reporting
-            let label_span = p.token_span().clone();
-
-            labels::label_definition(p);
-
-            // Skip whitespace after label
-            whitespace::skip_ws(p);
-
-            // Check for instruction after label on the same line
-            if p.at_instruction_start() {
-                expr::instruction_expr(p);
-            } else if p.at(NEWLINE) {
-                // If we have a newline, we need to check if the next line has an instruction
-                p.bump_any(); // Consume the newline
-
-                // Skip whitespace at the beginning of the next line
-                whitespace::skip_ws(p);
-
-                // Check if the next line starts with an instruction
-                if p.at_instruction_start() {
-                    expr::instruction_expr(p);
-                } else {
-                    // Error: Label must be followed by an instruction
-                    handle_missing_instruction_after_label(p, label_span);
-                }
-            } else if !p.at(EOF) {
-                // Error: Label must be followed by an instruction
-                handle_missing_instruction_after_label(p, label_span);
-            }
-
-            m.complete(p, STMT);
-        } else if p.at_instruction_start() {
-            // Instruction statement
-            let m = p.start();
-            expr::instruction_expr(p);
-            m.complete(p, STMT);
-        } else {
-            // Handle unexpected tokens or error situations
-            handle_unexpected_token_in_statement(p);
+        // Match on the current token to determine statement type
+        match p.current() {
+            IMPORT_KW => parse_import_statement(p),
+            HASH | HASH_STAR => parse_comment_statement(p),
+            IDENTIFIER if p.at_label_definition_start() => parse_label_statement(p),
+            _ if p.at_instruction_start() => parse_instruction_statement(p),
+            _ => handle_unexpected_token_in_statement(p),
         }
 
         // Skip trailing whitespace and newlines
         whitespace::skip_ws_and_nl(p);
+    }
+
+    // Helper function to parse import statements
+    fn parse_import_statement(p: &mut Parser<'_>) {
+        let m = p.start();
+        imports::import_stmt(p);
+        m.complete(p, STMT);
+    }
+
+    // Helper function to parse comment statements
+    fn parse_comment_statement(p: &mut Parser<'_>) {
+        let m = p.start();
+        comments::comment_group(p);
+        m.complete(p, STMT);
+    }
+
+    // Helper function to parse label statements
+    fn parse_label_statement(p: &mut Parser<'_>) {
+        let m = p.start();
+
+        // Store the span of the label for error reporting
+        let label_span = p.token_span().clone();
+
+        labels::label_definition(p);
+
+        // Skip whitespace after label
+        whitespace::skip_ws(p);
+
+        if p.at_instruction_start() {
+            // Instruction on same line
+            expr::instruction_expr(p);
+        } else if p.at(NEWLINE) {
+            // Check for instruction on next line
+            p.bump_any(); // Consume the newline
+            whitespace::skip_ws(p);
+
+            if p.at_instruction_start() {
+                expr::instruction_expr(p);
+            } else {
+                handle_missing_instruction_after_label(p, label_span);
+            }
+        } else if !p.at(EOF) {
+            handle_missing_instruction_after_label(p, label_span);
+        }
+
+        m.complete(p, STMT);
+    }
+
+    // Helper function to parse instruction statements
+    fn parse_instruction_statement(p: &mut Parser<'_>) {
+        let m = p.start();
+        expr::instruction_expr(p);
+        m.complete(p, STMT);
     }
 
     /// Handles situations where a label is defined but not followed by an instruction.
@@ -229,17 +242,16 @@ mod stmt {
     /// # Behavior
     /// Looks ahead for any subsequent instruction and provides a helpful error message,
     /// suggesting to place the label directly above an instruction.
-    pub(super) fn handle_missing_instruction_after_label(
+    fn handle_missing_instruction_after_label(
         p: &mut Parser<'_>,
         label_span: std::ops::Range<usize>,
     ) {
-        // Look ahead for any instruction that comes later in the file
         if let Some((_, instr_span)) =
             p.look_ahead_for(|kind| kind.is_keyword() || kind == IDENTIFIER)
         {
             // Found an instruction later in the file
             let spans = vec![
-                (label_span.clone(), "label defined here".to_string()),
+                (label_span, "label defined here".to_string()),
                 (
                     instr_span,
                     "instruction found here - place the label directly above this".to_string(),
@@ -278,30 +290,36 @@ mod stmt {
     /// │                            │
     /// └────────────────────────────┘
     /// ```
-    pub(super) fn handle_unexpected_token_in_statement(p: &mut Parser<'_>) {
+    fn handle_unexpected_token_in_statement(p: &mut Parser<'_>) {
         let m = p.start();
 
-        if p.at(RBRACKET) {
-            // Unexpected closing bracket
-            p.err_and_bump(
-                "Unexpected closing bracket ']'",
-                "This closing bracket doesn't match any opening bracket",
-            );
-        } else if p.at(ERROR_TOKEN) {
-            // Error token
-            let text = p.token_text().to_string();
-            p.err_and_bump(
-                &format!("Unexpected character: {text}"),
-                "Remove or replace this character",
-            );
-        } else {
-            // Other unexpected token
-            let text = p.token_text().to_string();
-            p.err_and_bump(
-                &format!("Unexpected token: {text}"),
-                "Expected an instruction, label, or comment",
-            );
-        }
+        let (message, help) = match p.current() {
+            RBRACKET => (
+                "Unexpected closing bracket ']'".to_string(),
+                "This closing bracket doesn't match any opening bracket".to_string(),
+            ),
+            ERROR_TOKEN => {
+                let text = p.token_text().to_string();
+                (
+                    format!("Unexpected character: {text}"),
+                    "Remove or replace this character".to_string(),
+                )
+            }
+            _ => {
+                let text = p.token_text().to_string();
+                (
+                    format!("Unexpected token: {text}"),
+                    "Expected an instruction, label, or comment".to_string(),
+                )
+            }
+        };
+
+        let span = p.token_span().clone();
+        p.error(message, help, span);
+        p.bump_any(); // Consume the unexpected token
+
+        // Try to recover by skipping to a token we know how to handle
+        p.skip_until(RECOVERY_SET);
 
         m.complete(p, STMT);
     }
@@ -311,6 +329,10 @@ mod stmt {
 mod imports {
     use super::*;
 
+    // Constants for error recovery
+    const IMPORT_PATH_RECOVERY: TokenSet = TokenSet::new(&[NEWLINE, EOF, HASH, HASH_STAR]);
+    const IMPORT_SPEC_RECOVERY: TokenSet = TokenSet::new(&[RBRACE, COMMA, FROM_KW, NEWLINE, EOF]);
+
     /// Parse an import statement.
     ///
     /// # Syntax
@@ -319,9 +341,7 @@ mod imports {
     /// import { symbol1, symbol2 } from "path/to/file"
     /// import * from "path/to/file"
     /// ```
-    #[allow(clippy::too_many_lines)]
     pub(super) fn import_stmt(p: &mut Parser<'_>) -> bool {
-        // Check if we're at an import keyword
         if !p.at(IMPORT_KW) {
             return false;
         }
@@ -330,179 +350,177 @@ mod imports {
         p.bump_any(); // Consume 'import'
         whitespace::skip_ws(p);
 
-        // Handle different import syntaxes
-        if p.at(STRING) {
-            // Simple import: import "path/to/file"
-            import_path(p);
-        } else if p.at(STAR) {
-            // Import all: import * from "path/to/file"
-            p.bump_any(); // Consume '*'
-            whitespace::skip_ws(p);
-
-            if p.at(FROM_KW) {
-                p.bump_any(); // Consume 'from'
-                whitespace::skip_ws(p);
-                import_path(p);
-            } else {
-                // Check if the current token might be a typo of "from"
-                let is_possible_from_typo = p.at(IDENTIFIER)
-                    && p.token_text().len() >= 2
-                    && p.token_text().to_lowercase().starts_with('f');
-
-                let token_span = p.token_span().clone();
-
-                if is_possible_from_typo {
-                    // Likely a typo of "from"
-                    let typo_text = p.token_text().to_string();
-                    p.bump_any(); // Consume the typo token
-                    whitespace::skip_ws(p);
-
-                    p.error(
-                        format!("'{typo_text}' might be a typo of 'from'"),
-                        "Expected 'from' after '*' in import statement".to_string(),
-                        token_span,
-                    );
-
-                    // Check if the next token is a string literal for the import path
-                    if p.at(STRING) {
-                        import_path(p);
-                        m.complete(p, IMPORT_STMT);
-                        return true;
-                    }
-                } else {
-                    // Not a typo, just missing "from"
-                    p.error(
-                        "Expected 'from' after '*' in import statement".to_string(),
-                        "Add 'from' followed by the import path".to_string(),
-                        p.token_span(),
-                    );
-                }
-
-                // Skip the rest of the import statement to avoid multiple errors
-                skip_to_end_of_statement(p);
-            }
-        } else if p.at(LBRACE) {
-            // Named imports: import { symbol1, symbol2 } from "path/to/file"
-            p.bump_any(); // Consume '{'
-            whitespace::skip_ws(p);
-
-            // Parse comma-separated list of identifiers
-            let mut first = true;
-            while !p.at(RBRACE) && !p.at(EOF) {
-                if !first {
-                    // Expect a comma between identifiers
-                    if p.at(COMMA) {
-                        p.bump_any(); // Consume ','
-                        whitespace::skip_ws(p);
-                    } else {
-                        p.error(
-                            "Expected ',' between import specifiers".to_string(),
-                            "Add a comma between import specifiers".to_string(),
-                            p.token_span(),
-                        );
-                        break;
-                    }
-                }
-
-                if p.at(IDENTIFIER) {
-                    p.bump_any(); // Consume identifier
-                    whitespace::skip_ws(p);
-                    first = false;
-                } else if p.at(RBRACE) {
-                    // Allow trailing comma
-                    break;
-                } else {
-                    p.error(
-                        "Expected identifier in import specifier list".to_string(),
-                        "Add a valid identifier".to_string(),
-                        p.token_span(),
-                    );
-                    // Try to recover by skipping to the next comma or closing brace
-                    while !p.at(COMMA) && !p.at(RBRACE) && !p.at(EOF) {
-                        p.bump_any();
-                    }
-                }
-            }
-
-            // Expect closing brace
-            if p.at(RBRACE) {
-                p.bump_any(); // Consume '}'
-                whitespace::skip_ws(p);
-
-                // Expect 'from' keyword
-                if p.at(FROM_KW) {
-                    p.bump_any(); // Consume 'from'
-                    whitespace::skip_ws(p);
-                    import_path(p);
-                } else {
-                    // Check if the current token might be a typo of "from"
-                    let is_possible_from_typo = p.at(IDENTIFIER)
-                        && p.token_text().len() >= 2
-                        && p.token_text().to_lowercase().starts_with('f');
-
-                    let token_span = p.token_span().clone();
-
-                    if is_possible_from_typo {
-                        // Likely a typo of "from"
-                        let typo_text = p.token_text().to_string();
-                        p.bump_any(); // Consume the typo token
-                        whitespace::skip_ws(p);
-
-                        p.error(
-                            format!("'{typo_text}' might be a typo of 'from'"),
-                            "Expected 'from' after import specifiers".to_string(),
-                            token_span,
-                        );
-
-                        // Check if the next token is a string literal for the import path
-                        if p.at(STRING) {
-                            import_path(p);
-                            m.complete(p, IMPORT_STMT);
-                            return true;
-                        }
-                    } else {
-                        // Not a typo, just missing "from"
-                        p.error(
-                            "Expected 'from' after import specifiers".to_string(),
-                            "Add 'from' followed by the import path".to_string(),
-                            p.token_span(),
-                        );
-                    }
-
-                    // Skip the rest of the import statement to avoid multiple errors
-                    // This is important for error recovery - we want to report only one error
-                    // for a missing 'from' keyword, not multiple errors for each token after it
-                    skip_to_end_of_statement(p);
-                }
-            } else {
+        match p.current() {
+            STRING => parse_simple_import(p),
+            STAR => parse_star_import(p),
+            LBRACE => parse_named_import(p),
+            _ => {
                 p.error(
-                    "Expected '}' to close import specifier list".to_string(),
-                    "Add a closing brace".to_string(),
+                    "Invalid import statement syntax".to_string(),
+                    "Use one of: import \"path\", import * from \"path\", or import { ... } from \"path\"".to_string(),
                     p.token_span(),
                 );
+                skip_to_end_of_statement(p);
             }
-        } else {
-            p.error(
-                "Invalid import statement syntax".to_string(),
-                "Use one of: import \"path\", import * from \"path\", or import { ... } from \"path\"".to_string(),
-                p.token_span(),
-            );
-
-            // Skip the rest of the import statement to avoid multiple errors
-            skip_to_end_of_statement(p);
         }
 
         m.complete(p, IMPORT_STMT);
         true
     }
 
+    // Parse a simple import of the form: import "path/to/file"
+    fn parse_simple_import(p: &mut Parser<'_>) {
+        import_path(p);
+    }
+
+    // Parse a star import of the form: import * from "path/to/file"
+    fn parse_star_import(p: &mut Parser<'_>) {
+        p.bump_any(); // Consume '*'
+        whitespace::skip_ws(p);
+
+        if p.at(FROM_KW) {
+            p.bump_any(); // Consume 'from'
+            whitespace::skip_ws(p);
+            import_path(p);
+        } else {
+            handle_missing_from_keyword(p);
+        }
+    }
+
+    // Parse a named import of the form: import { symbol1, symbol2 } from "path/to/file"
+    fn parse_named_import(p: &mut Parser<'_>) {
+        p.bump_any(); // Consume '{'
+        whitespace::skip_ws(p);
+
+        // Parse comma-separated list of identifiers
+        parse_import_specifiers(p);
+
+        // Expect closing brace
+        if p.at(RBRACE) {
+            p.bump_any(); // Consume '}'
+            whitespace::skip_ws(p);
+
+            // Expect 'from' keyword
+            if p.at(FROM_KW) {
+                p.bump_any(); // Consume 'from'
+                whitespace::skip_ws(p);
+                import_path(p);
+            } else {
+                handle_missing_from_keyword(p);
+            }
+        } else {
+            p.error(
+                "Expected '}' to close import specifier list".to_string(),
+                "Add a closing brace".to_string(),
+                p.token_span(),
+            );
+
+            // Try to recover
+            if !p.err_recover(
+                "Expected '}' to close import specifier list",
+                "Add a closing brace",
+                TokenSet::new(&[FROM_KW, STRING, NEWLINE, EOF]),
+            ) {
+                skip_to_end_of_statement(p);
+            }
+        }
+    }
+
+    // Parse import specifiers inside braces: { symbol1, symbol2 }
+    fn parse_import_specifiers(p: &mut Parser<'_>) {
+        let mut first = true;
+        while !p.at(RBRACE) && !p.at(EOF) {
+            if !first {
+                // Expect a comma between identifiers
+                if p.at(COMMA) {
+                    p.bump_any(); // Consume ','
+                    whitespace::skip_ws(p);
+                } else {
+                    p.error(
+                        "Expected ',' between import specifiers".to_string(),
+                        "Add a comma between import specifiers".to_string(),
+                        p.token_span(),
+                    );
+
+                    // Try to recover
+                    if !p.err_recover(
+                        "Expected ',' between import specifiers",
+                        "Add a comma between import specifiers",
+                        IMPORT_SPEC_RECOVERY,
+                    ) {
+                        break;
+                    }
+                }
+            }
+
+            if p.at(IDENTIFIER) {
+                p.bump_any(); // Consume identifier
+                whitespace::skip_ws(p);
+                first = false;
+            } else if p.at(RBRACE) {
+                // Allow trailing comma
+                break;
+            } else {
+                p.error(
+                    "Expected identifier in import specifier list".to_string(),
+                    "Add a valid identifier".to_string(),
+                    p.token_span(),
+                );
+
+                // Try to recover by skipping to the next comma or closing brace
+                if !p.err_recover(
+                    "Expected identifier in import specifier list",
+                    "Add a valid identifier",
+                    IMPORT_SPEC_RECOVERY,
+                ) {
+                    break;
+                }
+            }
+        }
+    }
+
+    // Handle case where 'from' keyword is missing or misspelled
+    fn handle_missing_from_keyword(p: &mut Parser<'_>) {
+        // Check if the current token might be a typo of "from"
+        let is_possible_from_typo = p.at(IDENTIFIER)
+            && p.token_text().len() >= 2
+            && p.token_text().to_lowercase().starts_with('f');
+
+        let token_span = p.token_span().clone();
+
+        if is_possible_from_typo {
+            // Likely a typo of "from"
+            let typo_text = p.token_text().to_string();
+            p.bump_any(); // Consume the typo token
+            whitespace::skip_ws(p);
+
+            p.error(
+                format!("'{typo_text}' might be a typo of 'from'"),
+                "Expected 'from' in import statement".to_string(),
+                token_span,
+            );
+
+            // Check if the next token is a string literal for the import path
+            if p.at(STRING) {
+                import_path(p);
+            } else {
+                skip_to_end_of_statement(p);
+            }
+        } else {
+            // Not a typo, just missing "from"
+            p.error(
+                "Expected 'from' in import statement".to_string(),
+                "Add 'from' followed by the import path".to_string(),
+                p.token_span(),
+            );
+            skip_to_end_of_statement(p);
+        }
+    }
+
     /// Skip to the end of the current statement to avoid multiple error messages.
     /// This is used for error recovery when we've already reported an error.
     fn skip_to_end_of_statement(p: &mut Parser<'_>) {
-        // Skip until we find a newline, EOF, or the start of a new statement
-        while !p.at(NEWLINE) && !p.at(EOF) {
-            p.bump_any();
-        }
+        p.skip_until(IMPORT_PATH_RECOVERY);
     }
 
     /// Parse an import path (string literal).
@@ -567,20 +585,15 @@ mod expr {
         // Skip whitespace after opcode
         whitespace::skip_ws(p);
 
-        // Check for unexpected opening bracket
-        if p.at(LBRACKET) {
-            unexpected_array_accessor(p);
-        }
-        // Check for unexpected closing bracket
-        else if p.at(RBRACKET) {
-            p.err_and_bump(
+        // Check for operand or special cases
+        match p.current() {
+            LBRACKET => unexpected_array_accessor(p),
+            RBRACKET => p.err_and_bump(
                 "Unexpected closing bracket ']'",
                 "This closing bracket doesn't match any opening bracket",
-            );
-        }
-        // Parse operand if present
-        else if !p.at(NEWLINE) && !p.at(HASH) && !p.at(HASH_STAR) && !p.at(EOF) {
-            operand_expr(p);
+            ),
+            NEWLINE | HASH | HASH_STAR | EOF => {} // No operand, which is fine
+            _ => operand_expr(p),                  // Parse operand
         }
 
         m.complete(p, INSTRUCTION);
@@ -799,19 +812,16 @@ mod expr {
         let open_bracket_span = p.token_span();
 
         // Consume the opening bracket
-        if p.at(LBRACKET) {
-            p.bump_any();
-        }
+        p.bump_any(); // Consume '['
 
         // Parse the index (must be a number or identifier)
         if p.at(NUMBER) || p.at(IDENTIFIER) {
             p.bump_any();
         } else {
-            let span = p.token_span();
             p.error(
                 "Expected a number or identifier as array index".to_string(),
                 "Array indices must be numbers or identifiers".to_string(),
-                span,
+                p.token_span(),
             );
         }
 
@@ -1035,57 +1045,51 @@ mod comments {
         let mut last_pos = p.current_pos();
 
         // Continue parsing comments as long as we see more comment markers of the same type
-        // after optional whitespace and newlines
         loop {
             // Skip any whitespace
             whitespace::skip_ws(p);
 
-            // If we see a newline, consume it and check for more comments
-            if p.at(NEWLINE) {
-                p.bump_any(); // Consume the newline
+            let continue_group = match p.current() {
+                // If we see a newline, check for comments on the next line
+                NEWLINE => {
+                    p.bump_any(); // Consume the newline
+                    whitespace::skip_ws(p);
 
-                // Skip whitespace at the beginning of the next line
-                whitespace::skip_ws(p);
+                    // Check if next line has a comment of the same type
+                    let has_matching_comment = (p.at(HASH_STAR) && is_doc_comment)
+                        || (p.at(HASH) && !p.at(HASH_STAR) && !is_doc_comment);
 
-                // If the next line starts with a comment of the same type, parse it
-                if (p.at(HASH_STAR) && is_doc_comment)
-                    || (p.at(HASH) && !p.at(HASH_STAR) && !is_doc_comment)
-                {
-                    comment(p);
-
-                    // Check if we're making progress
-                    let current_pos = p.current_pos();
-                    if current_pos <= last_pos {
-                        // We're not making progress, break to avoid infinite loop
-                        break;
+                    if has_matching_comment {
+                        comment(p);
                     }
-                    last_pos = current_pos;
-                } else {
-                    // Not a comment of the same type, we're done with this group
-                    break;
+                    has_matching_comment
                 }
-            } else if p.at(HASH) || p.at(HASH_STAR) {
                 // Another comment on the same line
-                let current_is_doc = p.at(HASH_STAR);
-                if current_is_doc != is_doc_comment {
-                    // Different type of comment, we're done with this group
-                    break;
+                HASH | HASH_STAR => {
+                    let current_is_doc = p.at(HASH_STAR);
+                    if current_is_doc == is_doc_comment {
+                        comment(p);
+                        true
+                    } else {
+                        // Different type of comment, we're done with this group
+                        false
+                    }
                 }
-
-                // Parse the next comment
-                comment(p);
-
-                // Check if we're making progress
-                let current_pos = p.current_pos();
-                if current_pos <= last_pos {
-                    // We're not making progress, break to avoid infinite loop
-                    break;
-                }
-                last_pos = current_pos;
-            } else {
                 // Not a comment or newline, we're done with this group
+                _ => false,
+            };
+
+            if !continue_group {
                 break;
             }
+
+            // Check if we're making progress
+            let current_pos = p.current_pos();
+            if current_pos <= last_pos {
+                // We're not making progress, break to avoid infinite loop
+                break;
+            }
+            last_pos = current_pos;
         }
 
         // Complete the comment group
