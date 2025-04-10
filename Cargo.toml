@@ -35,6 +35,7 @@ tokio-util         = { version = "0.7.13", features = ["codec", "compat"] }
 tracing            = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 walkdir            = "2.5.0"
+cstree = { version = "0.12.2", features = ["derive", "serde"] }
 
 # Serde and serialization
 serde        = "1.0.217"

@@ -125,7 +125,7 @@ async fn handle_command_iner(
             Cli::command().print_help().into_diagnostic()?;
             Ok::<_, Error>(ExitCode::SUCCESS)
         }
-        Command::Validate { program, ast } => {
+        Command::Validate { program, ast, reprint } => {
             let src = std::fs::read_to_string(program.clone())
                 .into_diagnostic()
                 .wrap_err(format!("Failed to read file: {}", program))?;
@@ -140,6 +140,12 @@ async fn handle_command_iner(
                 // Just print the debug representation of the program
                 println!("{program:#?}");
             }
+
+            if reprint {
+                // Print the program back out
+                println!("{program}");
+            }
+
             Ok::<_, Error>(ExitCode::SUCCESS)
         }
         Command::Server => {

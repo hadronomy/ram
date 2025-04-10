@@ -1,5 +1,4 @@
-use ram_parser::{Program, SyntaxNode, build_tree, convert_errors, parse};
-use rowan::ast::AstNode;
+use ram_parser::{AstNode, Program, SyntaxNode, build_tree, convert_errors, parse};
 
 /// Create a parser for RAM assembly language.
 ///
@@ -17,8 +16,8 @@ pub fn parse_program(source: &str) -> (Program, Vec<miette::Error>) {
     let (events, errors) = parse(source);
 
     // Convert the events into a syntax tree
-    let green_node = build_tree(events);
-    let syntax_node = SyntaxNode::new_root(green_node);
+    let (tree, cache) = build_tree(events);
+    let syntax_node = SyntaxNode::new_root_with_resolver(tree, cache);
     let program = Program::cast(syntax_node).expect("Failed to cast root node to Program");
 
     // Convert the errors into miette errors

@@ -4,7 +4,6 @@
 pub mod ast;
 mod event;
 mod grammar;
-mod language;
 mod lexer;
 mod parser;
 
@@ -16,10 +15,7 @@ mod tree_builder;
 
 pub use ast::*;
 pub use event::Event;
-pub use language::{
-    RamLang, SyntaxElement, SyntaxElementChildren, SyntaxNode, SyntaxNodeChildren, SyntaxToken,
-};
 pub use lexer::Token;
 pub use parser::{SyntaxError, convert_errors, parse};
-pub use syntax_kind::SyntaxKind;
+pub use syntax_kind::*;
 pub use tree_builder::build_tree;

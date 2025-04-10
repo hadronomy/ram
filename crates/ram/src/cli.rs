@@ -69,6 +69,9 @@ pub enum Command {
         /// Output the ast as JSON.
         #[arg(long, short, action)]
         ast: bool,
+
+        #[arg(long, short, action)]
+        reprint: bool,
     },
 }
 

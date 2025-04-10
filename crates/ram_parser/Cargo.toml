@@ -11,6 +11,7 @@ version.workspace    = true
 anstream           = { workspace = true }
 anyhow             = { workspace = true }
 clap               = { workspace = true }
+cstree             = { workspace = true }
 drop_bomb          = { workspace = true }
 globset            = { workspace = true, features = ["serde"] }
 human-panic        = { workspace = true }
