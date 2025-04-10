@@ -6,8 +6,7 @@ pub type Ram = SyntaxKind;
 pub type SyntaxNode = cstree::syntax::SyntaxNode<Ram>;
 pub type SyntaxToken = cstree::syntax::SyntaxToken<Ram>;
 pub type SyntaxElement = cstree::syntax::SyntaxElement<Ram>;
-pub type SyntaxText<'n, 'i, I> =
-    cstree::text::SyntaxText<'n, 'i, I, Ram>;
+pub type SyntaxText<'n, 'i, I> = cstree::text::SyntaxText<'n, 'i, I, Ram>;
 pub type ResolvedNode = cstree::syntax::ResolvedNode<Ram>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
