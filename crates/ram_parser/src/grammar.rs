@@ -113,7 +113,7 @@ mod stmt {
     // Recovery token set for error handling
     const RECOVERY_SET: TokenSet = TokenSet::new(&[
         NEWLINE, HASH, HASH_STAR, IDENTIFIER, LOAD_KW, STORE_KW, ADD_KW, SUB_KW, MUL_KW, DIV_KW,
-        JUMP_KW, JGTZ_KW, JZERO_KW, HALT_KW, IMPORT_KW,
+        JUMP_KW, JGTZ_KW, JZERO_KW, HALT_KW, MOD_KW, USE_KW,
     ]);
 
     /// Parses a statement.
@@ -169,7 +169,8 @@ mod stmt {
 
         // Match on the current token to determine statement type
         match p.current() {
-            IMPORT_KW => parse_import_statement(p),
+            MOD_KW => parse_module_declaration(p),
+            USE_KW => parse_module_use(p),
             HASH | HASH_STAR => parse_comment_statement(p),
             IDENTIFIER if p.at_label_definition_start() => parse_label_statement(p),
             _ if p.at_instruction_start() => parse_instruction_statement(p),
@@ -180,10 +181,17 @@ mod stmt {
         whitespace::skip_ws_and_nl(p);
     }
 
-    // Helper function to parse import statements
-    fn parse_import_statement(p: &mut Parser<'_>) {
+    // Helper function to parse module declaration statements
+    fn parse_module_declaration(p: &mut Parser<'_>) {
         let m = p.start();
-        imports::import_stmt(p);
+        modules::mod_stmt(p);
+        m.complete(p, STMT);
+    }
+
+    // Helper function to parse module use statements
+    fn parse_module_use(p: &mut Parser<'_>) {
+        let m = p.start();
+        modules::use_stmt(p);
         m.complete(p, STMT);
     }
 
@@ -345,219 +353,120 @@ mod stmt {
     }
 }
 
-/// Import module - handles import statements
-mod imports {
+/// Module system - handles module declarations and imports
+mod modules {
     use super::*;
 
     // Constants for error recovery
-    const IMPORT_PATH_RECOVERY: TokenSet = TokenSet::new(&[NEWLINE, EOF, HASH, HASH_STAR]);
-    const IMPORT_SPEC_RECOVERY: TokenSet = TokenSet::new(&[RBRACE, COMMA, FROM_KW, NEWLINE, EOF]);
+    const MODULE_PATH_RECOVERY: TokenSet = TokenSet::new(&[NEWLINE, EOF, HASH, HASH_STAR]);
 
-    /// Parse an import statement.
+    /// Parse a module declaration statement.
     ///
     /// # Syntax
     /// ```text
-    /// import "path/to/file"
-    /// import { symbol1, symbol2 } from "path/to/file"
-    /// import * from "path/to/file"
+    /// mod mymodule
     /// ```
-    pub(super) fn import_stmt(p: &mut Parser<'_>) -> bool {
-        if !p.at(IMPORT_KW) {
+    pub(super) fn mod_stmt(p: &mut Parser<'_>) -> bool {
+        if !p.at(MOD_KW) {
             return false;
         }
 
         let m = p.start();
-        p.bump_any(); // Consume 'import'
+        p.bump_any(); // Consume 'mod'
         whitespace::skip_ws(p);
 
-        match p.current() {
-            STRING => parse_simple_import(p),
-            STAR => parse_star_import(p),
-            LBRACE => parse_named_import(p),
-            _ => {
-                p.error(
-                    "Invalid import statement syntax".to_string(),
-                    "Use one of: import \"path\", import * from \"path\", or import { ... } from \"path\"".to_string(),
-                    p.token_span(),
-                );
-                skip_to_end_of_statement(p);
-            }
+        // Parse module name (identifier)
+        if p.at(IDENTIFIER) {
+            p.bump_any(); // Consume the module name
+        } else {
+            p.error(
+                "Expected module name".to_string(),
+                "Module declarations must be followed by a valid identifier".to_string(),
+                p.token_span(),
+            );
         }
 
-        m.complete(p, IMPORT_STMT);
+        m.complete(p, MOD_STMT);
         true
     }
 
-    // Parse a simple import of the form: import "path/to/file"
-    fn parse_simple_import(p: &mut Parser<'_>) {
-        import_path(p);
-    }
+    /// Parse a module use statement.
+    ///
+    /// # Syntax
+    /// ```text
+    /// use mymodule::*
+    /// use mymodule::symbol
+    /// ```
+    pub(super) fn use_stmt(p: &mut Parser<'_>) -> bool {
+        if !p.at(USE_KW) {
+            return false;
+        }
 
-    // Parse a star import of the form: import * from "path/to/file"
-    fn parse_star_import(p: &mut Parser<'_>) {
-        p.bump_any(); // Consume '*'
+        let m = p.start();
+        p.bump_any(); // Consume 'use'
         whitespace::skip_ws(p);
 
-        if p.at(FROM_KW) {
-            p.bump_any(); // Consume 'from'
-            whitespace::skip_ws(p);
-            import_path(p);
-        } else {
-            handle_missing_from_keyword(p);
-        }
+        // Parse module path
+        parse_module_path(p);
+
+        m.complete(p, USE_STMT);
+        true
     }
 
-    // Parse a named import of the form: import { symbol1, symbol2 } from "path/to/file"
-    fn parse_named_import(p: &mut Parser<'_>) {
-        p.bump_any(); // Consume '{'
-        whitespace::skip_ws(p);
-
-        // Parse comma-separated list of identifiers
-        parse_import_specifiers(p);
-
-        // Expect closing brace
-        if p.at(RBRACE) {
-            p.bump_any(); // Consume '}'
-            whitespace::skip_ws(p);
-
-            // Expect 'from' keyword
-            if p.at(FROM_KW) {
-                p.bump_any(); // Consume 'from'
-                whitespace::skip_ws(p);
-                import_path(p);
-            } else {
-                handle_missing_from_keyword(p);
-            }
-        } else {
-            p.error(
-                "Expected '}' to close import specifier list".to_string(),
-                "Add a closing brace".to_string(),
-                p.token_span(),
-            );
-
-            // Try to recover
-            if !p.err_recover(
-                "Expected '}' to close import specifier list",
-                "Add a closing brace",
-                TokenSet::new(&[FROM_KW, STRING, NEWLINE, EOF]),
-            ) {
-                skip_to_end_of_statement(p);
-            }
-        }
-    }
-
-    // Parse import specifiers inside braces: { symbol1, symbol2 }
-    fn parse_import_specifiers(p: &mut Parser<'_>) {
-        let mut first = true;
-        while !p.at(RBRACE) && !p.at(EOF) {
-            if !first {
-                // Expect a comma between identifiers
-                if p.at(COMMA) {
-                    p.bump_any(); // Consume ','
-                    whitespace::skip_ws(p);
-                } else {
-                    p.error(
-                        "Expected ',' between import specifiers".to_string(),
-                        "Add a comma between import specifiers".to_string(),
-                        p.token_span(),
-                    );
-
-                    // Try to recover
-                    if !p.err_recover(
-                        "Expected ',' between import specifiers",
-                        "Add a comma between import specifiers",
-                        IMPORT_SPEC_RECOVERY,
-                    ) {
-                        break;
-                    }
-                }
-            }
-
-            if p.at(IDENTIFIER) {
-                p.bump_any(); // Consume identifier
-                whitespace::skip_ws(p);
-                first = false;
-            } else if p.at(RBRACE) {
-                // Allow trailing comma
-                break;
-            } else {
-                p.error(
-                    "Expected identifier in import specifier list".to_string(),
-                    "Add a valid identifier".to_string(),
-                    p.token_span(),
-                );
-
-                // Try to recover by skipping to the next comma or closing brace
-                if !p.err_recover(
-                    "Expected identifier in import specifier list",
-                    "Add a valid identifier",
-                    IMPORT_SPEC_RECOVERY,
-                ) {
-                    break;
-                }
-            }
-        }
-    }
-
-    // Handle case where 'from' keyword is missing or misspelled
-    fn handle_missing_from_keyword(p: &mut Parser<'_>) {
-        // Check if the current token might be a typo of "from"
-        let is_possible_from_typo = p.at(IDENTIFIER)
-            && p.token_text().len() >= 2
-            && p.token_text().to_lowercase().starts_with('f');
-
-        let token_span = p.token_span().clone();
-
-        if is_possible_from_typo {
-            // Likely a typo of "from"
-            let typo_text = p.token_text().to_string();
-            p.bump_any(); // Consume the typo token
-            whitespace::skip_ws(p);
-
-            p.error(
-                format!("'{typo_text}' might be a typo of 'from'"),
-                "Expected 'from' in import statement".to_string(),
-                token_span,
-            );
-
-            // Check if the next token is a string literal for the import path
-            if p.at(STRING) {
-                import_path(p);
-            } else {
-                skip_to_end_of_statement(p);
-            }
-        } else {
-            // Not a typo, just missing "from"
-            p.error(
-                "Expected 'from' in import statement".to_string(),
-                "Add 'from' followed by the import path".to_string(),
-                p.token_span(),
-            );
-            skip_to_end_of_statement(p);
-        }
-    }
-
-    /// Skip to the end of the current statement to avoid multiple error messages.
-    /// This is used for error recovery when we've already reported an error.
-    fn skip_to_end_of_statement(p: &mut Parser<'_>) {
-        p.skip_until(IMPORT_PATH_RECOVERY);
-    }
-
-    /// Parse an import path (string literal).
-    fn import_path(p: &mut Parser<'_>) {
+    /// Parse a module path.
+    ///
+    /// # Syntax
+    /// ```text
+    /// mymodule::*
+    /// mymodule::symbol
+    /// ```
+    fn parse_module_path(p: &mut Parser<'_>) {
         let m = p.start();
 
-        if p.at(STRING) {
-            p.bump_any(); // Consume the string literal
+        // Parse the module name (identifier)
+        if p.at(IDENTIFIER) {
+            p.bump_any(); // Consume the module name
+            whitespace::skip_ws(p);
+
+            // Check for double colon
+            if p.at(COLON) && p.nth_at(1, COLON) {
+                p.bump_any(); // Consume first colon
+                p.bump_any(); // Consume second colon
+                whitespace::skip_ws(p);
+
+                // Parse what comes after the double colon
+                if p.at(STAR) {
+                    // Import everything from the module
+                    p.bump_any(); // Consume '*'
+                } else if p.at(IDENTIFIER) {
+                    // Import a specific symbol
+                    p.bump_any(); // Consume the symbol name
+                } else {
+                    p.error(
+                        "Expected '*' or identifier after '::'".to_string(),
+                        "Use '::*' to import everything or '::symbol' to import a specific symbol"
+                            .to_string(),
+                        p.token_span(),
+                    );
+                }
+            } else {
+                p.error(
+                    "Expected '::' after module name".to_string(),
+                    "Use '::*' to import everything or '::symbol' to import a specific symbol"
+                        .to_string(),
+                    p.token_span(),
+                );
+            }
         } else {
             p.error(
-                "Expected string literal for import path".to_string(),
-                "Add a string literal path in quotes".to_string(),
+                "Expected module name".to_string(),
+                "Use statements must specify a valid module name".to_string(),
                 p.token_span(),
             );
+            p.skip_until(MODULE_PATH_RECOVERY);
         }
 
-        m.complete(p, IMPORT_PATH);
+        m.complete(p, MODULE_PATH);
     }
 }
 

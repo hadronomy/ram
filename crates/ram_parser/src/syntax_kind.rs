@@ -30,8 +30,9 @@ pub enum SyntaxKind {
     IMMEDIATE_OPERAND, // Immediate addressing (e.g., =5)
     OPERAND_VALUE,
     ARRAY_ACCESSOR, // Array accessor [index]
-    IMPORT_STMT,    // Import statement
-    IMPORT_PATH,    // Path in an import statement
+    MOD_STMT,       // Module declaration statement
+    USE_STMT,       // Module use statement
+    MODULE_PATH,    // Path in a module statement
 
     // Error nodes
     ERROR,      // Error node used in parsing
@@ -57,8 +58,8 @@ pub enum SyntaxKind {
     JGTZ_KW,
     JZERO_KW,
     HALT_KW,
-    IMPORT_KW, // 'import' keyword
-    FROM_KW,   // 'from' keyword
+    MOD_KW, // 'mod' keyword
+    USE_KW, // 'use' keyword
     COLON,
     STAR,        // '*' for indirect addressing
     EQUALS,      // '=' for immediate addressing
@@ -107,5 +108,11 @@ impl SyntaxKind {
                 | SyntaxKind::JZERO_KW
                 | SyntaxKind::HALT_KW
         )
+    }
+
+    /// Returns true if this is a module-related keyword.
+    #[inline]
+    pub fn is_module_keyword(self) -> bool {
+        matches!(self, SyntaxKind::MOD_KW | SyntaxKind::USE_KW)
     }
 }

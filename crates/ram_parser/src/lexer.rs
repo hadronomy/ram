@@ -192,8 +192,8 @@ impl<'a> Lexer<'a> {
             "JGTZ" => JGTZ_KW,
             "JZERO" => JZERO_KW,
             "HALT" => HALT_KW,
-            "IMPORT" => IMPORT_KW,
-            "FROM" => FROM_KW,
+            "MOD" => MOD_KW,
+            "USE" => USE_KW,
             _ => IDENTIFIER,
         };
 
