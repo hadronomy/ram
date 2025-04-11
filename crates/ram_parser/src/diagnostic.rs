@@ -32,8 +32,6 @@
 
 use std::ops::Range;
 
-use ariadne::{Color, Label, Report, ReportKind};
-
 /// A diagnostic type used during parsing.
 /// This is compatible with ariadne's Report type and can be converted to ram_error::SingleParserError.
 #[derive(Debug, Clone)]
@@ -61,8 +59,18 @@ pub enum DiagnosticKind {
     Warning,
     /// Advice about code improvements or best practices.
     Advice,
-    /// A custom diagnostic kind with a specific name and color.
-    Custom(&'static str, Color),
+    /// A custom diagnostic kind with a specific name.
+    Custom(&'static str),
+}
+
+impl From<DiagnosticKind> for miette::Severity {
+    fn from(kind: DiagnosticKind) -> Self {
+        match kind {
+            DiagnosticKind::Custom(_) | DiagnosticKind::Error => miette::Severity::Error,
+            DiagnosticKind::Warning => miette::Severity::Warning,
+            DiagnosticKind::Advice => miette::Severity::Advice,
+        }
+    }
 }
 
 impl Diagnostic {
@@ -133,40 +141,6 @@ impl Diagnostic {
     /// Create a new diagnostic builder.
     pub fn builder() -> DiagnosticBuilder {
         DiagnosticBuilder::new()
-    }
-
-    /// Convert this diagnostic to an ariadne Report.
-    pub fn to_report(&self) -> Report<Range<usize>> {
-        let kind = match self.kind {
-            DiagnosticKind::Error => ReportKind::Error,
-            DiagnosticKind::Warning => ReportKind::Warning,
-            DiagnosticKind::Advice => ReportKind::Advice,
-            DiagnosticKind::Custom(name, color) => ReportKind::Custom(name, color),
-        };
-
-        // Create the report with the primary span
-        let primary_span = self.labeled_spans[0].0.clone();
-        let mut report = Report::build(kind, primary_span.clone()).with_message(&self.message);
-
-        if !self.help.is_empty() {
-            report = report.with_help(&self.help);
-        }
-
-        if let Some(code) = &self.code {
-            report = report.with_code(code);
-        }
-
-        // Add all labeled spans
-        for (span, label) in &self.labeled_spans {
-            report = report.with_label(Label::new(span.clone()).with_message(label));
-        }
-
-        // Add all notes
-        for note in &self.notes {
-            report = report.with_note(note);
-        }
-
-        report.finish()
     }
 }
 
@@ -322,9 +296,9 @@ impl DiagnosticBuilder {
 ///
 /// This function converts our internal Diagnostic to the ram_error types
 /// that can be used with miette for nice error reporting.
-pub fn convert_errors(source: &str, errors: Vec<Diagnostic>) -> ram_error::ParserError {
+pub fn convert_errors(source: &str, errors: Vec<Diagnostic>) -> ram_error::Report {
     use miette::LabeledSpan;
-    use ram_error::{ParserError, SingleParserError};
+    use ram_error::{Report, SingleReport};
 
     // Convert each Diagnostic to a SingleParserError
     let single_errors = errors
@@ -344,16 +318,13 @@ pub fn convert_errors(source: &str, errors: Vec<Diagnostic>) -> ram_error::Parse
                 DiagnosticKind::Error => format!("Error: {}", e.message),
                 DiagnosticKind::Warning => format!("Warning: {}", e.message),
                 DiagnosticKind::Advice => format!("Advice: {}", e.message),
-                DiagnosticKind::Custom(name, _) => format!("{}: {}", name, e.message),
+                DiagnosticKind::Custom(name) => format!("{}: {}", name, e.message),
             };
 
-            SingleParserError { message, labels }
+            SingleReport { message, labels, severity: Some(e.kind.into()), code: e.code }
         })
         .collect();
 
     // Create a ParserError with all the SingleParserErrors
-    ParserError {
-        src: miette::NamedSource::new("input.ram", source.to_string()),
-        errors: single_errors,
-    }
+    Report { src: miette::NamedSource::new("input.ram", source.to_string()), errors: single_errors }
 }

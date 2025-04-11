@@ -36,7 +36,7 @@ pub enum Error {
 
     #[error(transparent)]
     #[diagnostic(transparent)]
-    ParserError(#[from] ParserError),
+    ParserError(#[from] Report),
 }
 
 #[derive(Error, Diagnostic, Debug)]
@@ -47,24 +47,43 @@ pub struct UnknownError {
     pub at: SourceSpan,
 }
 
-#[derive(Error, Diagnostic, Debug, Clone, Eq, PartialEq)]
-#[error("Parse error: {message}")]
-pub struct SingleParserError {
+#[derive(Error, Debug, Clone, Eq, PartialEq)]
+#[error("{message}")]
+pub struct SingleReport {
     pub message: String,
-
-    #[label(collection)]
     pub labels: Vec<LabeledSpan>,
+    pub severity: Option<miette::Severity>,
+    pub code: Option<String>,
+}
+
+impl SingleReport {
+    pub fn new(message: String, labels: Vec<LabeledSpan>) -> Self {
+        Self { message, labels, severity: None, code: None }
+    }
+}
+
+impl miette::Diagnostic for SingleReport {
+    fn labels(&self) -> Option<Box<dyn Iterator<Item = LabeledSpan> + '_>> {
+        Some(Box::new(self.labels.iter().cloned()))
+    }
+
+    fn severity(&self) -> Option<miette::Severity> {
+        self.severity
+    }
+
+    fn code<'a>(&'a self) -> Option<Box<dyn std::fmt::Display + 'a>> {
+        self.code.as_ref().map(|c| Box::new(c) as Box<dyn std::fmt::Display>)
+    }
 }
 
 #[derive(Error, Diagnostic, Debug, Clone, Eq, PartialEq)]
 #[error("Multiple parser errors")]
-#[diagnostic(code(ram::parse_error))]
-pub struct ParserError {
+pub struct Report {
     // Source code for all errors
     #[source_code]
     pub src: NamedSource<String>,
 
     // All related parser errors
     #[related]
-    pub errors: Vec<SingleParserError>,
+    pub errors: Vec<SingleReport>,
 }

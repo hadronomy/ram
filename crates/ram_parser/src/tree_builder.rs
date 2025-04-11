@@ -157,10 +157,9 @@ impl TreeBuilder {
                     Event::AddToken { kind, text, span: _ } => {
                         self.builder.token(*kind, text);
                     }
-                    Event::Error { msg } => {
+                    Event::Error { msg: _ } => {
                         // Create an error node with the error message
                         self.builder.start_node(Ram::ERROR);
-                        self.builder.token(Ram::ERROR_TOKEN, msg);
                         self.builder.finish_node();
                     }
                     _ => {

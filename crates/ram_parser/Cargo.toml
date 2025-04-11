@@ -35,7 +35,6 @@ tracing-subscriber = { workspace = true }
 walkdir            = { workspace = true }
 
 ram_error = { workspace = true }
-ariadne = "0.5.1"
 
 [lints]
 workspace = true

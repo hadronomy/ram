@@ -45,7 +45,7 @@ pub fn parse(source: &str) -> (Vec<Event>, Vec<Diagnostic>) {
 ///
 /// This function converts our internal Diagnostic to the ram_error types
 /// that can be used with miette for nice error reporting.
-pub fn convert_errors(source: &str, errors: Vec<Diagnostic>) -> ram_error::ParserError {
+pub fn convert_errors(source: &str, errors: Vec<Diagnostic>) -> ram_error::Report {
     crate::diagnostic::convert_errors(source, errors)
 }
 
@@ -161,16 +161,12 @@ impl<'t> Parser<'t> {
     ///
     /// This method takes a diagnostic builder and a kind, and adds the resulting diagnostic
     /// to the parser's error list.
-    pub(crate) fn add_diagnostic(
-        &mut self,
-        builder: DiagnosticBuilder,
-        kind: DiagnosticKind,
-    ) {
+    pub(crate) fn add_diagnostic(&mut self, builder: DiagnosticBuilder, kind: DiagnosticKind) {
         match kind {
             DiagnosticKind::Error => self.errors.push(builder.build_error()),
             DiagnosticKind::Warning => self.errors.push(builder.build_warning()),
             DiagnosticKind::Advice => self.errors.push(builder.build_advice()),
-            DiagnosticKind::Custom(_, _) => {
+            DiagnosticKind::Custom(_) => {
                 self.errors.push(builder.with_kind(kind).build());
             }
         }
@@ -270,12 +266,7 @@ impl<'t> Parser<'t> {
     }
 
     /// Create an error node with a diagnostic and consume the next token.
-    pub(crate) fn diagnostic_and_bump(
-        &mut self,
-        message: &str,
-        help: &str,
-        kind: DiagnosticKind,
-    ) {
+    pub(crate) fn diagnostic_and_bump(&mut self, message: &str, help: &str, kind: DiagnosticKind) {
         let m = self.start();
         let span = self.token_span();
         let builder = Diagnostic::builder()

@@ -13,6 +13,7 @@
 #![allow(clippy::enum_glob_use)]
 
 use crate::SyntaxKind::*;
+use crate::diagnostic::{Diagnostic, DiagnosticKind};
 use crate::parser::{Parser, TokenSet};
 
 /// Entry point for the grammar
@@ -254,8 +255,6 @@ mod stmt {
         p: &mut Parser<'_>,
         label_span: std::ops::Range<usize>,
     ) {
-        use crate::diagnostic::{Diagnostic, DiagnosticKind};
-
         if let Some((_, instr_span)) =
             p.look_ahead_for(|kind| kind.is_keyword() || kind == IDENTIFIER)
         {
@@ -307,8 +306,6 @@ mod stmt {
     /// └────────────────────────────┘
     /// ```
     fn handle_unexpected_token_in_statement(p: &mut Parser<'_>) {
-        use crate::diagnostic::{Diagnostic, DiagnosticKind};
-
         let m = p.start();
 
         let (message, help) = match p.current() {
