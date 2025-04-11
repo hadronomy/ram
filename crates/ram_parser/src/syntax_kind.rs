@@ -43,9 +43,11 @@ pub enum SyntaxKind {
     // for a unified SyntaxKind type used by the tree.
     WHITESPACE,
     NEWLINE,
-    HASH,         // '#' itself (distinct from Comment node/token text)
-    HASH_STAR,    // '#*' documentation comment marker
-    COMMENT_TEXT, // The text content of a comment token
+    #[static_text("#")]
+    HASH, // '#' itself (distinct from Comment node/token text)
+    #[static_text("#*")]
+    HASH_STAR, // '#*' documentation comment marker
+    COMMENT_TEXT,
     NUMBER,
     IDENTIFIER,
     LOAD_KW,
@@ -58,16 +60,26 @@ pub enum SyntaxKind {
     JGTZ_KW,
     JZERO_KW,
     HALT_KW,
+    #[static_text("mod")]
     MOD_KW, // 'mod' keyword
+    #[static_text("use")]
     USE_KW, // 'use' keyword
+    #[static_text(":")]
     COLON,
-    STAR,        // '*' for indirect addressing
-    EQUALS,      // '=' for immediate addressing
-    LBRACKET,    // '[' for array access
-    RBRACKET,    // ']' for array access
-    LBRACE,      // '{' for import specifiers
-    RBRACE,      // '}' for import specifiers
-    COMMA,       // ',' for separating import specifiers
+    #[static_text("*")]
+    STAR, // '*' for indirect addressing
+    #[static_text("=")]
+    EQUALS, // '=' for immediate addressing
+    #[static_text("[")]
+    LBRACKET, // '[' for array access
+    #[static_text("]")]
+    RBRACKET, // ']' for array access
+    #[static_text("{")]
+    LBRACE, // '{' for import specifiers
+    #[static_text("}")]
+    RBRACE, // '}' for import specifiers
+    #[static_text(",")]
+    COMMA, // ',' for separating import specifiers
     STRING,      // String literal for import paths
     ERROR_TOKEN, // Token for unrecognized characters
     EOF,         // Not usually represented in the tree, but needed for parsing
