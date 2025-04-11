@@ -311,21 +311,15 @@ mod stmt {
         let (message, help) = match p.current() {
             RBRACKET => (
                 "Unexpected closing bracket ']'".to_string(),
-                "This closing bracket doesn't match any opening bracket".to_string(),
+                "This closing bracket doesn't match any opening bracket",
             ),
             ERROR_TOKEN => {
-                let text = p.token_text().to_string();
-                (
-                    format!("Unexpected character: {text}"),
-                    "Remove or replace this character".to_string(),
-                )
+                let text = p.token_text();
+                (format!("Unexpected character: {text}"), "Remove or replace this character")
             }
             _ => {
-                let text = p.token_text().to_string();
-                (
-                    format!("Unexpected token: {text}"),
-                    "Expected an instruction, label, or comment".to_string(),
-                )
+                let text = p.token_text();
+                (format!("Unexpected token: {text}"), "Expected an instruction, label, or comment")
             }
         };
 
@@ -376,10 +370,10 @@ mod modules {
         if p.at(IDENTIFIER) {
             p.bump_any(); // Consume the module name
         } else {
-            p.error(
-                "Expected module name".to_string(),
-                "Module declarations must be followed by a valid identifier".to_string(),
-                p.token_span(),
+            p.diagnostic_and_bump(
+                "Expected module name",
+                "Module declarations must be followed by a valid identifier",
+                DiagnosticKind::Error,
             );
         }
 
@@ -440,24 +434,22 @@ mod modules {
                     p.bump_any(); // Consume the symbol name
                 } else {
                     p.error(
-                        "Expected '*' or identifier after '::'".to_string(),
-                        "Use '::*' to import everything or '::symbol' to import a specific symbol"
-                            .to_string(),
+                        "Expected '*' or identifier after '::'",
+                        "Use '::*' to import everything or '::symbol' to import a specific symbol",
                         p.token_span(),
                     );
                 }
             } else {
                 p.error(
-                    "Expected '::' after module name".to_string(),
-                    "Use '::*' to import everything or '::symbol' to import a specific symbol"
-                        .to_string(),
+                    "Expected '::' after module name",
+                    "Use '::*' to import everything or '::symbol' to import a specific symbol",
                     p.token_span(),
                 );
             }
         } else {
             p.error(
-                "Expected module name".to_string(),
-                "Use statements must specify a valid module name".to_string(),
+                "Expected module name",
+                "Use statements must specify a valid module name",
                 p.token_span(),
             );
             p.skip_until(MODULE_PATH_RECOVERY);
@@ -502,8 +494,8 @@ mod expr {
         } else {
             let span = p.token_span();
             p.error(
-                "Expected an instruction opcode".to_string(),
-                "Opcodes must be valid identifiers".to_string(),
+                "Expected an instruction opcode",
+                "Opcodes must be valid identifiers",
                 span,
             );
         }
@@ -562,8 +554,8 @@ mod expr {
                 ];
 
                 p.labeled_error(
-                    "Array accessor to nowhere".to_string(),
-                    "Array accessors can only be used after an identifier or number".to_string(),
+                    "Array accessor to nowhere",
+                    "Array accessors can only be used after an identifier or number",
                     spans,
                 );
             } else {
@@ -574,16 +566,16 @@ mod expr {
                 ];
 
                 p.labeled_error(
-                    "Unclosed array accessor to nowhere".to_string(),
-                    "Array accessors can only be used after an identifier or number and must be closed with ']'".to_string(),
+                    "Unclosed array accessor to nowhere",
+                    "Array accessors can only be used after an identifier or number and must be closed with ']'",
                     spans,
                 );
             }
         } else {
             // No valid index inside brackets
             p.error(
-                "Empty array accessor".to_string(),
-                "Array accessors must contain a number or identifier".to_string(),
+                "Empty array accessor",
+                "Array accessors must contain a number or identifier",
                 open_bracket_span,
             );
 
@@ -704,8 +696,8 @@ mod expr {
         } else {
             let span = p.token_span();
             p.error(
-                "Expected a number or identifier".to_string(),
-                "Operands must be numbers or identifiers".to_string(),
+                "Expected a number or identifier",
+                "Operands must be numbers or identifiers",
                 span,
             );
         }
@@ -745,8 +737,8 @@ mod expr {
             p.bump_any();
         } else {
             p.error(
-                "Expected a number or identifier as array index".to_string(),
-                "Array indices must be numbers or identifiers".to_string(),
+                "Expected a number or identifier as array index",
+                "Array indices must be numbers or identifiers",
                 p.token_span(),
             );
         }
@@ -757,8 +749,8 @@ mod expr {
         } else {
             // Report unclosed bracket error
             p.error(
-                "Unclosed bracket in array accessor".to_string(),
-                "Add a closing bracket ']' to complete the array accessor".to_string(),
+                "Unclosed bracket in array accessor",
+                "Add a closing bracket ']' to complete the array accessor",
                 open_bracket_span,
             );
         }
@@ -815,8 +807,8 @@ mod labels {
             // This shouldn't happen due to the at_label_definition_start check
             let span = p.token_span();
             p.error(
-                "Expected a label name".to_string(),
-                "Label names must start with a letter".to_string(),
+                "Expected a label name",
+                "Label names must start with a letter",
                 span,
             );
         }
@@ -831,8 +823,8 @@ mod labels {
             // This shouldn't happen due to the at_label_definition_start check
             let span = p.token_span();
             p.error(
-                "Expected a colon after label name".to_string(),
-                "Add a colon after the label name".to_string(),
+                "Expected a colon after label name",
+                "Add a colon after the label name",
                 span,
             );
         }
@@ -885,8 +877,8 @@ mod comments {
         } else {
             let span = p.token_span();
             p.error(
-                "Expected a comment starting with # or #*".to_string(),
-                "Comments must start with # or #*".to_string(),
+                "Expected a comment starting with # or #*",
+                "Comments must start with # or #*",
                 span,
             );
             COMMENT

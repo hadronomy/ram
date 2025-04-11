@@ -153,8 +153,13 @@ impl<'t> Parser<'t> {
     /// Add an error with a single labeled span.
     ///
     /// This is a legacy method kept for backward compatibility.
-    pub(crate) fn error(&mut self, message: String, help: String, span: Range<usize>) {
-        self.errors.push(Diagnostic::error(message, help, span));
+    pub(crate) fn error(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        span: Range<usize>,
+    ) {
+        self.errors.push(Diagnostic::error(message.into(), help.into(), span));
     }
 
     /// Add a diagnostic using the builder API.
@@ -196,14 +201,16 @@ impl<'t> Parser<'t> {
     /// Add a diagnostic with multiple labeled spans.
     pub(crate) fn add_labeled_diagnostic(
         &mut self,
-        message: String,
-        help: String,
+        message: impl Into<String>,
+        help: impl Into<String>,
         spans: Vec<(Range<usize>, String)>,
         kind: DiagnosticKind,
     ) {
         if !spans.is_empty() {
-            let builder =
-                Diagnostic::builder().with_message(message).with_help(help).with_spans(spans);
+            let builder = Diagnostic::builder()
+                .with_message(message.into())
+                .with_help(help.into())
+                .with_spans(spans);
             self.add_diagnostic(builder, kind);
             return;
         }
@@ -212,8 +219,8 @@ impl<'t> Parser<'t> {
             DiagnosticKind::Error => self.error(message, help, 0..0),
             _ => {
                 let builder = Diagnostic::builder()
-                    .with_message(message)
-                    .with_help(help)
+                    .with_message(message.into())
+                    .with_help(help.into())
                     .with_primary_span(0..0, "here");
                 self.add_diagnostic(builder, kind);
             }
@@ -225,8 +232,8 @@ impl<'t> Parser<'t> {
     /// This is a legacy method kept for backward compatibility.
     pub(crate) fn labeled_error(
         &mut self,
-        message: String,
-        help: String,
+        message: impl Into<String>,
+        help: impl Into<String>,
         spans: Vec<(Range<usize>, String)>,
     ) {
         self.add_labeled_diagnostic(message, help, spans, DiagnosticKind::Error);
@@ -257,21 +264,26 @@ impl<'t> Parser<'t> {
     /// Create an error node and consume the next token.
     ///
     /// This is a legacy method kept for backward compatibility.
-    pub(crate) fn err_and_bump(&mut self, message: &str, help: &str) {
+    pub(crate) fn err_and_bump(&mut self, message: impl Into<String>, help: impl Into<String>) {
         let m = self.start();
         let span = self.token_span();
-        self.error(message.to_string(), help.to_string(), span);
+        self.error(message, help, span);
         self.bump_any();
         m.complete(self, ERROR);
     }
 
     /// Create an error node with a diagnostic and consume the next token.
-    pub(crate) fn diagnostic_and_bump(&mut self, message: &str, help: &str, kind: DiagnosticKind) {
+    pub(crate) fn diagnostic_and_bump(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        kind: DiagnosticKind,
+    ) {
         let m = self.start();
         let span = self.token_span();
         let builder = Diagnostic::builder()
-            .with_message(message.to_string())
-            .with_help(help.to_string())
+            .with_message(message.into())
+            .with_help(help.into())
             .with_primary_span(span, "here");
         self.add_diagnostic(builder, kind);
         self.bump_any();
@@ -281,16 +293,21 @@ impl<'t> Parser<'t> {
     /// Create an error node and recover until a token in the recovery set.
     ///
     /// This is a legacy method kept for backward compatibility.
-    pub(crate) fn err_recover(&mut self, message: &str, help: &str, recovery: TokenSet) -> bool {
+    pub(crate) fn err_recover(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        recovery: TokenSet,
+    ) -> bool {
         if self.at_ts(recovery) {
             let span = self.token_span();
-            self.error(message.to_string(), help.to_string(), span);
+            self.error(message, help, span);
             return true;
         }
 
         let m = self.start();
         let span = self.token_span();
-        self.error(message.to_string(), help.to_string(), span);
+        self.error(message, help, span);
 
         // Consume tokens until we hit recovery point or EOF
         while !self.at(EOF) && !self.at_ts(recovery) {
@@ -304,16 +321,16 @@ impl<'t> Parser<'t> {
     /// Create an error node with a diagnostic and recover until a token in the recovery set.
     pub(crate) fn diagnostic_recover(
         &mut self,
-        message: &str,
-        help: &str,
+        message: impl Into<String>,
+        help: impl Into<String>,
         recovery: TokenSet,
         kind: DiagnosticKind,
     ) -> bool {
         if self.at_ts(recovery) {
             let span = self.token_span();
             let builder = Diagnostic::builder()
-                .with_message(message.to_string())
-                .with_help(help.to_string())
+                .with_message(message.into())
+                .with_help(help.into())
                 .with_primary_span(span, "here");
             self.add_diagnostic(builder, kind);
             return true;
@@ -322,8 +339,8 @@ impl<'t> Parser<'t> {
         let m = self.start();
         let span = self.token_span();
         let builder = Diagnostic::builder()
-            .with_message(message.to_string())
-            .with_help(help.to_string())
+            .with_message(message.into())
+            .with_help(help.into())
             .with_primary_span(span, "here");
         self.add_diagnostic(builder, kind);
 
