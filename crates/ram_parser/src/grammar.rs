@@ -13,9 +13,9 @@
 #![allow(clippy::enum_glob_use)]
 
 use crate::SyntaxKind::*;
+use crate::T;
 use crate::diagnostic::{Diagnostic, DiagnosticKind};
 use crate::parser::{Parser, TokenSet};
-use crate::T;
 
 /// Entry point for the grammar
 pub(crate) mod entry {
@@ -113,10 +113,8 @@ mod stmt {
     use super::*;
 
     // Recovery token set for error handling
-    const RECOVERY_SET: TokenSet = TokenSet::new(&[
-        NEWLINE, T![#], T![#*], IDENTIFIER, LOAD_KW, STORE_KW, ADD_KW, SUB_KW, MUL_KW, DIV_KW,
-        JUMP_KW, JGTZ_KW, JZERO_KW, HALT_KW, T![mod], T![use],
-    ]);
+    const RECOVERY_SET: TokenSet =
+        TokenSet::new(&[NEWLINE, T![#], T![#*], IDENTIFIER, T![mod], T![use]]);
 
     /// Parses a statement.
     ///
@@ -494,11 +492,7 @@ mod expr {
             p.bump_any();
         } else {
             let span = p.token_span();
-            p.error(
-                "Expected an instruction opcode",
-                "Opcodes must be valid identifiers",
-                span,
-            );
+            p.error("Expected an instruction opcode", "Opcodes must be valid identifiers", span);
         }
 
         // Skip whitespace after opcode
@@ -512,7 +506,7 @@ mod expr {
                 "This closing bracket doesn't match any opening bracket",
             ),
             NEWLINE | T![#] | T![#*] | EOF => {} // No operand, which is fine
-            _ => operand_expr(p),                  // Parse operand
+            _ => operand_expr(p),                // Parse operand
         }
 
         m.complete(p, INSTRUCTION);
@@ -807,11 +801,7 @@ mod labels {
         } else {
             // This shouldn't happen due to the at_label_definition_start check
             let span = p.token_span();
-            p.error(
-                "Expected a label name",
-                "Label names must start with a letter",
-                span,
-            );
+            p.error("Expected a label name", "Label names must start with a letter", span);
         }
 
         // Consume whitespace between label name and colon
@@ -823,11 +813,7 @@ mod labels {
         } else {
             // This shouldn't happen due to the at_label_definition_start check
             let span = p.token_span();
-            p.error(
-                "Expected a colon after label name",
-                "Add a colon after the label name",
-                span,
-            );
+            p.error("Expected a colon after label name", "Add a colon after the label name", span);
         }
 
         m.complete(p, LABEL_DEF);

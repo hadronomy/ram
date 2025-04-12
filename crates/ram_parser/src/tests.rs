@@ -23,14 +23,14 @@ fn test_lexer() {
     let tokens = lexer.tokenize();
 
     assert_eq!(tokens.len(), 9);
-    assert_eq!(tokens[0].kind, SyntaxKind::LOAD_KW);
+    assert_eq!(tokens[0].kind, SyntaxKind::IDENTIFIER);
     assert_eq!(tokens[1].kind, SyntaxKind::WHITESPACE);
     assert_eq!(tokens[2].kind, SyntaxKind::NUMBER);
     assert_eq!(tokens[3].kind, SyntaxKind::WHITESPACE);
     assert_eq!(tokens[4].kind, SyntaxKind::HASH);
     assert_eq!(tokens[5].kind, SyntaxKind::COMMENT_TEXT);
     assert_eq!(tokens[6].kind, SyntaxKind::NEWLINE);
-    assert_eq!(tokens[7].kind, SyntaxKind::HALT_KW);
+    assert_eq!(tokens[7].kind, SyntaxKind::IDENTIFIER);
     assert_eq!(tokens[8].kind, SyntaxKind::NEWLINE);
 }
 
@@ -225,7 +225,7 @@ fn test_empty_file() {
 fn test_marker_handling() {
     // This test verifies that our marker system works properly
     let input = Input::new(vec![
-        Token { kind: SyntaxKind::LOAD_KW, text: "LOAD".to_string(), span: 0..4 },
+        Token { kind: SyntaxKind::IDENTIFIER, text: "LOAD".to_string(), span: 0..4 },
         Token { kind: SyntaxKind::WHITESPACE, text: " ".to_string(), span: 4..5 },
         Token { kind: SyntaxKind::NUMBER, text: "42".to_string(), span: 5..7 },
     ]);
@@ -262,7 +262,7 @@ fn test_marker_handling() {
 fn test_precede_marker() {
     // This tests the marker.precede() functionality
     let input = Input::new(vec![
-        Token { kind: SyntaxKind::LOAD_KW, text: "LOAD".to_string(), span: 0..4 },
+        Token { kind: SyntaxKind::IDENTIFIER, text: "LOAD".to_string(), span: 0..4 },
         Token { kind: SyntaxKind::WHITESPACE, text: " ".to_string(), span: 4..5 },
         Token { kind: SyntaxKind::NUMBER, text: "42".to_string(), span: 5..7 },
     ]);

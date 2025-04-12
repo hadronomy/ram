@@ -181,19 +181,11 @@ impl<'a> Lexer<'a> {
         }
 
         let text = self.source[start..self.position].to_string();
-        let kind = match text.to_uppercase().as_str() {
-            "LOAD" => LOAD_KW,
-            "STORE" => STORE_KW,
-            "ADD" => ADD_KW,
-            "SUB" => SUB_KW,
-            "MUL" => MUL_KW,
-            "DIV" => DIV_KW,
-            "JUMP" => JUMP_KW,
-            "JGTZ" => JGTZ_KW,
-            "JZERO" => JZERO_KW,
-            "HALT" => HALT_KW,
-            "MOD" => MOD_KW,
-            "USE" => USE_KW,
+        // Only module-related keywords are treated specially, all other identifiers
+        // (including instruction names) are treated as regular identifiers
+        let kind = match text.as_str() {
+            "mod" => MOD_KW,
+            "use" => USE_KW,
             _ => IDENTIFIER,
         };
 

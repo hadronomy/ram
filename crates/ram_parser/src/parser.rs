@@ -372,8 +372,8 @@ impl<'t> Parser<'t> {
 
     /// Returns true if the current token looks like the start of an instruction.
     pub(crate) fn at_instruction_start(&self) -> bool {
-        let kind = self.current();
-        kind.is_keyword() || kind == IDENTIFIER
+        // All instructions are now identifiers
+        self.current() == IDENTIFIER
     }
 
     /// Returns true if the current token looks like the start of a label definition.

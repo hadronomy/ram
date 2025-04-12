@@ -51,16 +51,6 @@ pub enum SyntaxKind {
     COMMENT_TEXT,
     NUMBER,
     IDENTIFIER,
-    LOAD_KW,
-    STORE_KW,
-    ADD_KW,
-    SUB_KW,
-    MUL_KW,
-    DIV_KW,
-    JUMP_KW,
-    JGTZ_KW,
-    JZERO_KW,
-    HALT_KW,
     #[static_text("mod")]
     MOD_KW, // 'mod' keyword
     #[static_text("use")]
@@ -95,6 +85,8 @@ pub enum SyntaxKind {
 ///
 /// Examples:
 /// ```
+/// use ram_parser::T;
+///
 /// // Both forms are equivalent:
 /// let hash_kind1 = T!["#"];   // String literal form
 /// let hash_kind2 = T![#];      // Identifier form
@@ -167,21 +159,12 @@ impl SyntaxKind {
     }
 
     /// Returns true if this is a keyword.
+    ///
+    /// Note: Instruction keywords are now treated as regular identifiers.
+    /// Only module-related keywords are considered keywords.
     #[inline]
     pub fn is_keyword(self) -> bool {
-        matches!(
-            self,
-            SyntaxKind::LOAD_KW
-                | SyntaxKind::STORE_KW
-                | SyntaxKind::ADD_KW
-                | SyntaxKind::SUB_KW
-                | SyntaxKind::MUL_KW
-                | SyntaxKind::DIV_KW
-                | SyntaxKind::JUMP_KW
-                | SyntaxKind::JGTZ_KW
-                | SyntaxKind::JZERO_KW
-                | SyntaxKind::HALT_KW
-        )
+        self.is_module_keyword()
     }
 
     /// Returns true if this is a module-related keyword.
