@@ -1,5 +1,5 @@
 [workspace]
-members  = ["./crates/*", "xtask"]
+members  = ["./crates/*", "crates/ram_derive", "xtask"]
 resolver = "2"
 
 [workspace.package]
@@ -14,6 +14,7 @@ anstream           = "0.6.18"
 anyhow             = "1.0.95"
 chumsky            = "0.10.0"
 clap               = { version = "4.5.23", features = ["derive", "env", "string", "wrap_help"] }
+cstree             = { version = "0.12.2", features = ["derive", "serde"] }
 drop_bomb          = "0.1.5"
 globset            = { version = "0.4.15", features = ["serde"] }
 human-panic        = "2.0.2"
@@ -35,7 +36,6 @@ tokio-util         = { version = "0.7.13", features = ["codec", "compat"] }
 tracing            = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 walkdir            = "2.5.0"
-cstree = { version = "0.12.2", features = ["derive", "serde"] }
 
 # Serde and serialization
 serde        = "1.0.217"
@@ -49,7 +49,13 @@ tower            = { version = "0.5.2" }
 tower-lsp        = { version = "0.20.0" }
 tower-lsp-macros = "0.9.0"
 
+# Macros
+proc-macro2 = "1.0.94"
+quote = "1.0.40"
+syn = { version = "2.0.100", features = ["full"] }
+
 # Workspace crates
+ram_derive = { path = "crates/ram_derive" }
 ram_error  = { path = "crates/ram_error" }
 ram_parser = { path = "crates/ram_parser" }
 

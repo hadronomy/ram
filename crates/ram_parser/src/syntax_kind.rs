@@ -1,4 +1,5 @@
 use cstree::Syntax;
+use ram_derive::FromStaticText;
 #[cfg(feature = "serde")]
 use serde::Serialize;
 
@@ -10,7 +11,7 @@ pub type SyntaxText<'n, 'i, I> = cstree::text::SyntaxText<'n, 'i, I, Ram>;
 pub type ResolvedNode = cstree::syntax::ResolvedNode<Ram>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-#[derive(Syntax)]
+#[derive(Syntax, FromStaticText)]
 #[repr(u32)] // Rowan requires a primitive representation
 #[cfg_attr(feature = "serde", derive(Serialize))]
 #[cfg_attr(feature = "serde", serde(rename_all = "SCREAMING_SNAKE_CASE"))]
@@ -83,6 +84,67 @@ pub enum SyntaxKind {
     STRING,      // String literal for import paths
     ERROR_TOKEN, // Token for unrecognized characters
     EOF,         // Not usually represented in the tree, but needed for parsing
+}
+
+// FIXME: Automatically generate this
+/// Macro to get a SyntaxKind variant from its static text representation.
+///
+/// This macro supports two syntax forms:
+/// 1. String literal form: `T!["mod"]`
+/// 2. Identifier form: `T![mod]` (more concise)
+///
+/// Examples:
+/// ```
+/// // Both forms are equivalent:
+/// let hash_kind1 = T!["#"];   // String literal form
+/// let hash_kind2 = T![#];      // Identifier form
+///
+/// let mod_kind1 = T!["mod"]; // String literal form
+/// let mod_kind2 = T![mod];     // Identifier form
+/// ```
+#[macro_export] // Export the macro for use in other modules/crates
+macro_rules! T {
+    // String literal form
+    ["#"] => { $crate::SyntaxKind::HASH };
+    ["#*"] => { $crate::SyntaxKind::HASH_STAR };
+    ["mod"] => { $crate::SyntaxKind::MOD_KW };
+    ["use"] => { $crate::SyntaxKind::USE_KW };
+    [":"] => { $crate::SyntaxKind::COLON };
+    ["*"] => { $crate::SyntaxKind::STAR };
+    ["="] => { $crate::SyntaxKind::EQUALS };
+    ["["] => { $crate::SyntaxKind::LBRACKET };
+    ["]"] => { $crate::SyntaxKind::RBRACKET };
+    ["{"] => { $crate::SyntaxKind::LBRACE };
+    ["}"] => { $crate::SyntaxKind::RBRACE };
+    [","] => { $crate::SyntaxKind::COMMA };
+
+    // Identifier form (more concise)
+    [#] => { $crate::SyntaxKind::HASH };
+    [#*] => { $crate::SyntaxKind::HASH_STAR };
+    [mod] => { $crate::SyntaxKind::MOD_KW };
+    [use] => { $crate::SyntaxKind::USE_KW };
+    [:] => { $crate::SyntaxKind::COLON };
+    [*] => { $crate::SyntaxKind::STAR };
+    [=] => { $crate::SyntaxKind::EQUALS };
+    ['['] => { $crate::SyntaxKind::LBRACKET };
+    [']'] => { $crate::SyntaxKind::RBRACKET };
+    ['{'] => { $crate::SyntaxKind::LBRACE };
+    ['}'] => { $crate::SyntaxKind::RBRACE };
+    [,] => { $crate::SyntaxKind::COMMA };
+
+    // Fallback for unknown tokens
+    [$text:literal] => {
+        compile_error!(concat!(
+            "Unknown token text: \"", $text, "\". ",
+            "Add it to the T! macro in syntax_kind.rs if it's a valid token."
+        ))
+    };
+    [$ident:ident] => {
+        compile_error!(concat!(
+            "Unknown token identifier: ", stringify!($ident), ". ",
+            "Add it to the T! macro in syntax_kind.rs if it's a valid token."
+        ))
+    };
 }
 
 impl SyntaxKind {

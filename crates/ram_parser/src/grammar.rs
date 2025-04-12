@@ -15,6 +15,7 @@
 use crate::SyntaxKind::*;
 use crate::diagnostic::{Diagnostic, DiagnosticKind};
 use crate::parser::{Parser, TokenSet};
+use crate::T;
 
 /// Entry point for the grammar
 pub(crate) mod entry {
@@ -113,8 +114,8 @@ mod stmt {
 
     // Recovery token set for error handling
     const RECOVERY_SET: TokenSet = TokenSet::new(&[
-        NEWLINE, HASH, HASH_STAR, IDENTIFIER, LOAD_KW, STORE_KW, ADD_KW, SUB_KW, MUL_KW, DIV_KW,
-        JUMP_KW, JGTZ_KW, JZERO_KW, HALT_KW, MOD_KW, USE_KW,
+        NEWLINE, T![#], T![#*], IDENTIFIER, LOAD_KW, STORE_KW, ADD_KW, SUB_KW, MUL_KW, DIV_KW,
+        JUMP_KW, JGTZ_KW, JZERO_KW, HALT_KW, T![mod], T![use],
     ]);
 
     /// Parses a statement.
@@ -170,9 +171,9 @@ mod stmt {
 
         // Match on the current token to determine statement type
         match p.current() {
-            MOD_KW => parse_module_declaration(p),
-            USE_KW => parse_module_use(p),
-            HASH | HASH_STAR => parse_comment_statement(p),
+            T![mod] => parse_module_declaration(p),
+            T![use] => parse_module_use(p),
+            T![#] | T![#*] => parse_comment_statement(p),
             IDENTIFIER if p.at_label_definition_start() => parse_label_statement(p),
             _ if p.at_instruction_start() => parse_instruction_statement(p),
             _ => handle_unexpected_token_in_statement(p),
@@ -309,7 +310,7 @@ mod stmt {
         let m = p.start();
 
         let (message, help) = match p.current() {
-            RBRACKET => (
+            T![']'] => (
                 "Unexpected closing bracket ']'".to_string(),
                 "This closing bracket doesn't match any opening bracket",
             ),
@@ -332,7 +333,7 @@ mod stmt {
 
         // Use a warning for unexpected closing brackets, error for other cases
         let kind =
-            if p.current() == RBRACKET { DiagnosticKind::Warning } else { DiagnosticKind::Error };
+            if p.current() == T![']'] { DiagnosticKind::Warning } else { DiagnosticKind::Error };
 
         p.add_diagnostic(builder, kind);
         p.bump_any(); // Consume the unexpected token
@@ -349,7 +350,7 @@ mod modules {
     use super::*;
 
     // Constants for error recovery
-    const MODULE_PATH_RECOVERY: TokenSet = TokenSet::new(&[NEWLINE, EOF, HASH, HASH_STAR]);
+    const MODULE_PATH_RECOVERY: TokenSet = TokenSet::new(&[NEWLINE, EOF, T![#], T![#*]]);
 
     /// Parse a module declaration statement.
     ///
@@ -358,7 +359,7 @@ mod modules {
     /// mod mymodule
     /// ```
     pub(super) fn mod_stmt(p: &mut Parser<'_>) -> bool {
-        if !p.at(MOD_KW) {
+        if !p.at(T![mod]) {
             return false;
         }
 
@@ -389,7 +390,7 @@ mod modules {
     /// use mymodule::symbol
     /// ```
     pub(super) fn use_stmt(p: &mut Parser<'_>) -> bool {
-        if !p.at(USE_KW) {
+        if !p.at(T![use]) {
             return false;
         }
 
@@ -420,13 +421,13 @@ mod modules {
             whitespace::skip_ws(p);
 
             // Check for double colon
-            if p.at(COLON) && p.nth_at(1, COLON) {
+            if p.at(T![:]) && p.nth_at(1, T![:]) {
                 p.bump_any(); // Consume first colon
                 p.bump_any(); // Consume second colon
                 whitespace::skip_ws(p);
 
                 // Parse what comes after the double colon
-                if p.at(STAR) {
+                if p.at(T![*]) {
                     // Import everything from the module
                     p.bump_any(); // Consume '*'
                 } else if p.at(IDENTIFIER) {
@@ -505,12 +506,12 @@ mod expr {
 
         // Check for operand or special cases
         match p.current() {
-            LBRACKET => unexpected_array_accessor(p),
-            RBRACKET => p.err_and_bump(
+            T!['['] => unexpected_array_accessor(p),
+            T![']'] => p.err_and_bump(
                 "Unexpected closing bracket ']'",
                 "This closing bracket doesn't match any opening bracket",
             ),
-            NEWLINE | HASH | HASH_STAR | EOF => {} // No operand, which is fine
+            NEWLINE | T![#] | T![#*] | EOF => {} // No operand, which is fine
             _ => operand_expr(p),                  // Parse operand
         }
 
@@ -540,7 +541,7 @@ mod expr {
             p.bump_any(); // Consume the number or identifier
 
             // Check for closing bracket
-            if p.at(RBRACKET) {
+            if p.at(T![']']) {
                 let close_bracket_span = p.token_span();
                 p.bump_any(); // Consume the closing bracket
 
@@ -580,7 +581,7 @@ mod expr {
             );
 
             // Skip to closing bracket if present
-            if p.at(RBRACKET) {
+            if p.at(T![']']) {
                 p.bump_any(); // Consume the closing bracket
             }
         }
@@ -625,14 +626,14 @@ mod expr {
 
         // Check for addressing mode indicators
         match p.current() {
-            STAR => {
+            T![*] => {
                 // Indirect addressing
                 let m_inner = p.start();
                 p.bump_any(); // Consume *
                 operand_value(p);
                 m_inner.complete(p, INDIRECT_OPERAND);
             }
-            EQUALS => {
+            T![=] => {
                 // Immediate addressing
                 let m_inner = p.start();
                 p.bump_any(); // Consume =
@@ -690,7 +691,7 @@ mod expr {
             p.bump_any();
 
             // Check for array accessor [index]
-            if p.at(LBRACKET) {
+            if p.at(T!['[']) {
                 array_accessor(p);
             }
         } else {
@@ -744,7 +745,7 @@ mod expr {
         }
 
         // Check for the closing bracket
-        if p.at(RBRACKET) {
+        if p.at(T![']']) {
             p.bump_any();
         } else {
             // Report unclosed bracket error
@@ -817,7 +818,7 @@ mod labels {
         whitespace::skip_ws(p);
 
         // Parse the colon
-        if p.at(COLON) {
+        if p.at(T![:]) {
             p.bump_any();
         } else {
             // This shouldn't happen due to the at_label_definition_start check
@@ -868,10 +869,10 @@ mod comments {
     pub(super) fn comment(p: &mut Parser<'_>) {
         let m = p.start();
 
-        let comment_kind = if p.at(HASH_STAR) {
+        let comment_kind = if p.at(T![#*]) {
             p.bump_any();
             DOC_COMMENT
-        } else if p.at(HASH) {
+        } else if p.at(T![#]) {
             p.bump_any();
             COMMENT
         } else {
@@ -954,7 +955,7 @@ mod comments {
         let group_marker = p.start();
 
         // Determine the type of the first comment
-        let is_doc_comment = p.at(HASH_STAR);
+        let is_doc_comment = p.at(T![#*]);
 
         // Parse the first comment
         comment(p);
@@ -974,8 +975,8 @@ mod comments {
                     whitespace::skip_ws(p);
 
                     // Check if next line has a comment of the same type
-                    let has_matching_comment = (p.at(HASH_STAR) && is_doc_comment)
-                        || (p.at(HASH) && !p.at(HASH_STAR) && !is_doc_comment);
+                    let has_matching_comment = (p.at(T![#*]) && is_doc_comment)
+                        || (p.at(T![#]) && !p.at(T![#*]) && !is_doc_comment);
 
                     if has_matching_comment {
                         comment(p);
@@ -983,8 +984,8 @@ mod comments {
                     has_matching_comment
                 }
                 // Another comment on the same line
-                HASH | HASH_STAR => {
-                    let current_is_doc = p.at(HASH_STAR);
+                T![#] | T![#*] => {
+                    let current_is_doc = p.at(T![#*]);
                     if current_is_doc == is_doc_comment {
                         comment(p);
                         true
