@@ -49,6 +49,7 @@ walkdir            = { workspace = true }
 
 ram_error  = { workspace = true }
 ram_parser = { workspace = true }
+ram_syntax = { workspace = true }
 
 [build-dependencies]
 shadow-rs = "1.0.1"

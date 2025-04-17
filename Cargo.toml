@@ -1,5 +1,5 @@
 [workspace]
-members  = ["./crates/*", "crates/ram_derive", "xtask"]
+members  = ["./crates/*", "crates/ram_derive", "crates/ram_syntax", "xtask"]
 resolver = "2"
 
 [workspace.package]
@@ -58,6 +58,7 @@ syn = { version = "2.0.100", features = ["full"] }
 ram_derive = { path = "crates/ram_derive" }
 ram_error  = { path = "crates/ram_error" }
 ram_parser = { path = "crates/ram_parser" }
+ram_syntax = { path = "crates/ram_syntax" }
 
 # Lint rules that I like taken from
 # https://github.com/rolldown/rolldown/blob/main/Cargo.toml

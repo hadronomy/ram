@@ -1,6 +1,7 @@
 //! Tests for the RAM parser.
 
-use crate::SyntaxKind;
+use ram_syntax::SyntaxKind;
+
 use crate::diagnostic::Diagnostic;
 use crate::event::Event;
 use crate::lexer::{Lexer, Token};

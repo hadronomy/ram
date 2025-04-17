@@ -36,6 +36,7 @@ walkdir            = { workspace = true }
 
 ram_derive = { workspace = true }
 ram_error  = { workspace = true }
+ram_syntax = { workspace = true }
 
 [lints]
 workspace = true

@@ -5,11 +5,10 @@
 
 use std::ops::Range;
 
+use ram_syntax::SyntaxKind;
+use ram_syntax::SyntaxKind::*;
 #[cfg(feature = "serde")]
 use serde::Serialize;
-
-use crate::SyntaxKind;
-use crate::SyntaxKind::*;
 
 /// A token produced by the lexer.
 #[derive(Debug, Clone, PartialEq)]

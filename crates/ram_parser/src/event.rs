@@ -5,7 +5,7 @@
 
 use std::ops::Range;
 
-use crate::SyntaxKind;
+use ram_syntax::SyntaxKind;
 
 /// The [Parser](`crate::Parser`) produces a flat list of [`Event`]s.
 /// They are converted to a tree-structure in

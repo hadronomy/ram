@@ -1,9 +1,8 @@
 use cstree::interning::Interner;
 use cstree::prelude::*;
+use ram_syntax::{Ram, SyntaxKind};
 
-use crate::SyntaxKind;
 use crate::event::Event;
-use crate::syntax_kind::Ram;
 
 /// A builder for creating syntax trees from parser events
 ///

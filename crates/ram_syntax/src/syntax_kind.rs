@@ -85,7 +85,7 @@ pub enum SyntaxKind {
 ///
 /// Examples:
 /// ```
-/// use ram_parser::T;
+/// use ram_syntax::T;
 ///
 /// // Both forms are equivalent:
 /// let hash_kind1 = T!["#"];   // String literal form

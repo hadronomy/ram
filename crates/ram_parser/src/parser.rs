@@ -10,12 +10,13 @@ use std::cell::Cell;
 use std::ops::Range;
 
 use drop_bomb::DropBomb;
+use ram_syntax::SyntaxKind;
+use ram_syntax::SyntaxKind::*;
 
-use crate::SyntaxKind::*;
 use crate::diagnostic::{Diagnostic, DiagnosticBuilder, DiagnosticKind};
 use crate::event::Event;
+use crate::grammar;
 use crate::lexer::{Lexer, Token};
-use crate::{SyntaxKind, grammar};
 
 /// The maximum number of steps the parser will take before giving up.
 const PARSER_STEP_LIMIT: usize = 100_000;

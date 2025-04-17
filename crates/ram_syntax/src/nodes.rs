@@ -1,33 +1,20 @@
-//! AST wrappers around [`SyntaxNode`]
+//! AST node implementations
 //!
-//! This module provides a typed API for working with the syntax tree.
+//! This module contains the implementations of all AST node types.
 //! Each struct represents a specific node type in the tree and provides
 //! methods for accessing its children and properties.
 
+use crate::ast::{AstChildren, AstNode};
 use crate::{ResolvedNode, SyntaxKind};
-
-/// Trait for all AST node types
-pub trait AstNode {
-    /// Checks if the given node can be cast to this type
-    fn can_cast(node: &ResolvedNode) -> bool;
-
-    /// Attempts to cast the node to this type
-    fn cast(node: ResolvedNode) -> Option<Self>
-    where
-        Self: Sized;
-
-    /// Returns the underlying syntax node
-    fn syntax(&self) -> &ResolvedNode;
-}
 
 /// Root node of the AST
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Program(ResolvedNode);
+pub struct Program(pub(crate) ResolvedNode);
 
 impl Program {
     /// Returns an iterator over the statements in the program
-    pub fn statements(&self) -> impl Iterator<Item = Statement> + '_ {
-        self.syntax().children().filter_map(|node| Statement::cast(node.clone()))
+    pub fn statements(&self) -> AstChildren<Statement> {
+        AstChildren::<Statement>::new(self.syntax())
     }
 }
 
@@ -53,37 +40,37 @@ impl AstNode for Program {
 
 /// Statement node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Statement(ResolvedNode);
+pub struct Statement(pub(crate) ResolvedNode);
 
 impl Statement {
     /// Returns the instruction if this statement contains one
     pub fn instruction(&self) -> Option<Instruction> {
-        self.syntax().children().find_map(|node| Instruction::cast(node.clone()))
+        AstChildren::<Instruction>::new(self.syntax()).next()
     }
 
     /// Returns the label definition if this statement contains one
     pub fn label_def(&self) -> Option<LabelDef> {
-        self.syntax().children().find_map(|node| LabelDef::cast(node.clone()))
+        AstChildren::<LabelDef>::new(self.syntax()).next()
     }
 
     /// Returns the comment if this statement contains one
     pub fn comment(&self) -> Option<Comment> {
-        self.syntax().children().find_map(|node| Comment::cast(node.clone()))
+        AstChildren::<Comment>::new(self.syntax()).next()
     }
 
     /// Returns the documentation comment if this statement contains one
     pub fn doc_comment(&self) -> Option<DocComment> {
-        self.syntax().children().find_map(|node| DocComment::cast(node.clone()))
+        AstChildren::<DocComment>::new(self.syntax()).next()
     }
 
     /// Returns the module declaration if this statement contains one
     pub fn mod_stmt(&self) -> Option<ModStmt> {
-        self.syntax().children().find_map(|node| ModStmt::cast(node.clone()))
+        AstChildren::<ModStmt>::new(self.syntax()).next()
     }
 
     /// Returns the module use statement if this statement contains one
     pub fn use_stmt(&self) -> Option<UseStmt> {
-        self.syntax().children().find_map(|node| UseStmt::cast(node.clone()))
+        AstChildren::<UseStmt>::new(self.syntax()).next()
     }
 }
 
@@ -103,7 +90,7 @@ impl AstNode for Statement {
 
 /// Instruction node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Instruction(ResolvedNode);
+pub struct Instruction(pub(crate) ResolvedNode);
 
 impl Instruction {
     /// Returns the opcode of the instruction
@@ -117,7 +104,7 @@ impl Instruction {
 
     /// Returns the operand of the instruction if it has one
     pub fn operand(&self) -> Option<Operand> {
-        self.syntax().children().find_map(|node| Operand::cast(node.clone()))
+        AstChildren::<Operand>::new(self.syntax()).next()
     }
 }
 
@@ -137,7 +124,7 @@ impl AstNode for Instruction {
 
 /// Label definition node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct LabelDef(ResolvedNode);
+pub struct LabelDef(pub(crate) ResolvedNode);
 
 impl LabelDef {
     /// Returns the name of the label
@@ -166,7 +153,7 @@ impl AstNode for LabelDef {
 
 /// Comment node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Comment(ResolvedNode);
+pub struct Comment(pub(crate) ResolvedNode);
 
 impl Comment {
     /// Returns the text of the comment
@@ -195,7 +182,7 @@ impl AstNode for Comment {
 
 /// Documentation comment node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct DocComment(ResolvedNode);
+pub struct DocComment(pub(crate) ResolvedNode);
 
 impl DocComment {
     /// Returns the text of the documentation comment
@@ -224,17 +211,17 @@ impl AstNode for DocComment {
 
 /// Comment group node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct CommentGroup(ResolvedNode);
+pub struct CommentGroup(pub(crate) ResolvedNode);
 
 impl CommentGroup {
     /// Returns the comments in this group
-    pub fn comments(&self) -> impl Iterator<Item = Comment> + '_ {
-        self.syntax().children().filter_map(|node| Comment::cast(node.clone()))
+    pub fn comments(&self) -> AstChildren<Comment> {
+        AstChildren::<Comment>::new(self.syntax())
     }
 
     /// Returns the documentation comments in this group
-    pub fn doc_comments(&self) -> impl Iterator<Item = DocComment> + '_ {
-        self.syntax().children().filter_map(|node| DocComment::cast(node.clone()))
+    pub fn doc_comments(&self) -> AstChildren<DocComment> {
+        AstChildren::<DocComment>::new(self.syntax())
     }
 }
 
@@ -254,7 +241,7 @@ impl AstNode for CommentGroup {
 
 /// Base operand node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct Operand(ResolvedNode);
+pub struct Operand(pub(crate) ResolvedNode);
 
 impl Operand {
     /// Returns the direct operand if this is a direct operand
@@ -286,7 +273,7 @@ impl Operand {
 
     /// Returns the value of the operand
     pub fn value(&self) -> Option<OperandValue> {
-        self.syntax().children().find_map(|node| OperandValue::cast(node.clone()))
+        AstChildren::<OperandValue>::new(self.syntax()).next()
     }
 }
 
@@ -306,12 +293,12 @@ impl AstNode for Operand {
 
 /// Direct operand node (e.g., 5)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct DirectOperand(ResolvedNode);
+pub struct DirectOperand(pub(crate) ResolvedNode);
 
 impl DirectOperand {
     /// Returns the value of the operand
     pub fn value(&self) -> Option<OperandValue> {
-        self.syntax().children().find_map(|node| OperandValue::cast(node.clone()))
+        AstChildren::<OperandValue>::new(self.syntax()).next()
     }
 }
 
@@ -331,12 +318,12 @@ impl AstNode for DirectOperand {
 
 /// Indirect operand node (e.g., *5)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct IndirectOperand(ResolvedNode);
+pub struct IndirectOperand(pub(crate) ResolvedNode);
 
 impl IndirectOperand {
     /// Returns the value of the operand
     pub fn value(&self) -> Option<OperandValue> {
-        self.syntax().children().find_map(|node| OperandValue::cast(node.clone()))
+        AstChildren::<OperandValue>::new(self.syntax()).next()
     }
 }
 
@@ -356,12 +343,12 @@ impl AstNode for IndirectOperand {
 
 /// Immediate operand node (e.g., =5)
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ImmediateOperand(ResolvedNode);
+pub struct ImmediateOperand(pub(crate) ResolvedNode);
 
 impl ImmediateOperand {
     /// Returns the value of the operand
     pub fn value(&self) -> Option<OperandValue> {
-        self.syntax().children().find_map(|node| OperandValue::cast(node.clone()))
+        AstChildren::<OperandValue>::new(self.syntax()).next()
     }
 }
 
@@ -381,7 +368,7 @@ impl AstNode for ImmediateOperand {
 
 /// Operand value node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct OperandValue(ResolvedNode);
+pub struct OperandValue(pub(crate) ResolvedNode);
 
 impl OperandValue {
     /// Returns the numeric value if this is a number
@@ -404,7 +391,7 @@ impl OperandValue {
 
     /// Returns the array accessor if this has one
     pub fn array_accessor(&self) -> Option<ArrayAccessor> {
-        self.syntax().children().find_map(|node| ArrayAccessor::cast(node.clone()))
+        AstChildren::<ArrayAccessor>::new(self.syntax()).next()
     }
 }
 
@@ -424,7 +411,7 @@ impl AstNode for OperandValue {
 
 /// Array accessor node (e.g., [5])
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ArrayAccessor(ResolvedNode);
+pub struct ArrayAccessor(pub(crate) ResolvedNode);
 
 impl ArrayAccessor {
     /// Returns the index value
@@ -453,7 +440,7 @@ impl AstNode for ArrayAccessor {
 
 /// Module declaration statement node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ModStmt(ResolvedNode);
+pub struct ModStmt(pub(crate) ResolvedNode);
 
 impl ModStmt {
     /// Returns the name of the module
@@ -482,12 +469,12 @@ impl AstNode for ModStmt {
 
 /// Module use statement node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct UseStmt(ResolvedNode);
+pub struct UseStmt(pub(crate) ResolvedNode);
 
 impl UseStmt {
     /// Returns the module path
     pub fn path(&self) -> Option<ModulePath> {
-        self.syntax().children().find_map(|node| ModulePath::cast(node.clone()))
+        AstChildren::<ModulePath>::new(self.syntax()).next()
     }
 }
 
@@ -507,7 +494,7 @@ impl AstNode for UseStmt {
 
 /// Module path node
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub struct ModulePath(ResolvedNode);
+pub struct ModulePath(pub(crate) ResolvedNode);
 
 impl ModulePath {
     /// Returns the path as a string

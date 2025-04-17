@@ -12,8 +12,9 @@
 #![allow(clippy::wildcard_imports)]
 #![allow(clippy::enum_glob_use)]
 
-use crate::SyntaxKind::*;
-use crate::T;
+use ram_syntax::SyntaxKind::*;
+use ram_syntax::T;
+
 use crate::diagnostic::{Diagnostic, DiagnosticKind};
 use crate::parser::{Parser, TokenSet};
 
