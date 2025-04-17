@@ -175,6 +175,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "base_db"
+version = "0.1.0"
+dependencies = [
+ "dashmap 5.5.3",
+ "indexmap",
+ "la-arena",
+ "ram_error",
+ "ram_syntax",
+ "rustc-hash 1.1.0",
+ "salsa",
+ "tracing",
+ "triomphe",
+ "typed-arena",
+]
+
+[[package]]
 name = "beef"
 version = "0.5.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -725,6 +741,46 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
+name = "hir"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base_db",
+ "cstree",
+ "drop_bomb",
+ "hir_def",
+ "indexmap",
+ "itertools 0.14.0",
+ "la-arena",
+ "ram_error",
+ "ram_syntax",
+ "salsa",
+ "thiserror 2.0.11",
+ "tracing",
+ "typed-arena",
+]
+
+[[package]]
+name = "hir_def"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base_db",
+ "cstree",
+ "drop_bomb",
+ "indexmap",
+ "itertools 0.14.0",
+ "la-arena",
+ "ram_error",
+ "ram_parser",
+ "ram_syntax",
+ "salsa",
+ "thiserror 2.0.11",
+ "tracing",
+ "typed-arena",
+]
+
+[[package]]
 name = "httparse"
 version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -910,9 +966,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.7.1"
+version = "2.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c9c992b02b5b4c94ea26e32fe5bccb7aa7d9f390ab5c1221ff895bc7ea8b652"
+checksum = "cea70ddb795996207ad57735b50c5982d8844f38ba9ee5f1aedcfb708a2aa11e"
 dependencies = [
  "equivalent",
  "hashbrown 0.15.2",
@@ -978,6 +1034,12 @@ dependencies = [
  "once_cell",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "la-arena"
+version = "0.3.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3752f229dcc5a481d60f385fa479ff46818033d881d2d801aa27dffcfb5e8306"
 
 [[package]]
 name = "lazy_static"
@@ -2241,8 +2303,15 @@ version = "0.1.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ef8f7726da4807b58ea5c96fdc122f80702030edc33b35aff9190a51148ccc85"
 dependencies = [
+ "serde",
  "stable_deref_trait",
 ]
+
+[[package]]
+name = "typed-arena"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6af6ae20167a9ece4bcb41af5b80f8a1f1df981f6391189ce00fd257af04126a"
 
 [[package]]
 name = "tz-rs"

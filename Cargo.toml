@@ -15,15 +15,20 @@ anyhow             = "1.0.95"
 chumsky            = "0.10.0"
 clap               = { version = "4.5.23", features = ["derive", "env", "string", "wrap_help"] }
 cstree             = { version = "0.12.2", features = ["derive", "serde"] }
+dashmap            = "5.5.3"
 drop_bomb          = "0.1.5"
 globset            = { version = "0.4.15", features = ["serde"] }
 human-panic        = "2.0.2"
+indexmap           = "2.9.0"
 itertools          = "0.14.0"
+la-arena           = "0.3.1"
 miette             = "7.4.0"
 num-derive         = "0.4.2"
 num-traits         = "0.2.19"
 owo-colors         = "4.1.0"
+query-group        = "0.2.0"
 rowan              = "0.15.11"
+rustc-hash         = "1.1.0"
 salsa              = "0.18.0"
 semver             = "1.0.24"
 shadow-rs          = "1.0.1"
@@ -35,6 +40,8 @@ tokio              = "1.42.0"
 tokio-util         = { version = "0.7.13", features = ["codec", "compat"] }
 tracing            = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+triomphe           = "0.1.11"
+typed-arena        = "2.0.2"
 walkdir            = "2.5.0"
 
 # Serde and serialization
@@ -55,10 +62,13 @@ quote = "1.0.40"
 syn = { version = "2.0.100", features = ["full"] }
 
 # Workspace crates
+base_db    = { path = "crates/base_db" }
 ram_derive = { path = "crates/ram_derive" }
 ram_error  = { path = "crates/ram_error" }
 ram_parser = { path = "crates/ram_parser" }
 ram_syntax = { path = "crates/ram_syntax" }
+hir_def    = { path = "crates/hir_def" }
+hir        = { path = "crates/hir" }
 
 # Lint rules that I like taken from
 # https://github.com/rolldown/rolldown/blob/main/Cargo.toml
