@@ -69,6 +69,8 @@ ram_parser = { path = "crates/ram_parser" }
 ram_syntax = { path = "crates/ram_syntax" }
 hir_def    = { path = "crates/hir_def" }
 hir        = { path = "crates/hir" }
+ram_core   = { path = "crates/ram_core" }
+ram_vm     = { path = "crates/ram_vm" }
 
 # Lint rules that I like taken from
 # https://github.com/rolldown/rolldown/blob/main/Cargo.toml

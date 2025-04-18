@@ -45,6 +45,11 @@ impl ResolvedFile {
     pub fn references(&self) -> &[DefReference] {
         &self.references
     }
+
+    /// Get all definitions in this file
+    pub fn all_definitions(&self) -> Vec<DefId> {
+        self.definitions.values().copied().collect()
+    }
 }
 
 /// Query implementation for resolving a file

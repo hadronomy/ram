@@ -8,6 +8,7 @@ use anstream::println;
 use clap::{CommandFactory, Parser};
 use human_panic::{Metadata, setup_panic};
 use miette::*;
+use ram_error::Error;
 use shadow_rs::shadow;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::time::UtcTime;
@@ -17,7 +18,6 @@ use tracing_subscriber::{EnvFilter, Registry, reload};
 
 use crate::cli::{Cli, Command, VersionFormat};
 use crate::color::ColorChoice;
-pub use crate::error::Error;
 pub use crate::version::*;
 
 pub mod cli;
@@ -25,6 +25,7 @@ pub mod color;
 pub mod error;
 pub mod language;
 pub mod lsp;
+pub mod run;
 pub mod version;
 
 shadow!(build);
@@ -147,6 +148,12 @@ async fn handle_command_iner(
             }
 
             Ok::<_, Error>(ExitCode::SUCCESS)
+        }
+        Command::Run { program, input: _, memory: _ } => {
+            let program_path = std::path::Path::new(&program);
+            run::run_program(program_path, None, None)
+                .map(|_| ExitCode::SUCCESS)
+                .map_err(Error::RunError)
         }
         Command::Server => {
             tracing_controls.set_stdout_enabled(false);

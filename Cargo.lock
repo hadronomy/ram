@@ -1449,9 +1449,11 @@ dependencies = [
  "num-derive",
  "num-traits",
  "owo-colors",
+ "ram_core",
  "ram_error",
  "ram_parser",
  "ram_syntax",
+ "ram_vm",
  "rowan",
  "salsa",
  "semver",
@@ -1473,6 +1475,24 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "walkdir",
+]
+
+[[package]]
+name = "ram_core"
+version = "0.1.0"
+dependencies = [
+ "base_db",
+ "dashmap 5.5.3",
+ "indexmap",
+ "la-arena",
+ "miette",
+ "ram_error",
+ "ram_syntax",
+ "rustc-hash 1.1.0",
+ "salsa",
+ "thiserror 2.0.11",
+ "tracing",
+ "typed-arena",
 ]
 
 [[package]]
@@ -1535,6 +1555,28 @@ dependencies = [
  "ram_derive",
  "serde",
  "serde_derive",
+]
+
+[[package]]
+name = "ram_vm"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "base_db",
+ "dashmap 5.5.3",
+ "hir",
+ "hir_def",
+ "indexmap",
+ "la-arena",
+ "ram_core",
+ "ram_error",
+ "ram_parser",
+ "ram_syntax",
+ "rustc-hash 1.1.0",
+ "salsa",
+ "thiserror 2.0.11",
+ "tracing",
+ "typed-arena",
 ]
 
 [[package]]

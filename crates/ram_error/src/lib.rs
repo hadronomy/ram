@@ -17,6 +17,17 @@ pub enum Error {
     #[diagnostic(code(ram::lsp_error))]
     LspError(miette::Report),
 
+    #[error("Run error: {0}")]
+    #[diagnostic(code(ram::run_error))]
+    RunError(miette::Report),
+
+    #[error("Command error: {0}")]
+    #[diagnostic(code(ram::command_error))]
+    CommandError(String),
+
+    // #[error("VM error: {0}")]
+    // #[diagnostic(code(ram::vm_error))]
+    // VmError(#[from] ram_core::error::VmError),
     #[error("Path not found: {0}")]
     #[diagnostic(code(ram::path_not_found))]
     PathNotFound(PathBuf),
