@@ -75,10 +75,10 @@ impl From<DiagnosticKind> for miette::Severity {
 
 impl Diagnostic {
     /// Create a new error diagnostic.
-    pub fn error(message: String, help: String, span: Range<usize>) -> Self {
+    pub fn error(message: impl Into<String>, help: impl Into<String>, span: Range<usize>) -> Self {
         Self {
-            message,
-            help,
+            message: message.into(),
+            help: help.into(),
             labeled_spans: vec![(span, "here".to_string())],
             kind: DiagnosticKind::Error,
             code: None,
@@ -87,10 +87,14 @@ impl Diagnostic {
     }
 
     /// Create a new warning diagnostic.
-    pub fn warning(message: String, help: String, span: Range<usize>) -> Self {
+    pub fn warning(
+        message: impl Into<String>,
+        help: impl Into<String>,
+        span: Range<usize>,
+    ) -> Self {
         Self {
-            message,
-            help,
+            message: message.into(),
+            help: help.into(),
             labeled_spans: vec![(span, "here".to_string())],
             kind: DiagnosticKind::Warning,
             code: None,
@@ -99,10 +103,10 @@ impl Diagnostic {
     }
 
     /// Create a new advice diagnostic.
-    pub fn advice(message: String, help: String, span: Range<usize>) -> Self {
+    pub fn advice(message: impl Into<String>, help: impl Into<String>, span: Range<usize>) -> Self {
         Self {
-            message,
-            help,
+            message: message.into(),
+            help: help.into(),
             labeled_spans: vec![(span, "here".to_string())],
             kind: DiagnosticKind::Advice,
             code: None,
