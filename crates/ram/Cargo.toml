@@ -16,7 +16,6 @@ serde   = ["dep:serde", "serde_json", "serde_derive"]
 [dependencies]
 anstream           = { workspace = true }
 anyhow             = { workspace = true }
-chumsky            = { workspace = true }
 clap               = { workspace = true }
 futures            = { version = "0.3.31", default-features = false, features = ["std", "async-await"] }
 globset            = { workspace = true, features = ["serde"] }
@@ -26,17 +25,21 @@ miette             = { workspace = true, features = ["fancy", "syntect-highlight
 num-derive         = { workspace = true }
 num-traits         = { workspace = true }
 owo-colors         = { workspace = true }
+rowan              = { workspace = true }
 salsa              = { workspace = true }
 semver             = { workspace = true }
 serde              = { workspace = true, optional = true }
 serde_derive       = { workspace = true, optional = true }
 serde_json         = { workspace = true, optional = true }
+shadow-rs          = { workspace = true }
 syntect            = { workspace = true }
+taplo              = { workspace = true }
 tempfile           = { workspace = true }
 textwrap           = { workspace = true }
 thiserror          = { workspace = true }
 tokio              = { workspace = true, features = ["io-util", "io-std", "macros", "rt-multi-thread", "time"] }
 tokio-util         = { workspace = true }
+toml               = { workspace = true }
 tower              = { workspace = true, features = ["util"] }
 tower-lsp          = { workspace = true }
 tower-lsp-macros   = { workspace = true }
@@ -44,10 +47,11 @@ tracing            = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["time"] }
 walkdir            = { workspace = true }
 
-ram_error = { workspace = true }
-shadow-rs = { workspace = true }
-taplo     = { workspace = true }
-toml      = { workspace = true }
+ram_error  = { workspace = true }
+ram_parser = { workspace = true }
+ram_syntax = { workspace = true }
+ram_core   = { workspace = true }
+ram_vm     = { workspace = true }
 
 [build-dependencies]
 shadow-rs = "1.0.1"

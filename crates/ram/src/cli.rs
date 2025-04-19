@@ -69,6 +69,23 @@ pub enum Command {
         /// Output the ast as JSON.
         #[arg(long, short, action)]
         ast: bool,
+
+        #[arg(long, short, action)]
+        reprint: bool,
+    },
+
+    /// Run a RAM program in the virtual machine.
+    Run {
+        /// The RAM program file to execute.
+        program: String,
+
+        /// Input values to provide to the program (space-separated).
+        #[arg(long, short, value_delimiter = ' ')]
+        input: Option<Vec<i64>>,
+
+        /// Show memory contents after execution.
+        #[arg(long, short, action)]
+        memory: bool,
     },
 }
 

@@ -1,0 +1,28 @@
+[package]
+name = "ram_vm"
+version = "0.1.0"
+edition = "2024"
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Core dependencies
+salsa.workspace = true
+la-arena.workspace = true
+typed-arena.workspace = true
+indexmap.workspace = true
+dashmap.workspace = true
+rustc-hash.workspace = true
+tracing.workspace = true
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Workspace dependencies
+base_db.workspace = true
+ram_error.workspace = true
+ram_syntax.workspace = true
+ram_parser.workspace = true
+ram_core.workspace = true
+hir.workspace = true
+hir_def.workspace = true
