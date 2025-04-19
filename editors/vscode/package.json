@@ -4,7 +4,7 @@
   "displayName": "ram",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@10.6.2",
+  "packageManager": "pnpm@10.8.1",
   "description": "",
   "funding": "https://github.com/sponsors/hadronomy",
   "homepage": "https://github.com/hadronomy/ram#readme",
@@ -30,7 +30,7 @@
     "syntax/*"
   ],
   "engines": {
-    "vscode": "^1.98.0"
+    "vscode": "^1.99.1"
   },
   "activationEvents": [
     "onStartupFinished"
@@ -100,24 +100,24 @@
     "release": "bumpp && nr publish"
   },
   "dependencies": {
-    "reactive-vscode": "^0.2.13",
+    "reactive-vscode": "^0.2.14",
     "vscode-ext-gen": "^1.0.2",
     "vscode-languageclient": "^9.0.1"
   },
   "devDependencies": {
-    "@antfu/ni": "^24.1.0",
+    "@antfu/ni": "^24.3.0",
     "@hadronomy/eslint-config": "^4.1.2",
-    "@types/node": "^22.13.10",
-    "@types/vscode": "^1.98.0",
-    "@types/ws": "^8.18.0",
-    "@vscode/vsce": "^3.2.2",
+    "@types/node": "^22.14.1",
+    "@types/vscode": "^1.99.1",
+    "@types/ws": "^8.18.1",
+    "@vscode/vsce": "^3.3.2",
     "bumpp": "^10.1.0",
-    "eslint": "^9.22.0",
+    "eslint": "^9.25.0",
     "esno": "^4.8.0",
-    "pnpm": "^10.6.2",
+    "pnpm": "^10.8.1",
     "tsup": "^8.4.0",
-    "typescript": "^5.8.2",
-    "vite": "^6.2.1",
-    "vitest": "^3.0.8"
+    "typescript": "^5.8.3",
+    "vite": "^6.3.2",
+    "vitest": "^3.1.1"
   }
 }
