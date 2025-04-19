@@ -752,7 +752,9 @@ dependencies = [
  "indexmap",
  "itertools 0.14.0",
  "la-arena",
+ "ram_core",
  "ram_error",
+ "ram_parser",
  "ram_syntax",
  "salsa",
  "thiserror 2.0.11",
@@ -1555,6 +1557,7 @@ dependencies = [
  "ram_derive",
  "serde",
  "serde_derive",
+ "tracing",
 ]
 
 [[package]]

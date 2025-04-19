@@ -2,6 +2,7 @@
 //!
 //! This module defines the salsa database interface for the HIR crate.
 
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use base_db::input::FileId;
@@ -15,4 +16,10 @@ pub trait HirDatabase: HirDefDatabase {
 
     /// Get the body for a specific definition
     fn body(&self, def_id: crate::ids::DefId) -> Arc<crate::body::Body>;
+
+    /// Get all bodies in a file
+    fn bodies_in_file(
+        &self,
+        file_id: FileId,
+    ) -> Arc<HashMap<crate::ids::LocalDefId, Arc<crate::body::Body>>>;
 }

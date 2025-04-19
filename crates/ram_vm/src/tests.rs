@@ -172,15 +172,17 @@ fn test_loop_with_jumps() {
         .push(Instruction::with_operand(InstructionKind::Sub, Operand::immediate(6)));
 
     // Add a label for the end
-    program.labels.insert("end".to_string(), 10);
+    program.labels.insert("end".to_string(), 9);
 
     // Jump to end if counter == 6
     program
         .instructions
-        .push(Instruction::with_operand(InstructionKind::JumpZero, Operand::direct(10)));
+        .push(Instruction::with_operand(InstructionKind::JumpZero, Operand::direct_str("end")));
 
     // Jump back to loop start
-    program.instructions.push(Instruction::with_operand(InstructionKind::Jump, Operand::direct(2)));
+    program
+        .instructions
+        .push(Instruction::with_operand(InstructionKind::Jump, Operand::direct_str("loop")));
 
     // End
     program.instructions.push(Instruction::without_operand(InstructionKind::Halt));
@@ -191,8 +193,8 @@ fn test_loop_with_jumps() {
     // Create the VM with vector-based I/O for testing
     let mut vm = VirtualMachine::new(program, VecInput::new(vec![]), VecOutput::new(), db);
 
-    // Run the program
-    vm.run().unwrap();
+    // Run the program with a maximum number of iterations to prevent infinite loops
+    vm.run_with_max_iterations(100).unwrap();
 
     // Check the output
     let output = vm.output.values;

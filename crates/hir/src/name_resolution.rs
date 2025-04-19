@@ -53,6 +53,7 @@ impl ResolvedFile {
 }
 
 /// Query implementation for resolving a file
+#[allow(dead_code)]
 pub(crate) fn resolve_file_query(
     db: &dyn crate::db::HirDatabase,
     file_id: FileId,

@@ -51,6 +51,24 @@ impl<I: Input, O: Output> VirtualMachine<I, O> {
         Ok(())
     }
 
+    /// Execute the program until it halts or reaches the maximum number of iterations
+    pub fn run_with_max_iterations(&mut self, max_iterations: usize) -> Result<(), VmError> {
+        let mut iterations = 0;
+        while self.pc < self.program.len() && iterations < max_iterations {
+            self.step()?;
+            iterations += 1;
+        }
+
+        if iterations >= max_iterations && self.pc < self.program.len() {
+            return Err(VmError::InvalidInstruction(format!(
+                "Program exceeded maximum iterations ({})",
+                max_iterations
+            )));
+        }
+
+        Ok(())
+    }
+
     /// Execute a single instruction
     pub fn step(&mut self) -> Result<(), VmError> {
         if self.pc >= self.program.len() {

@@ -8,11 +8,12 @@ repository.workspace = true
 version.workspace    = true
 
 [dependencies]
-cstree             = { workspace = true }
-either = "1.15.0"
-ram_derive         = { workspace = true }
-serde              = { workspace = true, optional = true }
-serde_derive       = { workspace = true, optional = true }
+cstree       = { workspace = true }
+either       = "1.15.0"
+ram_derive   = { workspace = true }
+serde        = { workspace = true, optional = true }
+serde_derive = { workspace = true, optional = true }
+tracing      = { workspace = true }
 
 [features]
 default = []

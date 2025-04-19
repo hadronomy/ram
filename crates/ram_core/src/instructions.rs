@@ -445,15 +445,27 @@ impl InstructionDefinition for JumpInstruction {
             .ok_or_else(|| VmError::InvalidOperand("JUMP requires an operand".to_string()))?;
         match operand.kind {
             OperandKind::Direct => {
-                // For JUMP, we always treat the operand as a label name
-                let label = match &operand.value {
-                    operand::OperandValue::Number(num) => num.to_string(),
-                    operand::OperandValue::String(s) => s.clone(),
-                };
-                debug!("JUMP: Attempting to jump to label '{}'", label);
-                let pc = vm_state.resolve_label(&label)?;
-                debug!("JUMP: Resolved label '{}' to PC={}", label, pc);
-                vm_state.set_program_counter(pc);
+                match &operand.value {
+                    operand::OperandValue::Number(num) => {
+                        // For numeric direct operands, jump directly to that memory location
+                        // Subtracting 1 because we want to jump to operand - 1
+                        let target = (*num as usize).saturating_sub(1);
+                        debug!(
+                            "JUMP: Jumping directly to memory location {} (operand {} - 1)",
+                            target, num
+                        );
+                        vm_state.set_program_counter(target);
+                    }
+                    operand::OperandValue::String(s) => {
+                        // For string operands, treat as a label
+                        debug!("JUMP: Attempting to jump to label '{}'", s);
+                        let pc = vm_state.resolve_label(s)?;
+                        // Subtracting 1 from label address because we want to jump to label - 1
+                        let target = pc.saturating_sub(1);
+                        debug!("JUMP: Resolved label '{}' to PC={} (jumping to {})", s, pc, target);
+                        vm_state.set_program_counter(target);
+                    }
+                }
             }
             _ => {
                 return Err(VmError::InvalidOperand(
@@ -492,15 +504,30 @@ impl InstructionDefinition for JumpGtzInstruction {
         if vm_state.accumulator() > 0 {
             match operand.kind {
                 OperandKind::Direct => {
-                    // For JGTZ, we always treat the operand as a label name
-                    let label = match &operand.value {
-                        operand::OperandValue::Number(num) => num.to_string(),
-                        operand::OperandValue::String(s) => s.clone(),
-                    };
-                    debug!("JGTZ: Attempting to jump to label '{}'", label);
-                    let pc = vm_state.resolve_label(&label)?;
-                    debug!("JGTZ: Resolved label '{}' to PC={}", label, pc);
-                    vm_state.set_program_counter(pc);
+                    match &operand.value {
+                        operand::OperandValue::Number(num) => {
+                            // For numeric direct operands, jump directly to that memory location
+                            // Subtracting 1 because we want to jump to operand - 1
+                            let target = (*num as usize).saturating_sub(1);
+                            debug!(
+                                "JGTZ: Jumping directly to memory location {} (operand {} - 1)",
+                                target, num
+                            );
+                            vm_state.set_program_counter(target);
+                        }
+                        operand::OperandValue::String(s) => {
+                            // For string operands, treat as a label
+                            debug!("JGTZ: Attempting to jump to label '{}'", s);
+                            let pc = vm_state.resolve_label(s)?;
+                            // Subtracting 1 from label address because we want to jump to label - 1
+                            let target = pc.saturating_sub(1);
+                            debug!(
+                                "JGTZ: Resolved label '{}' to PC={} (jumping to {})",
+                                s, pc, target
+                            );
+                            vm_state.set_program_counter(target);
+                        }
+                    }
                 }
                 _ => {
                     return Err(VmError::InvalidOperand(
@@ -540,15 +567,30 @@ impl InstructionDefinition for JumpZeroInstruction {
         if vm_state.accumulator() == 0 {
             match operand.kind {
                 OperandKind::Direct => {
-                    // For JZERO, we always treat the operand as a label name
-                    let label = match &operand.value {
-                        operand::OperandValue::Number(num) => num.to_string(),
-                        operand::OperandValue::String(s) => s.clone(),
-                    };
-                    debug!("JZERO: Attempting to jump to label '{}'", label);
-                    let pc = vm_state.resolve_label(&label)?;
-                    debug!("JZERO: Resolved label '{}' to PC={}", label, pc);
-                    vm_state.set_program_counter(pc);
+                    match &operand.value {
+                        operand::OperandValue::Number(num) => {
+                            // For numeric direct operands, jump directly to that memory location
+                            // Subtracting 1 because we want to jump to operand - 1
+                            let target = (*num as usize).saturating_sub(1);
+                            debug!(
+                                "JZERO: Jumping directly to memory location {} (operand {} - 1)",
+                                target, num
+                            );
+                            vm_state.set_program_counter(target);
+                        }
+                        operand::OperandValue::String(s) => {
+                            // For string operands, treat as a label
+                            debug!("JZERO: Attempting to jump to label '{}'", s);
+                            let pc = vm_state.resolve_label(s)?;
+                            // Subtracting 1 from label address because we want to jump to label - 1
+                            let target = pc.saturating_sub(1);
+                            debug!(
+                                "JZERO: Resolved label '{}' to PC={} (jumping to {})",
+                                s, pc, target
+                            );
+                            vm_state.set_program_counter(target);
+                        }
+                    }
                 }
                 _ => {
                     return Err(VmError::InvalidOperand(

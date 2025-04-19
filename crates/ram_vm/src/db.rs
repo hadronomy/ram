@@ -201,7 +201,36 @@ impl VmDatabase for VmDatabaseImpl {
     }
 
     fn parse_to_vm_program(&self, source: &str) -> Result<crate::program::Program, VmError> {
-        unimplemented!("parse_to_vm_program");
+        // Parse the source into an AST Program directly
+        let (program, errors) = self.parse_program(source);
+
+        // Check for errors
+        if !errors.is_empty() {
+            return Err(VmError::InvalidInstruction(format!("Parse errors: {:?}", errors)));
+        }
+
+        // Create a new database instance for this operation
+        // This avoids the need to modify the existing database
+        let mut temp_db = VmDatabaseImpl::new();
+
+        // Create a temporary file ID for this source
+        let file_id = FileId(0);
+
+        // Set the file text in the temporary database
+        temp_db.set_file_text(file_id, source);
+
+        // Lower the AST Program to an ItemTree in the temporary database
+        let item_tree = Arc::new(hir_def::item_tree::ItemTree::lower(&program, file_id));
+
+        // Create a DefId for the program
+        let def_id = hir::ids::DefId { file_id, local_id: hir::ids::LocalDefId(0) };
+
+        // Lower the AST Program to a HIR Body
+        let body = hir::lower::lower_program(&program, def_id, file_id, &item_tree);
+
+        // Convert the HIR Body to a VM Program
+        // We can use the original database for this since it doesn't depend on file_id
+        self.hir_to_vm_program(&body)
     }
 
     fn add_diagnostic(&mut self, file_id: FileId, diagnostic: Diagnostic) {
@@ -284,7 +313,71 @@ impl HirDatabase for VmDatabaseImpl {
 
     #[doc = " Get the body for a specific definition"]
     fn body(&self, def_id: hir::ids::DefId) -> Arc<hir::body::Body> {
-        unimplemented!("body");
+        // Get the file ID from the definition ID
+        let file_id = def_id.file_id;
+
+        // Get all bodies in the file
+        let bodies = self.bodies_in_file(file_id);
+
+        // Find the body for this definition
+        if let Some(body) = bodies.get(&def_id.local_id) {
+            return body.clone();
+        }
+
+        // If not found, create a new body
+        // Get the file text from the database
+        let file_text = self.file_text(file_id);
+
+        // Parse the file text into an AST Program
+        let (program, _errors) = self.parse_program(file_text.text(self).as_ref());
+
+        // Get the ItemTree for this file
+        let item_tree = self.item_tree(file_id);
+
+        // Lower the AST Program to a HIR Body
+        let body = hir::lower::lower_program(&program, def_id, file_id, &item_tree);
+
+        Arc::new(body)
+    }
+
+    fn bodies_in_file(
+        &self,
+        file_id: FileId,
+    ) -> Arc<HashMap<hir::ids::LocalDefId, Arc<hir::body::Body>>> {
+        // Create a map to store the bodies
+        let mut bodies = HashMap::new();
+
+        // Get the file text from the database
+        let file_text = self.file_text(file_id);
+
+        // Parse the file text into an AST Program
+        let (program, _errors) = self.parse_program(file_text.text(self).as_ref());
+
+        // Get the ItemTree for this file
+        let item_tree = self.item_tree(file_id);
+
+        // Process all labels in the ItemTree
+        for label in &item_tree.labels {
+            // Create a DefId for this label
+            let def_id = hir::ids::DefId { file_id, local_id: hir::ids::LocalDefId(label.id.0) };
+
+            // Lower the AST Program to a HIR Body for this label
+            let body = hir::lower::lower_program(&program, def_id, file_id, &item_tree);
+
+            // Add the body to the map
+            bodies.insert(def_id.local_id, Arc::new(body));
+        }
+
+        // If there are no labels, create a default body for the file
+        if bodies.is_empty() {
+            let def_id = hir::ids::DefId { file_id, local_id: hir::ids::LocalDefId(0) };
+
+            let body = hir::lower::lower_program(&program, def_id, file_id, &item_tree);
+
+            bodies.insert(def_id.local_id, Arc::new(body));
+        }
+
+        Arc::new(bodies)
     }
 }
 

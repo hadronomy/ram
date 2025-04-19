@@ -246,29 +246,17 @@ pub struct Operand(pub(crate) ResolvedNode);
 impl Operand {
     /// Returns the direct operand if this is a direct operand
     pub fn as_direct(&self) -> Option<DirectOperand> {
-        if DirectOperand::can_cast(self.syntax()) {
-            Some(DirectOperand(self.0.clone()))
-        } else {
-            None
-        }
+        self.syntax().children().find_map(|node| DirectOperand::cast(node.clone()))
     }
 
     /// Returns the indirect operand if this is an indirect operand
     pub fn as_indirect(&self) -> Option<IndirectOperand> {
-        if IndirectOperand::can_cast(self.syntax()) {
-            Some(IndirectOperand(self.0.clone()))
-        } else {
-            None
-        }
+        self.syntax().children().find_map(|node| IndirectOperand::cast(node.clone()))
     }
 
     /// Returns the immediate operand if this is an immediate operand
     pub fn as_immediate(&self) -> Option<ImmediateOperand> {
-        if ImmediateOperand::can_cast(self.syntax()) {
-            Some(ImmediateOperand(self.0.clone()))
-        } else {
-            None
-        }
+        self.syntax().children().find_map(|node| ImmediateOperand::cast(node.clone()))
     }
 
     /// Returns the value of the operand

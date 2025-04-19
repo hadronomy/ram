@@ -12,6 +12,7 @@ pub mod body;
 pub mod db;
 pub mod expr;
 pub mod ids;
+pub mod lower;
 pub mod name_resolution;
 pub mod source_analyzer;
 pub mod ty;

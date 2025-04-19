@@ -22,5 +22,7 @@ typed-arena.workspace = true
 # Workspace dependencies
 base_db.workspace   = true
 hir_def.workspace   = true
+ram_core.workspace  = true
 ram_error.workspace = true
+ram_parser.workspace = true
 ram_syntax.workspace = true

@@ -1,5 +1,6 @@
 load =5
-jump hello
+fuck: sub =1
+jgtz fuck
 load 0
 mul =2
 hello: write 0

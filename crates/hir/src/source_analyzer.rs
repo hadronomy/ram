@@ -15,8 +15,8 @@ use crate::ty::Ty;
 /// A source analyzer that provides access to the semantic information
 /// of a specific file.
 pub struct SourceAnalyzer {
-    db: Arc<dyn HirDatabase>,
-    file_id: FileId,
+    _db: Arc<dyn HirDatabase>,
+    _file_id: FileId,
     resolved_file: Arc<ResolvedFile>,
 }
 
@@ -24,7 +24,7 @@ impl SourceAnalyzer {
     /// Create a new source analyzer for a file
     pub fn new(db: Arc<dyn HirDatabase>, file_id: FileId) -> Self {
         let resolved_file = db.resolve_file(file_id);
-        Self { db, file_id, resolved_file }
+        Self { _db: db, _file_id: file_id, resolved_file }
     }
 
     /// Look up a definition by name

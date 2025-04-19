@@ -6,6 +6,8 @@
 use std::default::Default;
 use std::sync::Arc;
 
+use ram_syntax::AstNode;
+
 use crate::expr::ExprId;
 use crate::ids::{DefId, LocalDefId};
 
@@ -59,6 +61,9 @@ pub enum Literal {
 
     /// A string literal
     String(String),
+
+    /// A label literal (for identifiers that represent labels)
+    Label(String),
 }
 
 /// A reference to a label
@@ -122,11 +127,32 @@ pub struct Label {
 
     /// The name of the label
     pub name: String,
+
+    /// The instruction this label is mapped to (if any)
+    pub instruction_id: Option<LocalDefId>,
 }
 
 /// Query implementation for retrieving a body from the database
-pub(crate) fn body_query(_db: &dyn crate::db::HirDatabase, def_id: DefId) -> Arc<Body> {
-    // Here we would normally lower the AST for the given definition into a Body
-    // For now, we'll just return an empty Body
-    Arc::new(Body { owner: def_id, ..Body::default() })
+#[allow(dead_code)]
+pub(crate) fn body_query(db: &dyn crate::db::HirDatabase, def_id: DefId) -> Arc<Body> {
+    // Get the file ID from the definition ID
+    let file_id = def_id.file_id;
+
+    // Get the ItemTree for this file
+    let item_tree = db.item_tree(file_id);
+
+    // Get the file text
+    let file_text = db.file_text(file_id).text(db).to_string();
+
+    // Parse the file text into an AST Program
+    let (program, _errors) = ram_parser::parse(&file_text);
+    let (tree, cache) = ram_parser::build_tree(program);
+    let syntax_node = ram_syntax::SyntaxNode::new_root_with_resolver(tree, cache);
+    let program =
+        ram_syntax::Program::cast(syntax_node).expect("Failed to cast root node to Program");
+
+    // Lower the AST to HIR
+    let body = crate::lower::lower_program(&program, def_id, file_id, &item_tree);
+
+    Arc::new(body)
 }
