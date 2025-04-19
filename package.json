@@ -6,10 +6,10 @@
   "keywords": [],
   "devDependencies": {
     "@hadronomy/eslint-config": "^4.1.2",
-    "autoprefixer": "10.4.13",
+    "autoprefixer": "10.4.21",
     "eslint": "^9.25.0",
     "oxlint": "^0.16.6",
-    "postcss": "8.4.38",
+    "postcss": "8.5.3",
     "prettier": "^3.5.3",
     "taze": "^19.0.4",
     "turbo": "^2.5.0",
@@ -18,15 +18,17 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "@nx-dotnet/core",
+      "@parcel/watcher",
       "@swc/core",
       "@vscode/vsce-sign",
-      "keytar",
       "esbuild",
-      "nx"
+      "keytar",
+      "nx",
+      "sharp"
     ],
     "overrides": {
-      "@types/react": "19.0.10",
-      "@types/react-dom": "19.0.4"
+      "@types/react": "19.1.2",
+      "@types/react-dom": "19.1.2"
     }
   }
 }
