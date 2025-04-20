@@ -1,6 +1,7 @@
 //! Tests for the RAM virtual machine
 use std::sync::Arc;
 
+use ram_core::db::VmState;
 use ram_core::instruction::{Instruction, InstructionKind};
 use ram_core::operand::Operand;
 
@@ -46,8 +47,8 @@ fn test_simple_program() {
     vm.run().unwrap();
 
     // Check the final state
-    assert_eq!(vm.get_accumulator(), 8, "Accumulator should be 8");
-    assert_eq!(vm.get_memory().get(1).unwrap(), 8, "Memory[1] should be 8");
+    assert_eq!(vm.accumulator(), 8, "Accumulator should be 8");
+    assert_eq!(vm.get_memory(1).unwrap(), 8, "Memory[1] should be 8");
 
     // Check the output
     let output = vm.output.values;

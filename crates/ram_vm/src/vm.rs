@@ -144,18 +144,8 @@ impl<I: Input, O: Output> VirtualMachine<I, O> {
         }
     }
 
-    /// Get the current value of the accumulator
-    pub fn get_accumulator(&self) -> i64 {
-        self.accumulator
-    }
-
-    /// Get a reference to the memory
-    pub fn get_memory(&self) -> &Memory {
-        &self.memory
-    }
-
     /// Get the current program counter
-    pub fn get_pc(&self) -> usize {
+    pub fn pc(&self) -> usize {
         self.pc
     }
 

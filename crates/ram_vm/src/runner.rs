@@ -40,9 +40,9 @@ pub fn run_program(source: &str, input: Vec<i64>) -> Result<RunResult, VmError> 
 
     // Create the result
     let result = RunResult {
-        accumulator: vm.get_accumulator(),
+        accumulator: vm.accumulator(),
         output: vm.output.values.clone(),
-        steps: vm.get_pc(),
+        steps: vm.pc(),
     };
 
     Ok(result)
@@ -76,9 +76,9 @@ pub fn run_program_with_memory(
 
     // Create the result
     let result = RunResult {
-        accumulator: vm.get_accumulator(),
+        accumulator: vm.accumulator(),
         output: vm.output.values.clone(),
-        steps: vm.get_pc(),
+        steps: vm.pc(),
     };
 
     Ok(result)
@@ -108,9 +108,9 @@ pub fn run_program_with_max_iterations(
 
     // Create the result
     let result = RunResult {
-        accumulator: vm.get_accumulator(),
+        accumulator: vm.accumulator(),
         output: vm.output.values.clone(),
-        steps: vm.get_pc(),
+        steps: vm.pc(),
     };
 
     Ok(result)
