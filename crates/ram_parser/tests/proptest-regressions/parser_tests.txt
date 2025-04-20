@@ -1,0 +1,9 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc fa00dedc6a0300e5c387d7f805193ab78fca66078789f66b5e8d2aa84a64b7d9 # shrinks to mod_stmt = "mod A", use_stmt = "use A::A::A", label1 = "A:", instr1 = "HALT", label2 = "A:", instr2 = "HALT", comment = "# "
+cc 714143108f0bf36bb5335735d664015bca7ccaf44183dd6897cd7e79825e46fe # shrinks to program = "use A::A::A"
+cc e671805461eb45eea1bf83084d9731081402d2b8b8821ddec5ea1d1375059d17 # shrinks to stmt = "use A::A::A"

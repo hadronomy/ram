@@ -53,7 +53,7 @@ pub fn convert_errors(source: &str, errors: Vec<Diagnostic>) -> ram_error::Repor
 /// `Parser` struct provides the low-level API for
 /// navigating through the stream of tokens and
 /// constructing the parse tree.
-pub(crate) struct Parser<'t> {
+pub struct Parser<'t> {
     /// The input tokens.
     inp: &'t Input,
     /// Current position in the token stream.
@@ -68,12 +68,12 @@ pub(crate) struct Parser<'t> {
 
 impl<'t> Parser<'t> {
     /// Create a new parser for the given tokens.
-    pub(crate) fn new(inp: &'t Input) -> Parser<'t> {
+    pub fn new(inp: &'t Input) -> Parser<'t> {
         Parser { inp, pos: 0, events: Vec::new(), errors: Vec::new(), steps: Cell::new(0) }
     }
 
     /// Extract the events produced by the parser.
-    pub(crate) fn finish(self) -> (Vec<Event>, Vec<Diagnostic>) {
+    pub fn finish(self) -> (Vec<Event>, Vec<Diagnostic>) {
         (self.events, self.errors)
     }
 
@@ -454,14 +454,14 @@ impl<'t> Parser<'t> {
 
 /// Input to the parser - a sequence of tokens.
 #[derive(Debug)]
-pub(crate) struct Input {
+pub struct Input {
     /// The tokens in the input.
     tokens: Vec<Token>,
 }
 
 impl Input {
     /// Create a new input from a sequence of tokens.
-    pub(crate) fn new(tokens: Vec<Token>) -> Self {
+    pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens }
     }
 
@@ -507,7 +507,7 @@ impl TokenSet {
 /// A marker remembers the position of a syntax tree node that is in the process
 /// of being parsed. It can be completed or abandoned.
 #[must_use]
-pub(crate) struct Marker {
+pub struct Marker {
     pos: u32,
     bomb: DropBomb,
 }
@@ -521,7 +521,7 @@ impl Marker {
     /// Finishes the syntax tree node and assigns `kind` to it,
     /// and returns a `CompletedMarker` for possible future
     /// operation like `.precede()`.
-    pub(crate) fn complete(mut self, p: &mut Parser<'_>, kind: SyntaxKind) -> CompletedMarker {
+    pub fn complete(mut self, p: &mut Parser<'_>, kind: SyntaxKind) -> CompletedMarker {
         self.bomb.defuse();
         let idx = self.pos as usize;
         match &mut p.events[idx] {
@@ -536,7 +536,7 @@ impl Marker {
 
     /// Abandons the syntax tree node. All its children
     /// are attached to its parent instead.
-    pub(crate) fn abandon(mut self, p: &mut Parser<'_>) {
+    pub fn abandon(mut self, p: &mut Parser<'_>) {
         self.bomb.defuse();
         let idx = self.pos as usize;
         if idx == p.events.len() - 1 {
@@ -550,7 +550,7 @@ impl Marker {
 }
 
 /// A completed marker that remembers the position and kind of a syntax tree node.
-pub(crate) struct CompletedMarker {
+pub struct CompletedMarker {
     start_pos: u32,
     kind: SyntaxKind,
 }
@@ -566,7 +566,7 @@ impl CompletedMarker {
     /// whole `A`, decide that it should have started some node
     /// `B` before starting `A`. `precede` allows to do exactly
     /// that.
-    pub(crate) fn precede(self, p: &mut Parser<'_>) -> Marker {
+    pub fn precede(self, p: &mut Parser<'_>) -> Marker {
         let new_pos = p.start();
         let idx = self.start_pos as usize;
         match &mut p.events[idx] {
@@ -580,7 +580,7 @@ impl CompletedMarker {
     }
 
     /// Returns the kind of syntax tree node this marker represents.
-    pub(crate) fn kind(&self) -> SyntaxKind {
+    pub fn kind(&self) -> SyntaxKind {
         self.kind
     }
 }

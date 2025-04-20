@@ -61,6 +61,9 @@ proc-macro2 = "1.0.94"
 quote = "1.0.40"
 syn = { version = "2.0.100", features = ["full"] }
 
+# Dev
+proptest = "1.4.0"
+
 # Workspace crates
 base_db    = { path = "crates/base_db" }
 ram_derive = { path = "crates/ram_derive" }

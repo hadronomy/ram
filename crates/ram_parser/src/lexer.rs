@@ -25,7 +25,7 @@ pub struct Token {
 /// Lexer for RAM assembly language.
 ///
 /// Converts a string into a sequence of tokens.
-pub(crate) struct Lexer<'a> {
+pub struct Lexer<'a> {
     /// The source text.
     source: &'a str,
     /// The current position in the source text.
@@ -38,7 +38,7 @@ pub(crate) struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     /// Create a new lexer for the given source text.
-    pub(crate) fn new(source: &'a str) -> Self {
+    pub fn new(source: &'a str) -> Self {
         Self { source, position: 0, line: 1, column: 1 }
     }
 
@@ -283,7 +283,7 @@ impl<'a> Lexer<'a> {
     }
 
     /// Tokenize the entire source text.
-    pub(crate) fn tokenize(&mut self) -> Vec<Token> {
+    pub fn tokenize(&mut self) -> Vec<Token> {
         let mut tokens = Vec::new();
 
         while self.position < self.source.len() {

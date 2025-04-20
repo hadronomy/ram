@@ -1,16 +1,15 @@
 //! This code is heavily based on [rust-analyzer](https://github.com/rust-analyzer/rust-analyzer)
 //! implementation
 
-mod diagnostic;
-mod event;
+pub mod diagnostic;
+pub mod event;
 mod grammar;
-mod lexer;
-mod parser;
+pub mod lexer;
+pub mod parser;
+mod tree_builder;
 
 #[cfg(test)]
 mod tests;
-
-mod tree_builder;
 
 pub use diagnostic::{Diagnostic, DiagnosticBuilder, DiagnosticKind};
 pub use event::Event;
