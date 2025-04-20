@@ -1616,13 +1616,13 @@ dependencies = [
 name = "ram_vm"
 version = "0.1.0"
 dependencies = [
- "anyhow",
  "base_db",
  "dashmap 5.5.3",
  "hir",
  "hir_def",
  "indexmap",
  "la-arena",
+ "miette",
  "ram_core",
  "ram_error",
  "ram_parser",

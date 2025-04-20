@@ -22,8 +22,8 @@ pub enum VmError {
     #[error("Invalid instruction: {0}")]
     InvalidInstruction(String),
 
-    #[error("Parse error: {0}")]
-    #[diagnostic(code(ram::parse_error))]
+    #[error(transparent)]
+    #[diagnostic(transparent)]
     ParseError(#[from] ram_error::Report),
 
     /// IO error

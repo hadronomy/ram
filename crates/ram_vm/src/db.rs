@@ -10,6 +10,7 @@ use base_db::{
 use hir::db::HirDatabase;
 use hir::name_resolution::ResolvedFile;
 use hir_def::db::{HirDefDatabase, SourceFile};
+use miette::*;
 use ram_core::db::VmState;
 use ram_core::error::VmError;
 use ram_core::instruction::{InstructionDefinition, InstructionKind};
@@ -20,7 +21,6 @@ use ram_parser::{Diagnostic, build_tree, parse};
 use ram_syntax::{AstNode, Program};
 use salsa::{Durability, Event};
 use tracing;
-
 /// The database trait for VM queries
 #[salsa::db]
 pub trait VmDatabase: HirDatabase {
@@ -206,7 +206,12 @@ impl VmDatabase for VmDatabaseImpl {
 
         // Check for errors
         if !errors.is_empty() {
-            return Err(VmError::InvalidInstruction(format!("Parse errors: {:?}", errors)));
+            // Convert all errors to a nice report format
+            // FIXME: Refactor the DB API to be more consistent and
+            // not repetitive
+            let report = ram_parser::convert_errors(source, errors);
+            eprintln!("{:?}", miette::Error::new(report.clone()));
+            return Err(VmError::ParseError(report));
         }
 
         // Create a new database instance for this operation

@@ -1,0 +1,14 @@
+// This is an invalid RAM program with syntax errors
+mod invalid
+
+// Missing semicolon
+use invalid::test
+
+// Invalid instruction
+INVALID 123
+
+// Label without instruction
+label:
+
+// Another error
+READ [123]
