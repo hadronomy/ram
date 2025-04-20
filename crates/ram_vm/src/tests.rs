@@ -136,67 +136,35 @@ fn test_jumps() {
 
 #[test]
 fn test_loop_with_jumps() {
-    // Create a program that counts from 1 to 5 using a loop
-    let mut program = Program::new();
+    // Create a program that outputs numbers 1 to 5 using a loop
+    // This test uses a simpler approach with a RAM program
+    let source = r#"
+        LOAD =0
+        STORE 1
 
-    // Initialize counter to 1
-    program
-        .instructions
-        .push(Instruction::with_operand(InstructionKind::Load, Operand::immediate(1)));
-    program
-        .instructions
-        .push(Instruction::with_operand(InstructionKind::Store, Operand::direct(1)));
+        loop: LOAD 1
+        ADD =1
+        WRITE 0
 
-    // Add a label for the loop start
-    program.labels.insert("loop".to_string(), 2);
+        LOAD 1
+        ADD =1
+        STORE 1
 
-    // Output current counter
-    program.instructions.push(Instruction::with_operand(InstructionKind::Load, Operand::direct(1)));
-    program
-        .instructions
-        .push(Instruction::with_operand(InstructionKind::Write, Operand::immediate(0)));
+        LOAD 1
+        SUB =6
 
-    // Increment counter
-    program.instructions.push(Instruction::with_operand(InstructionKind::Load, Operand::direct(1)));
-    program
-        .instructions
-        .push(Instruction::with_operand(InstructionKind::Add, Operand::immediate(1)));
-    program
-        .instructions
-        .push(Instruction::with_operand(InstructionKind::Store, Operand::direct(1)));
+        JZERO end
+        ADD =1
+        JZERO end
 
-    // Check if counter > 5
-    program.instructions.push(Instruction::with_operand(InstructionKind::Load, Operand::direct(1)));
-    program
-        .instructions
-        .push(Instruction::with_operand(InstructionKind::Sub, Operand::immediate(6)));
+        JUMP loop
 
-    // Add a label for the end
-    program.labels.insert("end".to_string(), 9);
+        end: HALT
+    "#;
 
-    // Jump to end if counter == 6
-    program
-        .instructions
-        .push(Instruction::with_operand(InstructionKind::JumpZero, Operand::direct_str("end")));
-
-    // Jump back to loop start
-    program
-        .instructions
-        .push(Instruction::with_operand(InstructionKind::Jump, Operand::direct_str("loop")));
-
-    // End
-    program.instructions.push(Instruction::without_operand(InstructionKind::Halt));
-
-    // Create the VM database
-    let db = Arc::new(VmDatabaseImpl::new());
-
-    // Create the VM with vector-based I/O for testing
-    let mut vm = VirtualMachine::new(program, VecInput::new(vec![]), VecOutput::new(), db);
-
-    // Run the program with a maximum number of iterations to prevent infinite loops
-    vm.run_with_max_iterations(100).unwrap();
+    // Run the program
+    let result = crate::runner::run_program_with_max_iterations(source, vec![], 100).unwrap();
 
     // Check the output
-    let output = vm.output.values;
-    assert_eq!(output, vec![1, 2, 3, 4, 5], "Output should be [1, 2, 3, 4, 5]");
+    assert_eq!(result.output, vec![1, 2, 3, 4, 5], "Output should be [1, 2, 3, 4, 5]");
 }

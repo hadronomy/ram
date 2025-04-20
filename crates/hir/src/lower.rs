@@ -91,24 +91,40 @@ impl HirCollector {
 
     /// Lower an AST Program to a HIR Body
     pub fn lower_ast(&mut self, program: &ast::Program) {
+        // Keep track of label names and the instruction IDs they should map to
+        let mut label_to_instruction_map: HashMap<String, LocalDefId> = HashMap::new();
+
+        // First pass: Collect all labels that need to be mapped to instructions
+        let mut pending_labels: Vec<String> = Vec::new();
+
+        // Process all statements to build instructions and map labels
         for stmt in program.statements() {
-            if let Some(instruction) = stmt.instruction() {
-                self.lower_instruction(&instruction);
+            if let Some(label_def) = stmt.label_def() {
+                if let Some(name) = label_def.name() {
+                    // Add this label to the pending list
+                    pending_labels.push(name);
+                }
             }
 
-            if let Some(label_def) = stmt.label_def() {
-                // Labels are already processed from the ItemTree
-                // We need to associate them with the next instruction
-                if let Some(name) = label_def.name() {
-                    // Find the label in our body
-                    for label in &mut self.body.labels {
-                        if label.name == name {
-                            // Store the ID of the next instruction that will be created
-                            label.instruction_id = Some(LocalDefId(self.next_local_id));
-                            break;
-                        }
-                    }
+            if let Some(instruction) = stmt.instruction() {
+                // Process the instruction
+                let instr_id = LocalDefId(self.next_local_id);
+                self.lower_instruction(&instruction);
+
+                // Map all pending labels to this instruction
+                for label_name in &pending_labels {
+                    label_to_instruction_map.insert(label_name.clone(), instr_id);
                 }
+
+                // Clear the pending labels list
+                pending_labels.clear();
+            }
+        }
+
+        // Second pass: Update all labels with their instruction IDs
+        for label in &mut self.body.labels {
+            if let Some(&instr_id) = label_to_instruction_map.get(&label.name) {
+                label.instruction_id = Some(instr_id);
             }
         }
     }

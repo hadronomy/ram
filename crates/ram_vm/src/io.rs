@@ -112,6 +112,7 @@ impl Input for VecInput {
 }
 
 /// Vector-based output implementation for testing
+#[derive(Debug, Clone)]
 pub struct VecOutput {
     /// The output values
     pub values: Vec<i64>,

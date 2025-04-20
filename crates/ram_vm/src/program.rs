@@ -7,6 +7,7 @@ use hir::ids::DefId;
 use ram_core::error::VmError;
 use ram_core::instruction::Instruction;
 use ram_core::operand::{Operand, OperandValue};
+use tracing::debug;
 
 /// A program for the RAM virtual machine
 #[derive(Debug, Clone)]
@@ -51,10 +52,12 @@ impl Program {
         // First pass: collect instruction ID mapping
         let mut instruction_indices: HashMap<u32, usize> = HashMap::new();
         for (idx, instr) in body.instructions.iter().enumerate() {
+            debug!("HIR Instruction: {:?}", instr);
             instruction_indices.insert(instr.id.0, idx);
         }
 
         // Second pass: process all labels to build an accurate label map
+        debug!("HIR Labels: {:?}", body.labels);
         for label in &body.labels {
             if let Some(instr_id) = label.instruction_id {
                 if let Some(&idx) = instruction_indices.get(&instr_id.0) {

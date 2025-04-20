@@ -6,6 +6,10 @@ authors.workspace = true
 license.workspace = true
 repository.workspace = true
 
+[features]
+default = []
+examples = []
+
 [dependencies]
 # Core dependencies
 salsa.workspace = true
@@ -17,6 +21,7 @@ rustc-hash.workspace = true
 tracing.workspace = true
 thiserror.workspace = true
 miette.workspace = true
+once_cell = "1.19.0"
 
 # Workspace dependencies
 base_db.workspace = true

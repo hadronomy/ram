@@ -5,7 +5,8 @@ use tracing::debug;
 use crate::db::VmState;
 use crate::error::VmError;
 use crate::instruction::InstructionDefinition;
-use crate::operand::{self, Operand, OperandKind};
+use crate::operand::{Operand, OperandKind};
+use crate::operand_resolver::{DefaultOperandResolver, OperandResolver};
 
 /// LOAD instruction implementation
 #[derive(Debug, Clone)]
@@ -31,46 +32,11 @@ impl InstructionDefinition for LoadInstruction {
     ) -> Result<(), VmError> {
         let operand = operand
             .ok_or_else(|| VmError::InvalidOperand("LOAD requires an operand".to_string()))?;
-        let value = match operand.kind {
-            OperandKind::Direct => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => vm_state.get_memory(*num)?,
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        vm_state.get_memory(address as i64)?
-                    }
-                }
-            }
-            OperandKind::Indirect => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => {
-                        let address = vm_state.get_memory(*num)?;
-                        vm_state.get_memory(address)?
-                    }
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        let indirect_address = vm_state.get_memory(address as i64)?;
-                        vm_state.get_memory(indirect_address)?
-                    }
-                }
-            }
-            OperandKind::Immediate => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => *num,
-                    operand::OperandValue::String(s) => {
-                        // For immediate addressing with a string, try to parse it as a number
-                        s.parse::<i64>().map_err(|_| {
-                            VmError::InvalidOperand(format!(
-                                "Cannot use string '{}' as immediate value",
-                                s
-                            ))
-                        })?
-                    }
-                }
-            }
-        };
+
+        // Use the operand resolver to get the value
+        let resolver = DefaultOperandResolver;
+        let value = resolver.resolve_operand_value(operand, vm_state)?;
+
         vm_state.set_accumulator(value);
         Ok(())
     }
@@ -100,38 +66,17 @@ impl InstructionDefinition for StoreInstruction {
     ) -> Result<(), VmError> {
         let operand = operand
             .ok_or_else(|| VmError::InvalidOperand("STORE requires an operand".to_string()))?;
+
+        // Get the accumulator value
         let acc = vm_state.accumulator();
-        match operand.kind {
-            OperandKind::Direct => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => vm_state.set_memory(*num, acc)?,
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        vm_state.set_memory(address as i64, acc)?
-                    }
-                }
-            }
-            OperandKind::Indirect => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => {
-                        let address = vm_state.get_memory(*num)?;
-                        vm_state.set_memory(address, acc)?
-                    }
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        let indirect_address = vm_state.get_memory(address as i64)?;
-                        vm_state.set_memory(indirect_address, acc)?
-                    }
-                }
-            }
-            OperandKind::Immediate => {
-                return Err(VmError::InvalidOperand(
-                    "STORE cannot use immediate addressing".to_string(),
-                ));
-            }
-        }
+
+        // Use the operand resolver to get the address to store to
+        let resolver = DefaultOperandResolver;
+        let address = resolver.resolve_store_address(operand, vm_state)?;
+
+        // Store the accumulator value to the resolved address
+        vm_state.set_memory(address, acc)?;
+
         Ok(())
     }
 }
@@ -160,48 +105,15 @@ impl InstructionDefinition for AddInstruction {
     ) -> Result<(), VmError> {
         let operand = operand
             .ok_or_else(|| VmError::InvalidOperand("ADD requires an operand".to_string()))?;
-        let value = match operand.kind {
-            OperandKind::Direct => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => vm_state.get_memory(*num)?,
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        vm_state.get_memory(address as i64)?
-                    }
-                }
-            }
-            OperandKind::Indirect => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => {
-                        let address = vm_state.get_memory(*num)?;
-                        vm_state.get_memory(address)?
-                    }
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        let indirect_address = vm_state.get_memory(address as i64)?;
-                        vm_state.get_memory(indirect_address)?
-                    }
-                }
-            }
-            OperandKind::Immediate => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => *num,
-                    operand::OperandValue::String(s) => {
-                        // For immediate addressing with a string, try to parse it as a number
-                        s.parse::<i64>().map_err(|_| {
-                            VmError::InvalidOperand(format!(
-                                "Cannot use string '{}' as immediate value",
-                                s
-                            ))
-                        })?
-                    }
-                }
-            }
-        };
+
+        // Use the operand resolver to get the value
+        let resolver = DefaultOperandResolver;
+        let value = resolver.resolve_operand_value(operand, vm_state)?;
+
+        // Add the value to the accumulator
         let acc = vm_state.accumulator();
         vm_state.set_accumulator(acc + value);
+
         Ok(())
     }
 }
@@ -230,48 +142,15 @@ impl InstructionDefinition for SubInstruction {
     ) -> Result<(), VmError> {
         let operand = operand
             .ok_or_else(|| VmError::InvalidOperand("SUB requires an operand".to_string()))?;
-        let value = match operand.kind {
-            OperandKind::Direct => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => vm_state.get_memory(*num)?,
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        vm_state.get_memory(address as i64)?
-                    }
-                }
-            }
-            OperandKind::Indirect => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => {
-                        let address = vm_state.get_memory(*num)?;
-                        vm_state.get_memory(address)?
-                    }
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        let indirect_address = vm_state.get_memory(address as i64)?;
-                        vm_state.get_memory(indirect_address)?
-                    }
-                }
-            }
-            OperandKind::Immediate => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => *num,
-                    operand::OperandValue::String(s) => {
-                        // For immediate addressing with a string, try to parse it as a number
-                        s.parse::<i64>().map_err(|_| {
-                            VmError::InvalidOperand(format!(
-                                "Cannot use string '{}' as immediate value",
-                                s
-                            ))
-                        })?
-                    }
-                }
-            }
-        };
+
+        // Use the operand resolver to get the value
+        let resolver = DefaultOperandResolver;
+        let value = resolver.resolve_operand_value(operand, vm_state)?;
+
+        // Subtract the value from the accumulator
         let acc = vm_state.accumulator();
         vm_state.set_accumulator(acc - value);
+
         Ok(())
     }
 }
@@ -300,48 +179,15 @@ impl InstructionDefinition for MulInstruction {
     ) -> Result<(), VmError> {
         let operand = operand
             .ok_or_else(|| VmError::InvalidOperand("MUL requires an operand".to_string()))?;
-        let value = match operand.kind {
-            OperandKind::Direct => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => vm_state.get_memory(*num)?,
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        vm_state.get_memory(address as i64)?
-                    }
-                }
-            }
-            OperandKind::Indirect => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => {
-                        let address = vm_state.get_memory(*num)?;
-                        vm_state.get_memory(address)?
-                    }
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        let indirect_address = vm_state.get_memory(address as i64)?;
-                        vm_state.get_memory(indirect_address)?
-                    }
-                }
-            }
-            OperandKind::Immediate => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => *num,
-                    operand::OperandValue::String(s) => {
-                        // For immediate addressing with a string, try to parse it as a number
-                        s.parse::<i64>().map_err(|_| {
-                            VmError::InvalidOperand(format!(
-                                "Cannot use string '{}' as immediate value",
-                                s
-                            ))
-                        })?
-                    }
-                }
-            }
-        };
+
+        // Use the operand resolver to get the value
+        let resolver = DefaultOperandResolver;
+        let value = resolver.resolve_operand_value(operand, vm_state)?;
+
+        // Multiply the accumulator by the value
         let acc = vm_state.accumulator();
         vm_state.set_accumulator(acc * value);
+
         Ok(())
     }
 }
@@ -370,51 +216,20 @@ impl InstructionDefinition for DivInstruction {
     ) -> Result<(), VmError> {
         let operand = operand
             .ok_or_else(|| VmError::InvalidOperand("DIV requires an operand".to_string()))?;
-        let value = match operand.kind {
-            OperandKind::Direct => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => vm_state.get_memory(*num)?,
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        vm_state.get_memory(address as i64)?
-                    }
-                }
-            }
-            OperandKind::Indirect => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => {
-                        let address = vm_state.get_memory(*num)?;
-                        vm_state.get_memory(address)?
-                    }
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        let indirect_address = vm_state.get_memory(address as i64)?;
-                        vm_state.get_memory(indirect_address)?
-                    }
-                }
-            }
-            OperandKind::Immediate => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => *num,
-                    operand::OperandValue::String(s) => {
-                        // For immediate addressing with a string, try to parse it as a number
-                        s.parse::<i64>().map_err(|_| {
-                            VmError::InvalidOperand(format!(
-                                "Cannot use string '{}' as immediate value",
-                                s
-                            ))
-                        })?
-                    }
-                }
-            }
-        };
+
+        // Use the operand resolver to get the value
+        let resolver = DefaultOperandResolver;
+        let value = resolver.resolve_operand_value(operand, vm_state)?;
+
+        // Check for division by zero
         if value == 0 {
             return Err(VmError::DivisionByZero);
         }
+
+        // Divide the accumulator by the value
         let acc = vm_state.accumulator();
         vm_state.set_accumulator(acc / value);
+
         Ok(())
     }
 }
@@ -443,36 +258,15 @@ impl InstructionDefinition for JumpInstruction {
     ) -> Result<(), VmError> {
         let operand = operand
             .ok_or_else(|| VmError::InvalidOperand("JUMP requires an operand".to_string()))?;
-        match operand.kind {
-            OperandKind::Direct => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => {
-                        // For numeric direct operands, jump directly to that memory location
-                        // Subtracting 1 because we want to jump to operand - 1
-                        let target = (*num as usize).saturating_sub(1);
-                        debug!(
-                            "JUMP: Jumping directly to memory location {} (operand {} - 1)",
-                            target, num
-                        );
-                        vm_state.set_program_counter(target);
-                    }
-                    operand::OperandValue::String(s) => {
-                        // For string operands, treat as a label
-                        debug!("JUMP: Attempting to jump to label '{}'", s);
-                        let pc = vm_state.resolve_label(s)?;
-                        // Subtracting 1 from label address because we want to jump to label - 1
-                        let target = pc.saturating_sub(1);
-                        debug!("JUMP: Resolved label '{}' to PC={} (jumping to {})", s, pc, target);
-                        vm_state.set_program_counter(target);
-                    }
-                }
-            }
-            _ => {
-                return Err(VmError::InvalidOperand(
-                    "JUMP can only use direct addressing".to_string(),
-                ));
-            }
-        }
+
+        // Use the operand resolver to get the jump target
+        let resolver = DefaultOperandResolver;
+        let target = resolver.resolve_jump_target(operand, vm_state)?;
+
+        // Set the program counter to the jump target
+        debug!("JUMP: Jumping to target {}", target);
+        vm_state.set_program_counter(target);
+
         Ok(())
     }
 }
@@ -501,41 +295,20 @@ impl InstructionDefinition for JumpGtzInstruction {
     ) -> Result<(), VmError> {
         let operand = operand
             .ok_or_else(|| VmError::InvalidOperand("JGTZ requires an operand".to_string()))?;
+
+        // Only jump if the accumulator is greater than zero
         if vm_state.accumulator() > 0 {
-            match operand.kind {
-                OperandKind::Direct => {
-                    match &operand.value {
-                        operand::OperandValue::Number(num) => {
-                            // For numeric direct operands, jump directly to that memory location
-                            // Subtracting 1 because we want to jump to operand - 1
-                            let target = (*num as usize).saturating_sub(1);
-                            debug!(
-                                "JGTZ: Jumping directly to memory location {} (operand {} - 1)",
-                                target, num
-                            );
-                            vm_state.set_program_counter(target);
-                        }
-                        operand::OperandValue::String(s) => {
-                            // For string operands, treat as a label
-                            debug!("JGTZ: Attempting to jump to label '{}'", s);
-                            let pc = vm_state.resolve_label(s)?;
-                            // Subtracting 1 from label address because we want to jump to label - 1
-                            let target = pc.saturating_sub(1);
-                            debug!(
-                                "JGTZ: Resolved label '{}' to PC={} (jumping to {})",
-                                s, pc, target
-                            );
-                            vm_state.set_program_counter(target);
-                        }
-                    }
-                }
-                _ => {
-                    return Err(VmError::InvalidOperand(
-                        "JGTZ can only use direct addressing".to_string(),
-                    ));
-                }
-            }
+            // Use the operand resolver to get the jump target
+            let resolver = DefaultOperandResolver;
+            let target = resolver.resolve_jump_target(operand, vm_state)?;
+
+            // Set the program counter to the jump target
+            debug!("JGTZ: Jumping to target {}", target);
+            vm_state.set_program_counter(target);
+        } else {
+            debug!("JGTZ: Accumulator <= 0, not jumping");
         }
+
         Ok(())
     }
 }
@@ -564,41 +337,20 @@ impl InstructionDefinition for JumpZeroInstruction {
     ) -> Result<(), VmError> {
         let operand = operand
             .ok_or_else(|| VmError::InvalidOperand("JZERO requires an operand".to_string()))?;
+
+        // Only jump if the accumulator is zero
         if vm_state.accumulator() == 0 {
-            match operand.kind {
-                OperandKind::Direct => {
-                    match &operand.value {
-                        operand::OperandValue::Number(num) => {
-                            // For numeric direct operands, jump directly to that memory location
-                            // Subtracting 1 because we want to jump to operand - 1
-                            let target = (*num as usize).saturating_sub(1);
-                            debug!(
-                                "JZERO: Jumping directly to memory location {} (operand {} - 1)",
-                                target, num
-                            );
-                            vm_state.set_program_counter(target);
-                        }
-                        operand::OperandValue::String(s) => {
-                            // For string operands, treat as a label
-                            debug!("JZERO: Attempting to jump to label '{}'", s);
-                            let pc = vm_state.resolve_label(s)?;
-                            // Subtracting 1 from label address because we want to jump to label - 1
-                            let target = pc.saturating_sub(1);
-                            debug!(
-                                "JZERO: Resolved label '{}' to PC={} (jumping to {})",
-                                s, pc, target
-                            );
-                            vm_state.set_program_counter(target);
-                        }
-                    }
-                }
-                _ => {
-                    return Err(VmError::InvalidOperand(
-                        "JZERO can only use direct addressing".to_string(),
-                    ));
-                }
-            }
+            // Use the operand resolver to get the jump target
+            let resolver = DefaultOperandResolver;
+            let target = resolver.resolve_jump_target(operand, vm_state)?;
+
+            // Set the program counter to the jump target
+            debug!("JZERO: Jumping to target {}", target);
+            vm_state.set_program_counter(target);
+        } else {
+            debug!("JZERO: Accumulator != 0, not jumping");
         }
+
         Ok(())
     }
 }
@@ -627,38 +379,17 @@ impl InstructionDefinition for ReadInstruction {
     ) -> Result<(), VmError> {
         let operand = operand
             .ok_or_else(|| VmError::InvalidOperand("READ requires an operand".to_string()))?;
+
+        // Read input from the VM state
         let value = vm_state.read_input()?;
-        match operand.kind {
-            OperandKind::Direct => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => vm_state.set_memory(*num, value)?,
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        vm_state.set_memory(address as i64, value)?
-                    }
-                }
-            }
-            OperandKind::Indirect => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => {
-                        let address = vm_state.get_memory(*num)?;
-                        vm_state.set_memory(address, value)?
-                    }
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        let indirect_address = vm_state.get_memory(address as i64)?;
-                        vm_state.set_memory(indirect_address, value)?
-                    }
-                }
-            }
-            OperandKind::Immediate => {
-                return Err(VmError::InvalidOperand(
-                    "READ cannot use immediate addressing".to_string(),
-                ));
-            }
-        }
+
+        // Use the operand resolver to get the address to store to
+        let resolver = DefaultOperandResolver;
+        let address = resolver.resolve_store_address(operand, vm_state)?;
+
+        // Store the input value to the resolved address
+        vm_state.set_memory(address, value)?;
+
         Ok(())
     }
 }
@@ -687,47 +418,15 @@ impl InstructionDefinition for WriteInstruction {
     ) -> Result<(), VmError> {
         let operand = operand
             .ok_or_else(|| VmError::InvalidOperand("WRITE requires an operand".to_string()))?;
-        let value = match operand.kind {
-            OperandKind::Direct => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => vm_state.get_memory(*num)?,
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        vm_state.get_memory(address as i64)?
-                    }
-                }
-            }
-            OperandKind::Indirect => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => {
-                        let address = vm_state.get_memory(*num)?;
-                        vm_state.get_memory(address)?
-                    }
-                    operand::OperandValue::String(s) => {
-                        // Try to resolve the string as a label
-                        let address = vm_state.resolve_label(s)?;
-                        let indirect_address = vm_state.get_memory(address as i64)?;
-                        vm_state.get_memory(indirect_address)?
-                    }
-                }
-            }
-            OperandKind::Immediate => {
-                match &operand.value {
-                    operand::OperandValue::Number(num) => *num,
-                    operand::OperandValue::String(s) => {
-                        // For immediate addressing with a string, try to parse it as a number
-                        s.parse::<i64>().map_err(|_| {
-                            VmError::InvalidOperand(format!(
-                                "Cannot use string '{}' as immediate value",
-                                s
-                            ))
-                        })?
-                    }
-                }
-            }
-        };
+
+        // Use the operand resolver to get the value
+        let resolver = DefaultOperandResolver;
+        let value = resolver.resolve_operand_value(operand, vm_state)?;
+        debug!("WRITE: Writing value {}", value);
+
+        // Write the value to the output
         vm_state.write_output(value)?;
+
         Ok(())
     }
 }

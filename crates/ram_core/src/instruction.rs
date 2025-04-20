@@ -7,6 +7,19 @@ use crate::db::VmState;
 use crate::error::VmError;
 use crate::operand::{Operand, OperandKind};
 
+/// Information about an instruction
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InstructionInfo {
+    /// The name of the instruction
+    pub name: String,
+    /// Whether the instruction requires an operand
+    pub requires_operand: bool,
+    /// The allowed operand kinds for this instruction
+    pub allowed_operand_kinds: Vec<OperandKind>,
+    /// A description of the instruction
+    pub description: String,
+}
+
 /// An instruction in the RAM virtual machine
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Instruction {
@@ -154,6 +167,82 @@ impl InstructionKind {
         !matches!(self, Self::Halt)
     }
 
+    /// Get the allowed operand kinds for this instruction
+    pub fn allowed_operand_kinds(&self) -> &[OperandKind] {
+        static ALL_KINDS: [OperandKind; 3] =
+            [OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate];
+
+        match self {
+            Self::Halt => &[],
+            _ => &ALL_KINDS,
+        }
+    }
+
+    /// Get a description of the instruction
+    pub fn description(&self) -> &str {
+        match self {
+            Self::Load => "Load a value into the accumulator",
+            Self::Store => "Store the accumulator value in memory",
+            Self::Add => "Add a value to the accumulator",
+            Self::Sub => "Subtract a value from the accumulator",
+            Self::Mul => "Multiply the accumulator by a value",
+            Self::Div => "Divide the accumulator by a value",
+            Self::Jump => "Jump to a label",
+            Self::JumpGtz => "Jump to a label if the accumulator is greater than zero",
+            Self::JumpZero => "Jump to a label if the accumulator is zero",
+            Self::Read => "Read a value from input",
+            Self::Write => "Write a value to output",
+            Self::Halt => "Halt the program",
+            Self::Custom(_) => "Custom instruction",
+        }
+    }
+
+    /// Get information about the instruction
+    pub fn info(&self) -> InstructionInfo {
+        InstructionInfo {
+            name: self.name().to_string(),
+            requires_operand: self.requires_operand(),
+            allowed_operand_kinds: self.allowed_operand_kinds().to_vec(),
+            description: self.description().to_string(),
+        }
+    }
+
+    /// Get information about all standard instructions
+    pub fn standard_instructions_info() -> Vec<InstructionInfo> {
+        vec![
+            Self::Load.info(),
+            Self::Store.info(),
+            Self::Add.info(),
+            Self::Sub.info(),
+            Self::Mul.info(),
+            Self::Div.info(),
+            Self::Jump.info(),
+            Self::JumpGtz.info(),
+            Self::JumpZero.info(),
+            Self::Read.info(),
+            Self::Write.info(),
+            Self::Halt.info(),
+        ]
+    }
+
+    /// Get all standard instruction kinds
+    pub fn standard_kinds() -> Vec<InstructionKind> {
+        vec![
+            Self::Load,
+            Self::Store,
+            Self::Add,
+            Self::Sub,
+            Self::Mul,
+            Self::Div,
+            Self::Jump,
+            Self::JumpGtz,
+            Self::JumpZero,
+            Self::Read,
+            Self::Write,
+            Self::Halt,
+        ]
+    }
+
     /// Parse an instruction name into an InstructionKind
     pub fn from_name(name: &str) -> Self {
         match name.to_uppercase().as_str() {
@@ -192,6 +281,59 @@ impl InstructionKind {
             "No implementation for instruction: {}",
             self.name()
         )))
+    }
+}
+
+impl InstructionDefinition for InstructionKind {
+    /// Get the name of the instruction
+    fn name(&self) -> &str {
+        self.name()
+    }
+
+    /// Check if the instruction requires an operand
+    fn requires_operand(&self) -> bool {
+        self.requires_operand()
+    }
+
+    /// Get the allowed operand kinds for this instruction
+    fn allowed_operand_kinds(&self) -> &[OperandKind] {
+        self.allowed_operand_kinds()
+    }
+
+    /// Validate that the operand is valid for this instruction
+    fn validate_operand(&self, operand: Option<&Operand>) -> Result<(), VmError> {
+        if self.requires_operand() && operand.is_none() {
+            return Err(VmError::InvalidOperand(format!("{} requires an operand", self.name())));
+        }
+        if !self.requires_operand() && operand.is_some() {
+            return Err(VmError::InvalidOperand(format!(
+                "{} does not accept an operand",
+                self.name()
+            )));
+        }
+        if let Some(operand) = operand {
+            if !self.allowed_operand_kinds().contains(&operand.kind) {
+                return Err(VmError::InvalidOperand(format!(
+                    "{} does not accept {} operands",
+                    self.name(),
+                    match operand.kind {
+                        OperandKind::Direct => "direct",
+                        OperandKind::Indirect => "indirect",
+                        OperandKind::Immediate => "immediate",
+                    }
+                )));
+            }
+        }
+        Ok(())
+    }
+
+    /// Execute the instruction with the given operand and VM state
+    fn execute(
+        &self,
+        operand: Option<&Operand>,
+        vm_state: &mut dyn VmState,
+    ) -> Result<(), VmError> {
+        self.execute(operand, vm_state)
     }
 }
 

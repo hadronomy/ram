@@ -1488,6 +1488,7 @@ dependencies = [
  "indexmap",
  "la-arena",
  "miette",
+ "once_cell",
  "ram_error",
  "ram_syntax",
  "rustc-hash 1.1.0",
