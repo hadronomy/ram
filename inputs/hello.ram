@@ -1,0 +1,70 @@
+# Hello World program in RAM
+# This program outputs "Hello, World!" to the console
+
+# Initialize the accumulator with the ASCII value of 'H'
+LOAD =72
+STORE 0
+WRITE 0
+
+# Output 'e'
+LOAD =101
+STORE 0
+WRITE 0
+
+# Output 'l'
+LOAD =108
+STORE 0
+WRITE 0
+
+# Output 'l'
+LOAD =108
+STORE 0
+WRITE 0
+
+# Output 'o'
+LOAD =111
+STORE 0
+WRITE 0
+
+# Output ','
+LOAD =44
+STORE 0
+WRITE 0
+
+# Output ' '
+LOAD =32
+STORE 0
+WRITE 0
+
+# Output 'W'
+LOAD =87
+STORE 0
+WRITE 0
+
+# Output 'o'
+LOAD =111
+STORE 0
+WRITE 0
+
+# Output 'r'
+LOAD =114
+STORE 0
+WRITE 0
+
+# Output 'l'
+LOAD =108
+STORE 0
+WRITE 0
+
+# Output 'd'
+LOAD =100
+STORE 0
+WRITE 0
+
+# Output '!'
+LOAD =33
+STORE 0
+WRITE 0
+
+# Halt the program
+HALT

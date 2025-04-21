@@ -48,6 +48,7 @@
 
 pub use highlighting::*;
 pub use parser::*;
+pub use ram_parser::*;
 
 pub mod highlighting;
 pub mod parser;

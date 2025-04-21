@@ -5,10 +5,10 @@ use std::process::ExitCode;
 use std::sync::{Arc, RwLock};
 
 use anstream::println;
-use chumsky::{Parser as ChumskyParser, stream};
 use clap::{CommandFactory, Parser};
 use human_panic::{Metadata, setup_panic};
 use miette::*;
+use ram_error::Error;
 use shadow_rs::shadow;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::time::UtcTime;
@@ -18,8 +18,6 @@ use tracing_subscriber::{EnvFilter, Registry, reload};
 
 use crate::cli::{Cli, Command, VersionFormat};
 use crate::color::ColorChoice;
-pub use crate::error::Error;
-use crate::error::handle_parser_errors;
 pub use crate::version::*;
 
 pub mod cli;
@@ -27,6 +25,7 @@ pub mod color;
 pub mod error;
 pub mod language;
 pub mod lsp;
+pub mod run;
 pub mod version;
 
 shadow!(build);
@@ -82,6 +81,7 @@ where
         Box::new(
             miette::MietteHandlerOpts::new()
                 .break_words(false)
+                .show_related_errors_as_nested()
                 .word_separator(textwrap::WordSeparator::AsciiSpace)
                 .word_splitter(textwrap::WordSplitter::NoHyphenation)
                 .with_syntax_highlighting(language::highlighter())
@@ -126,26 +126,34 @@ async fn handle_command_iner(
             Cli::command().print_help().into_diagnostic()?;
             Ok::<_, Error>(ExitCode::SUCCESS)
         }
-        Command::Validate { program, ast } => {
+        Command::Validate { program, ast, reprint } => {
             let src = std::fs::read_to_string(program.clone())
                 .into_diagnostic()
                 .wrap_err(format!("Failed to read file: {}", program))?;
-            let (program, errors) =
-                language::parser().parse_recovery(stream::Stream::from(src.clone()));
-            handle_parser_errors(&src, errors);
+            let (program, errors) = language::parser()(&src);
+
+            // Report any errors
+            for error in errors {
+                eprintln!("{:?}", error);
+            }
 
             if ast {
-                #[cfg(feature = "serde")]
-                {
-                    let json = serde_json::to_string_pretty(&program).unwrap();
-                    println!("{json}");
-                }
-                #[cfg(not(feature = "serde"))]
-                {
-                    println!("{program:#?}");
-                }
+                // Just print the debug representation of the program
+                println!("{program:#?}");
             }
+
+            if reprint {
+                // Print the program back out
+                println!("{program}");
+            }
+
             Ok::<_, Error>(ExitCode::SUCCESS)
+        }
+        Command::Run { program, input: _, memory: _ } => {
+            let program_path = std::path::Path::new(&program);
+            run::run_program(program_path, None, None)
+                .map(|_| ExitCode::SUCCESS)
+                .map_err(Error::RunError)
         }
         Command::Server => {
             tracing_controls.set_stdout_enabled(false);
