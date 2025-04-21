@@ -1,0 +1,88 @@
+package ram:plugin;
+
+interface types {
+    /// Represents the kind of operand
+    enum operand-kind {
+        direct,
+        indirect,
+        immediate,
+    }
+
+    /// Represents an operand for an instruction
+    record operand {
+        /// The kind of operand
+        kind: operand-kind,
+        /// The value of the operand
+        value: string,
+    }
+
+    /// Error types for plugin operations
+    variant error {
+        invalid-instruction(string),
+        invalid-operand(string),
+        execution-error(string),
+        vm-error(string),
+    }
+}
+
+interface host {
+    use types.{operand, error};
+
+    /// Get the accumulator value from the VM
+    get-accumulator: func() -> result<s64, error>;
+
+    /// Set the accumulator value in the VM
+    set-accumulator: func(value: s64) -> result<_, error>;
+
+    /// Read a value from memory at the given address
+    read-memory: func(address: u32) -> result<s64, error>;
+
+    /// Write a value to memory at the given address
+    write-memory: func(address: u32, value: s64) -> result<_, error>;
+
+    /// Read from input
+    read-input: func() -> result<s64, error>;
+
+    /// Write to output
+    write-output: func(value: s64) -> result<_, error>;
+}
+
+interface plugin {
+    use types.{operand, error, operand-kind};
+
+    /// Information about a plugin
+    record plugin-info {
+        /// The name of the plugin
+        name: string,
+        /// The version of the plugin
+        version: string,
+        /// A description of the plugin
+        description: string,
+    }
+
+    /// Information about an instruction
+    record instruction-info {
+        /// The name of the instruction
+        name: string,
+        /// Whether the instruction requires an operand
+        requires-operand: bool,
+        /// The allowed operand kinds for this instruction
+        allowed-operand-kinds: list<operand-kind>,
+        /// A description of the instruction
+        description: string,
+    }
+
+    /// Get information about the plugin
+    get-plugin-info: func() -> plugin-info;
+
+    /// Get all instructions provided by this plugin
+    get-instructions: func() -> list<instruction-info>;
+
+    /// Execute an instruction
+    execute-instruction: func(name: string, operand: option<operand>) -> result<_, error>;
+}
+
+world ram-plugin {
+    import host;
+    export plugin;
+}
