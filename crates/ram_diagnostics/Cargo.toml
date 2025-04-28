@@ -1,0 +1,12 @@
+[package]
+name = "ram_diagnostics"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Error handling
+miette = { version = "5.10.0", features = ["syntect-highlighter"] }
+thiserror = "1.0.40"
+
+# Internal crates
+ram_error = { path = "../ram_error" }

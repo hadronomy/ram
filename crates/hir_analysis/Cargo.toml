@@ -1,0 +1,21 @@
+[package]
+name = "hir_analysis"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Internal crates
+hir = { path = "../hir" }
+base_db = { path = "../base_db" }
+ram_diagnostics = { path = "../ram_diagnostics" }
+ram_error = { path = "../ram_error" }
+
+# External dependencies
+salsa = "0.16.1"
+tracing = "0.1.37"
+thiserror = "1.0.40"
+miette = "5.10.0"
+
+[dev-dependencies]
+insta = "1.29.0"
+expect-test = "1.4.1"
