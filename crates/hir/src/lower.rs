@@ -143,8 +143,13 @@ impl HirCollector {
     /// Lower the body of an AST Program, processing statements and linking labels.
     pub fn lower_program_body(&mut self, program: &ast::Program) -> Result<(), HirError> {
         let mut current_label_name: Option<String> = None;
+        let mut last_instruction_id: Option<LocalDefId> = None;
 
         for stmt in program.statements() {
+            // Check if this statement has an instruction
+            let has_instruction = stmt.instruction().is_some();
+
+            // Process label if present
             if let Some(label_def) = stmt.label_def() {
                 let Some(name) = label_def.name() else {
                     // Skip labels without names (should ideally be caught by parser/ItemTree)
@@ -159,27 +164,50 @@ impl HirCollector {
                         label_def.syntax().text_range(),
                     ));
                 }
-                // Store the name of the label immediately preceding the next instruction.
-                // If multiple labels precede an instruction, the last one wins.
+                // Store the name of the label
                 current_label_name = Some(name);
-                continue; // Processed label, move to next statement
+
+                // If this statement doesn't also have an instruction, continue to the next statement
+                if !has_instruction {
+                    continue;
+                }
+                // Otherwise, fall through to process the instruction in the same statement
             }
 
-            let Some(instruction) = stmt.instruction() else {
-                // Ignore other statement types (e.g., comments, mod decls handled by ItemTree).
-                continue;
-            };
+            // Process instruction if present
+            if let Some(instruction) = stmt.instruction() {
+                let instr_local_id = self.next_instruction_local_id(); // Get ID for this instruction.
 
-            let instr_local_id = self.next_instruction_local_id(); // Get ID for this instruction.
-            let hir_instruction = self.lower_instruction(&instruction, instr_local_id)?;
+                // If there's a label for this instruction, pass it to the lower_instruction method
+                let label_for_instruction = current_label_name.clone();
+                let mut hir_instruction = self.lower_instruction(&instruction, instr_local_id)?;
 
-            // If there was a label just before this instruction, link it.
-            if let Some(label_name) = current_label_name.take() {
-                self.link_label_to_instruction(&label_name, instr_local_id)?;
+                // Set the label name on the instruction if there is one
+                if let Some(label_name) = &label_for_instruction {
+                    hir_instruction.label_name = Some(label_name.clone());
+                }
+
+                // If there was a label just before this instruction, link it.
+                if let Some(label_name) = current_label_name.take() {
+                    self.link_label_to_instruction(&label_name, instr_local_id)?;
+                }
+
+                self.body.instructions.push(hir_instruction);
+                last_instruction_id = Some(instr_local_id);
             }
-
-            self.body.instructions.push(hir_instruction);
         }
+
+        // Handle any remaining label that might be at the end of the file
+        // Link it to the last instruction if available
+        if let Some(label_name) = current_label_name {
+            if let Some(last_id) = last_instruction_id {
+                self.link_label_to_instruction(&label_name, last_id)?;
+            } else {
+                // This is a rare case where there's a label but no instructions in the file
+                warn!("Label '{}' found at the end of the file with no instructions to link to", label_name);
+            }
+        }
+
         Ok(())
     }
 
@@ -263,6 +291,7 @@ impl HirCollector {
             id: instr_local_id,
             opcode,
             operand: first_operand_expr_id, // Link to the first operand expression.
+            label_name: None, // Will be set by the caller if needed
         };
 
         Ok(hir_instruction)

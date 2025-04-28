@@ -117,6 +117,9 @@ pub struct Instruction {
 
     /// The operand to the instruction (if any)
     pub operand: Option<ExprId>,
+
+    /// The label associated with this instruction (if any)
+    pub label_name: Option<String>,
 }
 
 /// A label in the body
