@@ -19,6 +19,9 @@ pub struct ItemTree {
     /// A list of modules declared in this file
     pub modules: Vec<ModuleDef>,
 
+    /// A list of use statements in this file
+    pub use_stmts: Vec<UseDef>, // Added field
+
     /// A list of labels declared in this file
     pub labels: Vec<LabelDef>,
 
@@ -37,6 +40,38 @@ pub struct ModuleDef {
 
     /// The source location of this module declaration
     pub source: ItemSource,
+}
+
+/// A use statement in the ItemTree
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct UseDef {
+    /// The path being imported
+    pub path: ModulePath,
+
+    /// The ID of this use statement in the ItemTree
+    pub id: ItemTreeId,
+
+    /// The source location of this use statement
+    pub source: ItemSource,
+}
+
+/// Represents the path in a `use` statement
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ModulePath {
+    /// A simple path like `module::symbol` or `module::*`
+    Simple {
+        /// The module name identifier
+        module: String,
+        /// The symbol or wildcard being imported
+        symbol: Option<String>, // None represents '*'
+    },
+    /// A nested path like `module::submodule::symbol` (potentially longer)
+    Nested {
+        /// The segments of the path (e.g., ["module", "submodule", "symbol"])
+        segments: Vec<String>,
+        /// Indicates if the last segment is a wildcard '*'
+        is_wildcard: bool,
+    },
 }
 
 /// A label declaration in the ItemTree
