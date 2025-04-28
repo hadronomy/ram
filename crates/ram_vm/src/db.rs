@@ -231,7 +231,8 @@ impl VmDatabase for VmDatabaseImpl {
         let def_id = hir::ids::DefId { file_id, local_id: hir::ids::LocalDefId(0) };
 
         // Lower the AST Program to a HIR Body
-        let body = hir::lower::lower_program(&program, def_id, file_id, &item_tree);
+        let body = hir::lower::lower_program(&program, def_id, file_id, &item_tree)
+            .expect("Failed to lower program to HIR");
 
         // Convert the HIR Body to a VM Program
         // We can use the original database for this since it doesn't depend on file_id
@@ -340,7 +341,8 @@ impl HirDatabase for VmDatabaseImpl {
         let item_tree = self.item_tree(file_id);
 
         // Lower the AST Program to a HIR Body
-        let body = hir::lower::lower_program(&program, def_id, file_id, &item_tree);
+        let body = hir::lower::lower_program(&program, def_id, file_id, &item_tree)
+            .expect("Failed to lower program to HIR");
 
         Arc::new(body)
     }
@@ -367,7 +369,8 @@ impl HirDatabase for VmDatabaseImpl {
             let def_id = hir::ids::DefId { file_id, local_id: hir::ids::LocalDefId(label.id.0) };
 
             // Lower the AST Program to a HIR Body for this label
-            let body = hir::lower::lower_program(&program, def_id, file_id, &item_tree);
+            let body = hir::lower::lower_program(&program, def_id, file_id, &item_tree)
+                .expect("Failed to lower program to HIR");
 
             // Add the body to the map
             bodies.insert(def_id.local_id, Arc::new(body));
@@ -377,7 +380,8 @@ impl HirDatabase for VmDatabaseImpl {
         if bodies.is_empty() {
             let def_id = hir::ids::DefId { file_id, local_id: hir::ids::LocalDefId(0) };
 
-            let body = hir::lower::lower_program(&program, def_id, file_id, &item_tree);
+            let body = hir::lower::lower_program(&program, def_id, file_id, &item_tree)
+                .expect("Failed to lower program to HIR");
 
             bodies.insert(def_id.local_id, Arc::new(body));
         }

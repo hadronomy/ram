@@ -152,7 +152,8 @@ pub(crate) fn body_query(db: &dyn crate::db::HirDatabase, def_id: DefId) -> Arc<
         ram_syntax::Program::cast(syntax_node).expect("Failed to cast root node to Program");
 
     // Lower the AST to HIR
-    let body = crate::lower::lower_program(&program, def_id, file_id, &item_tree);
+    let body = crate::lower::lower_program(&program, def_id, file_id, &item_tree)
+        .expect("Failed to lower program to HIR");
 
     Arc::new(body)
 }
