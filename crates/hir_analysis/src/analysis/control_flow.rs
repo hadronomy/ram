@@ -2,12 +2,15 @@
 //!
 //! This module provides control flow analysis for HIR.
 
+use std::any::TypeId;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
-use hir::ids::{DefId, LocalDefId};
 use hir::body::Body;
+use hir::ids::{DefId, LocalDefId};
 
+use crate::AnalysisContext;
+use crate::analysis::AnalysisPass;
 use crate::visitors::control_flow::ControlFlowVisitor;
 
 /// A basic block in the control flow graph
@@ -15,13 +18,13 @@ use crate::visitors::control_flow::ControlFlowVisitor;
 pub struct BasicBlock {
     /// ID of the block
     pub id: usize,
-    
+
     /// Instructions in the block
     pub instructions: Vec<LocalDefId>,
-    
+
     /// Predecessor blocks
     pub predecessors: HashSet<usize>,
-    
+
     /// Successor blocks
     pub successors: HashSet<usize>,
 }
@@ -31,13 +34,13 @@ pub struct BasicBlock {
 pub struct ControlFlowGraph {
     /// Basic blocks in the graph
     pub blocks: Vec<BasicBlock>,
-    
+
     /// Entry block
     pub entry_block: usize,
-    
+
     /// Exit blocks
     pub exit_blocks: HashSet<usize>,
-    
+
     /// Map from instruction ID to block ID
     pub instruction_to_block: HashMap<LocalDefId, usize>,
 }
@@ -52,7 +55,7 @@ impl ControlFlowGraph {
             instruction_to_block: HashMap::new(),
         }
     }
-    
+
     /// Add a new basic block and return its ID
     pub fn add_block(&mut self) -> usize {
         let id = self.blocks.len();
@@ -64,7 +67,7 @@ impl ControlFlowGraph {
         });
         id
     }
-    
+
     /// Add an instruction to a block
     pub fn add_instruction(&mut self, block_id: usize, instruction_id: LocalDefId) {
         if let Some(block) = self.blocks.get_mut(block_id) {
@@ -72,23 +75,23 @@ impl ControlFlowGraph {
             self.instruction_to_block.insert(instruction_id, block_id);
         }
     }
-    
+
     /// Add an edge between blocks
     pub fn add_edge(&mut self, from: usize, to: usize) {
         if let Some(from_block) = self.blocks.get_mut(from) {
             from_block.successors.insert(to);
         }
-        
+
         if let Some(to_block) = self.blocks.get_mut(to) {
             to_block.predecessors.insert(from);
         }
     }
-    
+
     /// Get the block containing an instruction
     pub fn get_block_for_instruction(&self, instruction_id: LocalDefId) -> Option<usize> {
         self.instruction_to_block.get(&instruction_id).copied()
     }
-    
+
     /// Check if an instruction is reachable from the entry block
     pub fn is_instruction_reachable(&self, instruction_id: LocalDefId) -> bool {
         if let Some(block_id) = self.get_block_for_instruction(instruction_id) {
@@ -97,32 +100,32 @@ impl ControlFlowGraph {
             false
         }
     }
-    
+
     /// Check if a block is reachable from the entry block
     pub fn is_block_reachable(&self, block_id: usize) -> bool {
         let mut visited = HashSet::new();
         let mut worklist = vec![self.entry_block];
-        
+
         while let Some(current) = worklist.pop() {
             if current == block_id {
                 return true;
             }
-            
+
             if visited.insert(current) {
                 if let Some(block) = self.blocks.get(current) {
                     worklist.extend(block.successors.iter().copied());
                 }
             }
         }
-        
+
         false
     }
-    
+
     /// Get all reachable blocks
     pub fn reachable_blocks(&self) -> HashSet<usize> {
         let mut visited = HashSet::new();
         let mut worklist = vec![self.entry_block];
-        
+
         while let Some(current) = worklist.pop() {
             if visited.insert(current) {
                 if let Some(block) = self.blocks.get(current) {
@@ -130,10 +133,10 @@ impl ControlFlowGraph {
                 }
             }
         }
-        
+
         visited
     }
-    
+
     /// Get all unreachable blocks
     pub fn unreachable_blocks(&self) -> HashSet<usize> {
         let reachable = self.reachable_blocks();
@@ -142,18 +145,30 @@ impl ControlFlowGraph {
 }
 
 /// Analyze the control flow of a body
+///
+/// This function is deprecated. Use `ControlFlowVisitor::build` instead.
+#[deprecated(note = "Use `ControlFlowVisitor::build` instead")]
 pub fn analyze(ctx: &mut crate::AnalysisContext) -> Arc<ControlFlowGraph> {
-    let mut visitor = ControlFlowVisitor::new(ctx);
-    let cfg = visitor.build();
-    Arc::new(cfg)
+    // Create a visitor
+    let visitor = crate::visitors::ControlFlowVisitor::new();
+
+    // Build the CFG
+    visitor.build(ctx)
 }
 
 /// Query function for getting the control flow graph of a body
-pub(crate) fn control_flow_query(db: &dyn crate::AnalysisDatabase, def_id: DefId) -> Arc<ControlFlowGraph> {
+pub(crate) fn control_flow_query(
+    db: &dyn crate::AnalysisDatabase,
+    def_id: DefId,
+) -> Arc<ControlFlowGraph> {
     let body = db.body(def_id);
     let mut context = crate::AnalysisContext::new(db, &body);
-    
-    analyze(&mut context)
+
+    // Create a visitor
+    let visitor = crate::visitors::ControlFlowVisitor::new();
+
+    // Build the CFG
+    visitor.build(&mut context)
 }
 
 /// Query function for checking if an instruction is reachable
@@ -164,4 +179,48 @@ pub(crate) fn is_reachable_query(
 ) -> bool {
     let cfg = db.control_flow_graph(def_id);
     cfg.is_instruction_reachable(instr_id)
+}
+
+/// Control flow analysis pass
+///
+/// This pass analyzes the control flow of a body and builds a control flow graph.
+/// It has no dependencies and should run early in the analysis pipeline.
+#[derive(Debug, Default, Clone)]
+pub struct ControlFlowAnalysis;
+
+impl ControlFlowAnalysis {
+    /// Create a new control flow analysis pass
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl AnalysisPass for ControlFlowAnalysis {
+    type Output = Arc<ControlFlowGraph>;
+
+    fn run<'db, 'body>(
+        &self,
+        ctx: &mut AnalysisContext<'db, 'body>,
+        _dependencies: &crate::AnalysisResults,
+    ) -> Self::Output {
+        // Create a control flow visitor
+        let visitor = crate::visitors::ControlFlowVisitor::new();
+
+        // Build the control flow graph
+        visitor.build(ctx)
+    }
+
+    fn description(&self) -> &'static str {
+        "Analyzes control flow and builds a control flow graph"
+    }
+
+    fn priority(&self) -> u32 {
+        // Control flow analysis should run early
+        10
+    }
+
+    fn dependencies(&self) -> Vec<TypeId> {
+        // This pass has no dependencies
+        Vec::new()
+    }
 }

@@ -65,16 +65,18 @@ syn         = { version = "2.0.100", features = ["full"] }
 proptest = "1.4.0"
 
 # Workspace crates
-base_db      = { path = "crates/base_db" }
-hir          = { path = "crates/hir" }
-hir_analysis = { path = "crates/hir_analysis" }
-hir_def      = { path = "crates/hir_def" }
-ram_core     = { path = "crates/ram_core" }
-ram_derive   = { path = "crates/ram_derive" }
-ram_error    = { path = "crates/ram_error" }
-ram_parser   = { path = "crates/ram_parser" }
-ram_syntax   = { path = "crates/ram_syntax" }
-ram_vm       = { path = "crates/ram_vm" }
+base_db             = { path = "crates/base_db" }
+hir                 = { path = "crates/hir" }
+hir_analysis        = { path = "crates/hir_analysis" }
+hir_analysis_derive = { path = "crates/hir_analysis_derive" }
+hir_def             = { path = "crates/hir_def" }
+ram_core            = { path = "crates/ram_core" }
+ram_derive          = { path = "crates/ram_derive" }
+ram_diagnostics     = { path = "crates/ram_diagnostics" }
+ram_error           = { path = "crates/ram_error" }
+ram_parser          = { path = "crates/ram_parser" }
+ram_syntax          = { path = "crates/ram_syntax" }
+ram_vm              = { path = "crates/ram_vm" }
 
 # Lint rules that I like taken from
 # https://github.com/rolldown/rolldown/blob/main/Cargo.toml

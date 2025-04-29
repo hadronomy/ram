@@ -325,20 +325,12 @@ pub fn convert_errors(source: &str, errors: Vec<Diagnostic>) -> ram_error::Repor
                 DiagnosticKind::Custom(name) => format!("{}: {}", name, e.message),
             };
 
-            SingleReport { 
-                message, 
-                labels, 
-                severity: Some(e.kind.into()), 
-                code: e.code 
-            }
+            SingleReport { message, labels, severity: Some(e.kind.into()), code: e.code }
         })
         .collect();
 
     // Create a ParserError with all the SingleParserErrors
-    Report { 
-        src: miette::NamedSource::new("input.ram", source.to_string()), 
-        errors: single_errors 
-    }
+    Report { src: miette::NamedSource::new("input.ram", source.to_string()), errors: single_errors }
 }
 
 /// A collection of diagnostics
@@ -351,65 +343,93 @@ pub struct DiagnosticCollection {
 impl DiagnosticCollection {
     /// Create a new empty diagnostic collection
     pub fn new() -> Self {
-        Self {
-            diagnostics: Vec::new(),
-        }
+        Self { diagnostics: Vec::new() }
     }
-    
+
     /// Add a diagnostic to the collection
     pub fn add(&mut self, diagnostic: Diagnostic) {
         self.diagnostics.push(diagnostic);
     }
-    
+
     /// Add an error diagnostic
-    pub fn error(&mut self, message: impl Into<String>, help: impl Into<String>, span: Option<Range<usize>>) {
+    pub fn error(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        span: Option<Range<usize>>,
+    ) {
         let span = span.unwrap_or(0..0);
         self.add(Diagnostic::error(message, help, span));
     }
-    
+
     /// Add a warning diagnostic
-    pub fn warning(&mut self, message: impl Into<String>, help: impl Into<String>, span: Option<Range<usize>>) {
+    pub fn warning(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        span: Option<Range<usize>>,
+    ) {
         let span = span.unwrap_or(0..0);
         self.add(Diagnostic::warning(message, help, span));
     }
-    
+
     /// Add an info diagnostic
-    pub fn info(&mut self, message: impl Into<String>, help: impl Into<String>, span: Option<Range<usize>>) {
+    pub fn info(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        span: Option<Range<usize>>,
+    ) {
         let span = span.unwrap_or(0..0);
         self.add(Diagnostic::advice(message, help, span));
     }
-    
+
     /// Add a hint diagnostic
-    pub fn hint(&mut self, message: impl Into<String>, help: impl Into<String>, span: Option<Range<usize>>) {
+    pub fn hint(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        span: Option<Range<usize>>,
+    ) {
         let span = span.unwrap_or(0..0);
         self.add(Diagnostic::advice(message, help, span));
     }
-    
+
     /// Check if the collection has any diagnostics
     pub fn is_empty(&self) -> bool {
         self.diagnostics.is_empty()
     }
-    
+
     /// Check if the collection has any errors
     pub fn has_errors(&self) -> bool {
         self.diagnostics.iter().any(|d| d.kind == DiagnosticKind::Error)
     }
-    
+
     /// Get all diagnostics
     pub fn diagnostics(&self) -> &[Diagnostic] {
         &self.diagnostics
     }
-    
+
     /// Get the number of diagnostics
     pub fn len(&self) -> usize {
         self.diagnostics.len()
     }
-    
+
+    /// Get the number of error diagnostics
+    pub fn error_count(&self) -> usize {
+        self.diagnostics.iter().filter(|d| d.kind == DiagnosticKind::Error).count()
+    }
+
+    /// Get the number of warning diagnostics
+    pub fn warning_count(&self) -> usize {
+        self.diagnostics.iter().filter(|d| d.kind == DiagnosticKind::Warning).count()
+    }
+
     /// Extend this collection with diagnostics from another collection
     pub fn extend(&mut self, other: DiagnosticCollection) {
         self.diagnostics.extend(other.diagnostics);
     }
-    
+
     /// Convert to a ram_error::Report
     pub fn to_report(&self, source: &str) -> ram_error::Report {
         convert_errors(source, self.diagnostics.clone())

@@ -4,9 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-# Error handling
-miette = { version = "5.10.0", features = ["syntect-highlighter"] }
-thiserror = "1.0.40"
+miette = { workspace = true }
+thiserror = { workspace = true }
 
-# Internal crates
-ram_error = { path = "../ram_error" }
+ram_error = { workspace = true }

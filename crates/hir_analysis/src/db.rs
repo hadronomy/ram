@@ -6,73 +6,72 @@
 
 use std::sync::Arc;
 
-use hir::body::Body;
+use hir::expr::ExprId;
 use hir::ids::{DefId, LocalDefId};
-use hir::HirDatabase;
-
 use ram_diagnostics::DiagnosticCollection;
-use crate::types::TypeInfo;
+
 use crate::analysis::control_flow::ControlFlowGraph;
 use crate::analysis::data_flow::DataFlowResults;
 use crate::analysis::optimization::Optimization;
+use crate::types::TypeInfo;
 
 /// Database trait for semantic analysis
 ///
 /// This trait extends the HIR database with methods for semantic analysis.
 /// It provides access to the HIR and caches analysis results.
-#[salsa::query_group(AnalysisStorageStorage)]
-pub trait AnalysisDatabase: HirDatabase {
+pub trait AnalysisDatabase: hir::db::HirDatabase {
     /// Get the type information for a body
-    #[salsa::invoke(crate::types::type_check_query)]
     fn type_info(&self, def_id: DefId) -> Arc<TypeInfo>;
 
     /// Get the control flow graph for a body
-    #[salsa::invoke(crate::analysis::control_flow::control_flow_query)]
     fn control_flow_graph(&self, def_id: DefId) -> Arc<ControlFlowGraph>;
 
     /// Get the data flow analysis results for a body
-    #[salsa::invoke(crate::analysis::data_flow::data_flow_query)]
     fn data_flow_results(&self, def_id: DefId) -> Arc<DataFlowResults>;
 
     /// Get the optimization opportunities for a body
-    #[salsa::invoke(crate::analysis::optimization::optimization_query)]
     fn optimizations(&self, def_id: DefId) -> Arc<Vec<Optimization>>;
 
     /// Get the diagnostics for a body
-    #[salsa::invoke(crate::diagnostics_query::diagnostics_query)]
     fn diagnostics(&self, def_id: DefId) -> Arc<DiagnosticCollection>;
 
     /// Check if an instruction is reachable
-    #[salsa::invoke(crate::analysis::control_flow::is_reachable_query)]
     fn is_instruction_reachable(&self, def_id: DefId, instr_id: LocalDefId) -> bool;
 
     /// Get the type of an expression
-    #[salsa::invoke(crate::types::expr_type_query)]
-    fn expr_type(&self, def_id: DefId, expr_id: hir::ExprId) -> crate::types::TypeId;
+    fn expr_type(&self, def_id: DefId, expr_id: ExprId) -> crate::types::TypeId;
 }
 
-/// Storage for analysis database
-#[salsa::database(AnalysisStorageStorage)]
-#[derive(Default)]
-pub struct AnalysisStorage {
-    storage: salsa::Storage<Self>,
-}
-
-impl salsa::Database for AnalysisStorage {}
-
-impl std::fmt::Debug for AnalysisStorage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AnalysisStorage").finish()
-    }
-}
-
-/// Implement HirDatabase for AnalysisStorage by delegating to the inner database
-impl HirDatabase for AnalysisStorage {
-    fn body(&self, def_id: DefId) -> Arc<Body> {
-        // This would delegate to the inner HirDatabase implementation
-        // For now, we'll just panic as this is just an example
-        unimplemented!("AnalysisStorage::body not implemented")
+/// Implementation of the AnalysisDatabase trait for any type that implements HirDatabase
+impl<DB> AnalysisDatabase for DB
+where
+    DB: hir::db::HirDatabase + salsa::Database,
+{
+    fn type_info(&self, def_id: DefId) -> Arc<TypeInfo> {
+        crate::types::type_check_query(self, def_id)
     }
 
-    // Implement other methods from HirDatabase...
+    fn control_flow_graph(&self, def_id: DefId) -> Arc<ControlFlowGraph> {
+        crate::analysis::control_flow::control_flow_query(self, def_id)
+    }
+
+    fn data_flow_results(&self, def_id: DefId) -> Arc<DataFlowResults> {
+        crate::analysis::data_flow::data_flow_query(self, def_id)
+    }
+
+    fn optimizations(&self, def_id: DefId) -> Arc<Vec<Optimization>> {
+        crate::analysis::optimization::optimization_query(self, def_id)
+    }
+
+    fn diagnostics(&self, def_id: DefId) -> Arc<DiagnosticCollection> {
+        crate::diagnostics_query::diagnostics_query(self, def_id)
+    }
+
+    fn is_instruction_reachable(&self, def_id: DefId, instr_id: LocalDefId) -> bool {
+        crate::analysis::control_flow::is_reachable_query(self, def_id, instr_id)
+    }
+
+    fn expr_type(&self, def_id: DefId, expr_id: ExprId) -> crate::types::TypeId {
+        crate::types::expr_type_query(self, def_id, expr_id)
+    }
 }

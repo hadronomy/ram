@@ -34,7 +34,35 @@ impl HirDatabase for TestAnalysisDatabase {
     }
 }
 
-impl AnalysisDatabase for TestAnalysisDatabase {}
+impl AnalysisDatabase for TestAnalysisDatabase {
+    fn type_info(&self, def_id: DefId) -> Arc<TypeInfo> {
+        todo!()
+    }
+
+    fn control_flow_graph(&self, def_id: DefId) -> Arc<ControlFlowGraph> {
+        todo!()
+    }
+
+    fn data_flow_results(&self, def_id: DefId) -> Arc<DataFlowResults> {
+        todo!()
+    }
+
+    fn optimizations(&self, def_id: DefId) -> Arc<Vec<Optimization>> {
+        todo!()
+    }
+
+    fn diagnostics(&self, def_id: DefId) -> Arc<DiagnosticCollection> {
+        todo!()
+    }
+
+    fn is_instruction_reachable(&self, def_id: DefId, instr_id: LocalDefId) -> bool {
+        todo!()
+    }
+
+    fn expr_type(&self, def_id: DefId, expr_id: hir::ExprId) -> hir_analysis::types::TypeId {
+        todo!()
+    }
+}
 
 fn main() {
     // Create a simple body for testing

@@ -4,7 +4,7 @@
 //! of RAM programs beyond simple type checking.
 
 use hir::ids::LocalDefId;
-use hir::ExprId;
+use hir::expr::ExprId;
 use hir::body::{Body, Instruction};
 
 use ram_diagnostics::DiagnosticCollection;
