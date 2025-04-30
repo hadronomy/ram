@@ -1,0 +1,17 @@
+[package]
+name = "ram_lsp"
+
+authors.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+version.workspace    = true
+
+[dependencies]
+miette             = { workspace = true }
+serde_json         = { workspace = true }
+tokio              = { workspace = true, features = ["io-util", "io-std", "macros", "rt-multi-thread", "time"] }
+tower-lsp          = { workspace = true }
+tracing            = { workspace = true }
+
+ram_error  = { workspace = true }

@@ -77,6 +77,7 @@ ram_error           = { path = "crates/ram_error" }
 ram_parser          = { path = "crates/ram_parser" }
 ram_syntax          = { path = "crates/ram_syntax" }
 ram_vm              = { path = "crates/ram_vm" }
+ram_lsp             = { path = "crates/ram_lsp" }
 
 # Lint rules that I like taken from
 # https://github.com/rolldown/rolldown/blob/main/Cargo.toml

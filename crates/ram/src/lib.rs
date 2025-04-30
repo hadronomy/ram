@@ -24,7 +24,6 @@ pub mod cli;
 pub mod color;
 pub mod error;
 pub mod language;
-pub mod lsp;
 pub mod run;
 pub mod version;
 
@@ -157,7 +156,7 @@ async fn handle_command_iner(
         }
         Command::Server => {
             tracing_controls.set_stdout_enabled(false);
-            lsp::run()
+            ram_lsp::run()
                 .await
                 .wrap_err("Failed to run LSP server")
                 .map(|_| ExitCode::SUCCESS)

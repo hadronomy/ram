@@ -1605,6 +1605,7 @@ dependencies = [
  "owo-colors",
  "ram_core",
  "ram_error",
+ "ram_lsp",
  "ram_parser",
  "ram_syntax",
  "ram_vm",
@@ -1674,6 +1675,18 @@ version = "0.1.0"
 dependencies = [
  "miette",
  "thiserror 2.0.11",
+]
+
+[[package]]
+name = "ram_lsp"
+version = "0.1.0"
+dependencies = [
+ "miette",
+ "ram_error",
+ "serde_json",
+ "tokio",
+ "tower-lsp",
+ "tracing",
 ]
 
 [[package]]

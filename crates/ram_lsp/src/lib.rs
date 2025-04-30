@@ -5,7 +5,8 @@ use tower_lsp::lsp_types::*;
 use tower_lsp::{Client, LanguageServer, LspService, Server};
 use tracing::info;
 
-use crate::VERSION;
+/// The version of the LSP server
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[derive(Debug)]
 struct Backend {
@@ -19,7 +20,7 @@ impl LanguageServer for Backend {
         Ok(InitializeResult {
             server_info: Some(ServerInfo {
                 name: "RAM Language Server".to_string(),
-                version: Some(VERSION.pkg_version().to_string()),
+                version: Some(VERSION.to_string()),
             }),
             capabilities: ServerCapabilities {
                 text_document_sync: Some(TextDocumentSyncCapability::Kind(
@@ -105,6 +106,7 @@ impl LanguageServer for Backend {
     }
 }
 
+/// Run the LSP server
 pub async fn run() -> Result<()> {
     info!("Starting LSP server");
     let (stdin, stdout) = (tokio::io::stdin(), tokio::io::stdout());

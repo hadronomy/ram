@@ -52,6 +52,7 @@ ram_parser = { workspace = true }
 ram_syntax = { workspace = true }
 ram_core   = { workspace = true }
 ram_vm     = { workspace = true }
+ram_lsp    = { workspace = true }
 
 [build-dependencies]
 shadow-rs = "1.0.1"
