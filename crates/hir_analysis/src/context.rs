@@ -31,6 +31,7 @@ use std::sync::Arc;
 
 use hir::body::Body;
 use miette::*;
+use ram_diagnostics::{Diagnostic, DiagnosticCollection};
 use tracing::{debug, error, instrument};
 
 use crate::error::AnalysisError;
@@ -40,12 +41,14 @@ use crate::pass::AnalysisPass;
 ///
 /// The [`AnalysisContext`] is passed to each analysis pass and allows passes to
 /// access the results of their dependencies. It also provides access to the
-/// HIR body being analyzed.
+/// HIR body being analyzed. It also collects diagnostics reported by analysis passes.
 pub struct AnalysisContext {
     /// The HIR body being analyzed.
     body: Arc<hir::body::Body>,
     /// Map from pass TypeId to analysis results.
     results: HashMap<TypeId, Box<dyn Any + Send + Sync>>,
+    /// Collection of diagnostics reported by analysis passes.
+    diagnostics: DiagnosticCollection,
 }
 
 impl AnalysisContext {
@@ -57,7 +60,102 @@ impl AnalysisContext {
     #[instrument(skip(body))]
     pub(crate) fn new(body: Arc<Body>) -> Self {
         debug!("Creating new AnalysisContext");
-        AnalysisContext { body, results: HashMap::new() }
+        AnalysisContext { body, results: HashMap::new(), diagnostics: DiagnosticCollection::new() }
+    }
+
+    /// Add a diagnostic to the context.
+    ///
+    /// This method allows analysis passes to report diagnostics during analysis.
+    ///
+    /// # Parameters
+    ///
+    /// * `diagnostic` - The diagnostic to add.
+    #[instrument(skip(self, diagnostic))]
+    pub fn add_diagnostic(&mut self, diagnostic: Diagnostic) {
+        debug!("Adding diagnostic: {:?}", diagnostic);
+        self.diagnostics.add(diagnostic);
+    }
+
+    /// Add an error diagnostic to the context.
+    ///
+    /// This is a convenience method for adding an error diagnostic.
+    ///
+    /// # Parameters
+    ///
+    /// * `message` - The error message.
+    /// * `help` - Additional help text.
+    /// * `span` - The source span for the error, if available.
+    #[instrument(skip(self, message, help))]
+    pub fn error(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        span: Option<std::ops::Range<usize>>,
+    ) {
+        debug!("Adding error diagnostic");
+        self.diagnostics.error(message, help, span);
+    }
+
+    /// Add a warning diagnostic to the context.
+    ///
+    /// This is a convenience method for adding a warning diagnostic.
+    ///
+    /// # Parameters
+    ///
+    /// * `message` - The warning message.
+    /// * `help` - Additional help text.
+    /// * `span` - The source span for the warning, if available.
+    #[instrument(skip(self, message, help))]
+    pub fn warning(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        span: Option<std::ops::Range<usize>>,
+    ) {
+        debug!("Adding warning diagnostic");
+        self.diagnostics.warning(message, help, span);
+    }
+
+    /// Add an info diagnostic to the context.
+    ///
+    /// This is a convenience method for adding an info diagnostic.
+    ///
+    /// # Parameters
+    ///
+    /// * `message` - The info message.
+    /// * `help` - Additional help text.
+    /// * `span` - The source span for the info, if available.
+    #[instrument(skip(self, message, help))]
+    pub fn info(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        span: Option<std::ops::Range<usize>>,
+    ) {
+        debug!("Adding info diagnostic");
+        self.diagnostics.info(message, help, span);
+    }
+
+    /// Get all diagnostics collected during analysis.
+    ///
+    /// # Returns
+    ///
+    /// A reference to the diagnostic collection.
+    #[instrument(skip(self))]
+    pub fn diagnostics(&self) -> &DiagnosticCollection {
+        debug!("Accessing diagnostics from AnalysisContext");
+        &self.diagnostics
+    }
+
+    /// Check if there are any error diagnostics.
+    ///
+    /// # Returns
+    ///
+    /// `true` if there are any error diagnostics, `false` otherwise.
+    #[instrument(skip(self))]
+    pub fn has_errors(&self) -> bool {
+        debug!("Checking for errors in AnalysisContext");
+        self.diagnostics.has_errors()
     }
 
     /// Returns a reference to the HIR body being analyzed.
@@ -176,6 +274,7 @@ impl fmt::Debug for AnalysisContext {
         f.debug_struct("AnalysisContext")
             .field("body", &self.body)
             .field("results", &format!("{} results", self.results.len()))
+            .field("diagnostics", &format!("{} diagnostics", self.diagnostics.len()))
             .finish()
     }
 }

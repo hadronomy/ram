@@ -38,9 +38,8 @@
 //!
 //! // Usage
 //! fn count_instructions(body: &Body) -> usize {
-//!     let mut visitor = InstructionCounter { count: 0 };
-//!     walk_body(&mut visitor, body);
-//!     visitor.finish()
+//!     let visitor = InstructionCounter { count: 0 };
+//!     walk_body(visitor, body)
 //! }
 //! ```
 
