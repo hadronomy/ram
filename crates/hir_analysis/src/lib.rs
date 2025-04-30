@@ -56,6 +56,7 @@ pub mod context;
 pub mod error;
 pub mod pass;
 pub mod pipeline;
+pub mod visitors;
 
 // Re-export main components
 pub use context::AnalysisContext;
