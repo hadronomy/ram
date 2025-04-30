@@ -6,17 +6,15 @@
 //!
 //! The main components of this crate are:
 //!
-//! * [`AnalysisContext`](context::AnalysisContext) - Stores and provides access to analysis results.
-//! * [`AnalysisPass`](pass::AnalysisPass) - Trait for implementing analysis passes.
-//! * [`AnalysisPipeline`](pipeline::AnalysisPipeline) - Manages the registration and execution of analysis passes.
-//! * [`AnalysisError`](error::AnalysisError) - Error types for the HIR analysis.
+//! * [`AnalysisContext`] - Stores and provides access to analysis results.
+//! * [`AnalysisPass`] - Trait for implementing analysis passes.
+//! * [`AnalysisPipeline`] - Manages the registration and execution of analysis passes.
+//! * [`AnalysisError`] - Error types for the HIR analysis.
 //!
 //! # Example
 //!
 //! ```rust
-//! use hir_analysis::pipeline::AnalysisPipeline;
-//! use hir_analysis::pass::AnalysisPass;
-//! use hir_analysis::context::AnalysisContext;
+//! use hir_analysis::{AnalysisPipeline, AnalysisPass, AnalysisContext, AnalysisError};
 //! use hir::body::Body;
 //! use std::sync::Arc;
 //! use std::any::TypeId;
@@ -47,7 +45,7 @@
 //! // pipeline.register::<MyPass>().unwrap();
 //!
 //! // Run the analysis on a body
-//! // let body = Arc::new(Body::new(...));
+//! // let body = Arc::new(Body::default());
 //! // let context = pipeline.analyze(body).unwrap();
 //!
 //! // Get the result
@@ -59,4 +57,11 @@ pub mod error;
 pub mod pass;
 pub mod pipeline;
 
-// TODO: Re-export macros
+// Re-export main components
+pub use context::AnalysisContext;
+pub use error::AnalysisError;
+pub use pass::AnalysisPass;
+pub use pipeline::AnalysisPipeline;
+
+#[cfg(test)]
+mod tests;

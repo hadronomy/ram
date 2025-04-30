@@ -13,8 +13,9 @@
 //! use std::sync::Arc;
 //!
 //! // Create a new context
-//! let body = Arc::new(Body::new(/* ... */));
-//! let mut context = AnalysisContext::new(body);
+//! let body = Arc::new(Body::default());
+//! // Note: AnalysisContext::new is pub(crate), so we'd normally use the pipeline
+//! // let context = AnalysisContext::from(Body::default());
 //!
 //! // Insert a result (typically done by the AnalysisPipeline)
 //! // context.insert_result::<MyPass>(my_result).unwrap();
