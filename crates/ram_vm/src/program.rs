@@ -51,8 +51,14 @@ impl Program {
 
         // First pass: collect instruction ID mapping
         let mut instruction_indices: HashMap<u32, usize> = HashMap::new();
+        debug!("HIR Instructions: {:?}", body.instructions);
         for (idx, instr) in body.instructions.iter().enumerate() {
-            debug!("HIR Instruction: {:?}", instr);
+            if let Some(label) = &instr.label_name {
+                debug!("HIR Instruction: {:?} (Label: {})", instr, label);
+            } else {
+                debug!("HIR Instruction: {:?}", instr);
+            }
+            debug!("Instruction ID: {:?}", instr.id);
             instruction_indices.insert(instr.id.0, idx);
         }
 
@@ -61,6 +67,7 @@ impl Program {
         for label in &body.labels {
             if let Some(instr_id) = label.instruction_id {
                 if let Some(&idx) = instruction_indices.get(&instr_id.0) {
+                    debug!("Label {} maps to instruction at index {}", label.name, idx);
                     program.labels.insert(label.name.clone(), idx);
                 }
             }
@@ -84,7 +91,7 @@ impl Program {
                 // Convert the expression to an operand
                 match &expr.kind {
                     body::ExprKind::Literal(body::Literal::Int(value)) => {
-                        Some(Operand::direct(*value))
+                        Some(Operand::immediate(*value))
                     }
                     body::ExprKind::Literal(body::Literal::String(value)) => {
                         // For string literals, always use the string value

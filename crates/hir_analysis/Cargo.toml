@@ -1,0 +1,22 @@
+[package]
+name = "hir_analysis"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+salsa = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+miette = { workspace = true }
+petgraph = "0.8.1"
+
+hir = { workspace = true }
+base_db = { workspace = true }
+ram_core = { workspace = true }
+ram_diagnostics = { workspace = true }
+ram_error = { workspace = true }
+hir_analysis_derive = { workspace = true, optional = true }
+
+[features]
+default = []
+macros = ["hir_analysis_derive"]

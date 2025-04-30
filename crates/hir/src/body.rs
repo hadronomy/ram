@@ -35,6 +35,9 @@ pub struct Expr {
 
     /// The kind of expression
     pub kind: ExprKind,
+
+    /// Source span for this expression
+    pub span: std::ops::Range<usize>,
 }
 
 /// The kind of an expression
@@ -117,6 +120,12 @@ pub struct Instruction {
 
     /// The operand to the instruction (if any)
     pub operand: Option<ExprId>,
+
+    /// The label associated with this instruction (if any)
+    pub label_name: Option<String>,
+
+    /// Source span for this instruction
+    pub span: std::ops::Range<usize>,
 }
 
 /// A label in the body
@@ -130,6 +139,9 @@ pub struct Label {
 
     /// The instruction this label is mapped to (if any)
     pub instruction_id: Option<LocalDefId>,
+
+    /// Source span for this label
+    pub span: std::ops::Range<usize>,
 }
 
 /// Query implementation for retrieving a body from the database
@@ -152,7 +164,8 @@ pub(crate) fn body_query(db: &dyn crate::db::HirDatabase, def_id: DefId) -> Arc<
         ram_syntax::Program::cast(syntax_node).expect("Failed to cast root node to Program");
 
     // Lower the AST to HIR
-    let body = crate::lower::lower_program(&program, def_id, file_id, &item_tree);
+    let body = crate::lower::lower_program(&program, def_id, file_id, &item_tree)
+        .expect("Failed to lower program to HIR");
 
     Arc::new(body)
 }

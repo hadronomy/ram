@@ -6,11 +6,11 @@
 //! by edits inside function bodies.
 
 use base_db::input::FileId;
-use ram_syntax::ast;
+use ram_syntax::{ResolvedNode, ast};
 
 /// A unique identifier for an item within an ItemTree
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct ItemTreeId(pub u32);
+pub struct ItemTreeId(pub u32); // Make pub for use in hir::lower
 
 /// The ItemTree holds a summary of the top-level items in a source file.
 /// It extracts the module structure and item signatures but ignores function bodies.
@@ -100,14 +100,11 @@ pub struct DocComment {
 /// Source location information for an item
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ItemSource {
-    /// The syntax node that defines this item
+    /// The file ID that contains this item
     pub file_id: FileId,
 
-    /// The start offset of this item in the source file
-    pub start_offset: usize,
-
-    /// The end offset of this item in the source file
-    pub end_offset: usize,
+    /// The syntax node that defines this item
+    pub syntax_node: ResolvedNode,
 }
 
 impl ItemTree {

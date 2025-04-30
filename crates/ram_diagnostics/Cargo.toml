@@ -1,0 +1,10 @@
+[package]
+name = "ram_diagnostics"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+miette = { workspace = true }
+thiserror = { workspace = true }
+
+ram_error = { workspace = true }
