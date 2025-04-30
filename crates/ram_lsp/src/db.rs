@@ -153,12 +153,27 @@ impl LspDatabase {
     }
 
     /// Create a HIR body from an AST Program
-    /// This is a simplified version for the LSP - in a real implementation,
-    /// we would use the proper lowering logic from the hir crate
-    fn create_hir_body_from_program(&self, _program: &Program) -> Body {
-        // For now, just return an empty body
-        // In a real implementation, we would use the proper lowering logic
-        Body::default()
+    /// Uses the proper lowering logic from the hir crate
+    fn create_hir_body_from_program(&self, program: &Program) -> Body {
+        // Create a dummy file ID for this program
+        let file_id = base_db::input::FileId(0);
+
+        // Create a dummy DefId for the program
+        let def_id = hir::ids::DefId { file_id, local_id: hir::ids::LocalDefId(0) };
+
+        // Create an ItemTree for the program
+        let item_tree = hir_def::item_tree::ItemTree::lower(program, file_id);
+
+        // Lower the AST Program to a HIR Body
+        match hir::lower::lower_program(program, def_id, file_id, &item_tree) {
+            Ok(body) => body,
+            Err(err) => {
+                // Log the error
+                tracing::error!("Failed to lower program to HIR: {:?}", err);
+                // Return an empty body as fallback
+                Body::default()
+            }
+        }
     }
 
     /// Get the diagnostics for a file

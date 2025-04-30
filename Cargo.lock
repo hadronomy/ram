@@ -1685,6 +1685,7 @@ dependencies = [
  "dashmap 5.5.3",
  "hir",
  "hir_analysis",
+ "hir_def",
  "miette",
  "ram_core",
  "ram_diagnostics",

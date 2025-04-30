@@ -21,6 +21,7 @@ url                = "2.5.0"
 base_db            = { workspace = true }
 hir                = { workspace = true }
 hir_analysis       = { workspace = true }
+hir_def            = { workspace = true }
 ram_core           = { workspace = true }
 ram_diagnostics    = { workspace = true }
 ram_error          = { workspace = true }
