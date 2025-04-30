@@ -340,6 +340,27 @@ pub struct DiagnosticCollection {
     diagnostics: Vec<Diagnostic>,
 }
 
+impl Iterator for DiagnosticCollection {
+    type Item = Diagnostic;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.diagnostics.is_empty() {
+            None
+        } else {
+            Some(self.diagnostics.remove(0))
+        }
+    }
+}
+
+impl<'a> IntoIterator for &'a DiagnosticCollection {
+    type Item = &'a Diagnostic;
+    type IntoIter = std::slice::Iter<'a, Diagnostic>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.diagnostics.iter()
+    }
+}
+
 impl DiagnosticCollection {
     /// Create a new empty diagnostic collection
     pub fn new() -> Self {

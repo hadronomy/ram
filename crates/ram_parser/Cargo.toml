@@ -34,9 +34,10 @@ tracing            = { workspace = true }
 tracing-subscriber = { workspace = true }
 walkdir            = { workspace = true }
 
-ram_derive = { workspace = true }
-ram_error  = { workspace = true }
-ram_syntax = { workspace = true }
+ram_derive      = { workspace = true }
+ram_diagnostics = { workspace = true }
+ram_error       = { workspace = true }
+ram_syntax      = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }

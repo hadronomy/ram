@@ -1,0 +1,11 @@
+# Test file for JUMP instruction
+# The instructions between JUMP end and end: should be marked as unreachable
+
+  LOAD =3
+  STORE 1
+  ADD =2
+  JUMP end
+  STORE =2  # This should be unreachable
+  WRITE 1   # This should be unreachable
+  WRITE 2   # This should be unreachable
+end: HALT
