@@ -18,7 +18,7 @@ use crate::pass::AnalysisPass;
 
 mod graph;
 
-pub use graph::{DataFlowEdge, DataFlowGraph, DataFlowNode, DataFlowValue};
+pub use graph::{DataFlowGraph, DataFlowNode, DataFlowValue};
 
 /// Data flow analysis pass
 ///
@@ -82,8 +82,8 @@ struct DataFlowGraphBuilder<'a> {
     cfg: &'a ControlFlowGraph,
     /// The data flow graph being built
     dfg: DataFlowGraph,
-    /// Map from instruction IDs to data flow node IDs
-    instr_to_node: HashMap<LocalDefId, usize>,
+    /// Map from instruction IDs to data flow node indices
+    instr_to_node: HashMap<LocalDefId, petgraph::graph::NodeIndex>,
     /// Set of memory addresses that have been written to
     written_addrs: HashSet<i64>,
     /// Set of memory addresses that have been read from
@@ -276,34 +276,11 @@ impl<'a> DataFlowGraphBuilder<'a> {
     /// Check if there's a path from source to target in the CFG
     fn is_reachable(&self, source: LocalDefId, target: LocalDefId) -> bool {
         // Get the corresponding nodes in the CFG
-        let source_node = self.cfg.get_node(self.instr_to_node[&source]);
-        // We don't need to use target_node directly, but we need the target ID for comparison
-
-        // Perform a breadth-first search from source to target
-        let mut visited = HashSet::new();
-        let mut queue = std::collections::VecDeque::new();
-
-        if let Some(source_id) = source_node.instruction_id {
-            queue.push_back(source_id);
-            visited.insert(source_id);
-        }
-
-        while let Some(node_id) = queue.pop_front() {
-            if node_id == target.clone() {
-                return true;
-            }
-
-            // Add all successors to the queue
-            for succ in self.cfg.get_successors(self.instr_to_node[&node_id]) {
-                let succ_node = self.cfg.get_node(succ);
-
-                if let Some(succ_id) = succ_node.instruction_id {
-                    if !visited.contains(&succ_id) {
-                        visited.insert(succ_id);
-                        queue.push_back(succ_id);
-                    }
-                }
-            }
+        if let (Some(source_idx), Some(target_idx)) =
+            (self.cfg.get_node_by_instruction(source), self.cfg.get_node_by_instruction(target))
+        {
+            // Use petgraph's has_path function
+            return self.cfg.has_path(source_idx, target_idx);
         }
 
         false

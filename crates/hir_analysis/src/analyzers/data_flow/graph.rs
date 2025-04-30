@@ -1,4 +1,4 @@
-//! Data flow graph implementation
+//! Data flow graph implementation using petgraph
 //!
 //! This module provides the implementation of the data flow graph (DFG).
 //! The DFG represents the flow of data through a program, where nodes
@@ -7,48 +7,10 @@
 use std::collections::{HashMap, HashSet};
 
 use hir::ids::LocalDefId;
-
-/// A node in the data flow graph
-#[derive(Debug, Clone)]
-pub struct DataFlowNode {
-    /// The ID of the instruction this node represents
-    pub instruction_id: LocalDefId,
-    /// Incoming edges to this node
-    incoming_edges: Vec<DataFlowEdge>,
-    /// Outgoing edges from this node
-    outgoing_edges: Vec<DataFlowEdge>,
-}
-
-impl DataFlowNode {
-    /// Create a new data flow node
-    pub fn new(instruction_id: LocalDefId) -> Self {
-        Self {
-            instruction_id,
-            incoming_edges: Vec::new(),
-            outgoing_edges: Vec::new(),
-        }
-    }
-
-    /// Add an incoming edge to this node
-    pub fn add_incoming_edge(&mut self, edge: DataFlowEdge) {
-        self.incoming_edges.push(edge);
-    }
-
-    /// Add an outgoing edge from this node
-    pub fn add_outgoing_edge(&mut self, edge: DataFlowEdge) {
-        self.outgoing_edges.push(edge);
-    }
-
-    /// Get the incoming edges to this node
-    pub fn incoming_edges(&self) -> &[DataFlowEdge] {
-        &self.incoming_edges
-    }
-
-    /// Get the outgoing edges from this node
-    pub fn outgoing_edges(&self) -> &[DataFlowEdge] {
-        &self.outgoing_edges
-    }
-}
+use petgraph::algo::toposort;
+use petgraph::dot::{Config, Dot};
+use petgraph::graph::{DiGraph, EdgeIndex, NodeIndex};
+use petgraph::visit::EdgeRef;
 
 /// The value flowing through a data flow edge
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -59,21 +21,17 @@ pub enum DataFlowValue {
     Accumulator,
 }
 
-/// An edge in the data flow graph
-#[derive(Debug, Clone, Copy)]
-pub struct DataFlowEdge {
-    /// The source node of the edge
-    pub source: usize,
-    /// The target node of the edge
-    pub target: usize,
-    /// The value flowing through the edge
-    pub value: DataFlowValue,
+/// A node in the data flow graph
+#[derive(Debug, Clone)]
+pub struct DataFlowNode {
+    /// The ID of the instruction this node represents
+    pub instruction_id: LocalDefId,
 }
 
-impl DataFlowEdge {
-    /// Create a new data flow edge
-    pub fn new(source: usize, target: usize, value: DataFlowValue) -> Self {
-        Self { source, target, value }
+impl DataFlowNode {
+    /// Create a new data flow node
+    pub fn new(instruction_id: LocalDefId) -> Self {
+        Self { instruction_id }
     }
 }
 
@@ -83,93 +41,99 @@ impl DataFlowEdge {
 /// where nodes are instructions and edges represent data dependencies.
 #[derive(Debug, Clone)]
 pub struct DataFlowGraph {
-    /// The nodes in the graph
-    nodes: Vec<DataFlowNode>,
-    /// Map from instruction IDs to node IDs
-    instr_to_node: HashMap<LocalDefId, usize>,
+    /// The underlying petgraph directed graph
+    graph: DiGraph<DataFlowNode, DataFlowValue>,
+    /// Map from instruction IDs to node indices
+    instr_to_node: HashMap<LocalDefId, NodeIndex>,
 }
 
 impl DataFlowGraph {
     /// Create a new data flow graph
     pub fn new() -> Self {
-        Self {
-            nodes: Vec::new(),
-            instr_to_node: HashMap::new(),
-        }
+        Self { graph: DiGraph::new(), instr_to_node: HashMap::new() }
     }
 
     /// Add a node to the graph
-    pub fn add_node(&mut self, node: DataFlowNode) -> usize {
-        let node_id = self.nodes.len();
-        self.instr_to_node.insert(node.instruction_id, node_id);
-        self.nodes.push(node);
-        node_id
+    pub fn add_node(&mut self, node: DataFlowNode) -> NodeIndex {
+        let node_idx = self.graph.add_node(node);
+        self.instr_to_node.insert(self.graph[node_idx].instruction_id, node_idx);
+        node_idx
     }
 
     /// Add an edge to the graph
-    pub fn add_edge(&mut self, source: usize, target: usize, value: DataFlowValue) {
-        let edge = DataFlowEdge::new(source, target, value);
-        
-        // Add the edge to the source node's outgoing edges
-        if let Some(source_node) = self.nodes.get_mut(source) {
-            source_node.add_outgoing_edge(edge);
-        }
-        
-        // Add the edge to the target node's incoming edges
-        if let Some(target_node) = self.nodes.get_mut(target) {
-            target_node.add_incoming_edge(edge);
-        }
+    pub fn add_edge(
+        &mut self,
+        source: NodeIndex,
+        target: NodeIndex,
+        value: DataFlowValue,
+    ) -> EdgeIndex {
+        self.graph.add_edge(source, target, value)
     }
 
-    /// Get a node by its ID
-    pub fn get_node(&self, node_id: usize) -> &DataFlowNode {
-        &self.nodes[node_id]
+    /// Get a node by its index
+    pub fn get_node(&self, node_idx: NodeIndex) -> &DataFlowNode {
+        &self.graph[node_idx]
     }
 
     /// Get a node by its instruction ID
     pub fn get_node_by_instruction(&self, instr_id: LocalDefId) -> Option<&DataFlowNode> {
-        self.instr_to_node.get(&instr_id).map(|&node_id| &self.nodes[node_id])
+        self.instr_to_node.get(&instr_id).map(|&node_idx| &self.graph[node_idx])
+    }
+
+    /// Get a node index by its instruction ID
+    pub fn get_node_idx_by_instruction(&self, instr_id: LocalDefId) -> Option<NodeIndex> {
+        self.instr_to_node.get(&instr_id).copied()
     }
 
     /// Get the incoming edges to a node
-    pub fn get_incoming_edges(&self, node_id: usize) -> Vec<DataFlowEdge> {
-        self.nodes[node_id].incoming_edges().to_vec()
+    pub fn get_incoming_edges(&self, node_idx: NodeIndex) -> Vec<(NodeIndex, DataFlowValue)> {
+        self.graph
+            .edges_directed(node_idx, petgraph::Direction::Incoming)
+            .map(|edge| (edge.source(), *edge.weight()))
+            .collect()
     }
 
     /// Get the outgoing edges from a node
-    pub fn get_outgoing_edges(&self, node_id: usize) -> Vec<DataFlowEdge> {
-        self.nodes[node_id].outgoing_edges().to_vec()
+    pub fn get_outgoing_edges(&self, node_idx: NodeIndex) -> Vec<(NodeIndex, DataFlowValue)> {
+        self.graph
+            .edges_directed(node_idx, petgraph::Direction::Outgoing)
+            .map(|edge| (edge.target(), *edge.weight()))
+            .collect()
     }
 
     /// Find memory addresses that are read before being written
     pub fn find_uninitialized_reads(&self) -> HashSet<i64> {
         let mut uninitialized = HashSet::new();
         let mut initialized = HashSet::new();
-        
+
         // Topologically sort the nodes
-        let sorted_nodes = self.topological_sort();
-        
+        let sorted_nodes = match self.topological_sort() {
+            Ok(nodes) => nodes,
+            Err(_) => {
+                // If there's a cycle, just use all nodes in any order
+                self.graph.node_indices().collect()
+            }
+        };
+
         // Analyze each node in topological order
-        for &node_id in &sorted_nodes {
-            let node = &self.nodes[node_id];
-            
+        for node_idx in sorted_nodes {
             // Check incoming edges for reads
-            for edge in node.incoming_edges() {
-                if let DataFlowValue::Memory(addr) = edge.value {
+            for (_, value) in self.get_incoming_edges(node_idx) {
+                if let DataFlowValue::Memory(addr) = value {
                     if !initialized.contains(&addr) {
                         uninitialized.insert(addr);
                     }
                 }
             }
-            
+
             // Check outgoing edges for writes
-            for edge in node.outgoing_edges() {
-                if let DataFlowValue::Memory(addr) = edge.value {
+            for (_, value) in self.get_outgoing_edges(node_idx) {
+                if let DataFlowValue::Memory(addr) = value {
                     initialized.insert(addr);
                 }
             }
         }
-        
+
         uninitialized
     }
 
@@ -177,75 +141,63 @@ impl DataFlowGraph {
     pub fn find_unused_writes(&self) -> HashSet<i64> {
         let mut written = HashSet::new();
         let mut read = HashSet::new();
-        
+
         // Collect all memory addresses that are written to or read from
-        for node in &self.nodes {
-            for edge in node.outgoing_edges() {
-                if let DataFlowValue::Memory(addr) = edge.value {
+        for node_idx in self.graph.node_indices() {
+            for (_, value) in self.get_outgoing_edges(node_idx) {
+                if let DataFlowValue::Memory(addr) = value {
                     written.insert(addr);
                 }
             }
-            
-            for edge in node.incoming_edges() {
-                if let DataFlowValue::Memory(addr) = edge.value {
+
+            for (_, value) in self.get_incoming_edges(node_idx) {
+                if let DataFlowValue::Memory(addr) = value {
                     read.insert(addr);
                 }
             }
         }
-        
+
         // Find addresses that are written to but never read from
         written.difference(&read).copied().collect()
     }
 
     /// Perform a topological sort of the nodes
-    fn topological_sort(&self) -> Vec<usize> {
-        let mut result = Vec::new();
-        let mut visited = HashSet::new();
-        let mut temp = HashSet::new();
-        
-        // Visit each node
-        for node_id in 0..self.nodes.len() {
-            if !visited.contains(&node_id) {
-                self.visit(node_id, &mut visited, &mut temp, &mut result);
-            }
-        }
-        
-        result.reverse();
-        result
+    fn topological_sort(&self) -> Result<Vec<NodeIndex>, petgraph::algo::Cycle<NodeIndex>> {
+        toposort(&self.graph, None)
     }
 
-    /// Helper function for topological sort
-    fn visit(
-        &self,
-        node_id: usize,
-        visited: &mut HashSet<usize>,
-        temp: &mut HashSet<usize>,
-        result: &mut Vec<usize>,
-    ) {
-        // Check if the node is already being visited
-        if temp.contains(&node_id) {
-            // Cycle detected, but we'll ignore it for now
-            return;
-        }
-        
-        // Check if the node has already been visited
-        if visited.contains(&node_id) {
-            return;
-        }
-        
-        // Mark the node as being visited
-        temp.insert(node_id);
-        
-        // Visit all successors
-        for edge in self.get_outgoing_edges(node_id) {
-            self.visit(edge.target, visited, temp, result);
-        }
-        
-        // Mark the node as visited
-        visited.insert(node_id);
-        temp.remove(&node_id);
-        
-        // Add the node to the result
-        result.push(node_id);
+    /// Get a DOT representation of the graph for visualization
+    pub fn to_dot(&self) -> String {
+        format!("{:?}", Dot::with_config(&self.graph, &[Config::EdgeNoLabel]))
+    }
+
+    /// Get the underlying petgraph directed graph
+    pub fn graph(&self) -> &DiGraph<DataFlowNode, DataFlowValue> {
+        &self.graph
+    }
+
+    /// Get a mutable reference to the underlying petgraph directed graph
+    pub fn graph_mut(&mut self) -> &mut DiGraph<DataFlowNode, DataFlowValue> {
+        &mut self.graph
+    }
+
+    /// Get all node indices in the graph
+    pub fn node_indices(&self) -> Vec<NodeIndex> {
+        self.graph.node_indices().collect()
+    }
+
+    /// Get the number of nodes in the graph
+    pub fn node_count(&self) -> usize {
+        self.graph.node_count()
+    }
+
+    /// Get the number of edges in the graph
+    pub fn edge_count(&self) -> usize {
+        self.graph.edge_count()
+    }
+
+    /// Check if the graph is empty
+    pub fn is_empty(&self) -> bool {
+        self.graph.node_count() == 0
     }
 }

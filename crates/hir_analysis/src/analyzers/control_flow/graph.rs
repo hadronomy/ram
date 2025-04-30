@@ -1,4 +1,4 @@
-//! Control flow graph implementation
+//! Control flow graph implementation using petgraph
 //!
 //! This module provides the implementation of the control flow graph (CFG).
 //! The CFG represents the control flow of a program as a directed graph,
@@ -7,44 +7,10 @@
 use std::collections::{HashMap, HashSet};
 
 use hir::ids::LocalDefId;
-
-/// A node in the control flow graph
-#[derive(Debug, Clone)]
-pub struct Node {
-    /// The ID of the instruction this node represents
-    pub instruction_id: Option<LocalDefId>,
-    /// Incoming edges to this node
-    incoming_edges: Vec<Edge>,
-    /// Outgoing edges from this node
-    outgoing_edges: Vec<Edge>,
-}
-
-impl Node {
-    /// Create a new node
-    pub fn new(instruction_id: Option<LocalDefId>) -> Self {
-        Self { instruction_id, incoming_edges: Vec::new(), outgoing_edges: Vec::new() }
-    }
-
-    /// Add an incoming edge to this node
-    pub fn add_incoming_edge(&mut self, edge: Edge) {
-        self.incoming_edges.push(edge);
-    }
-
-    /// Add an outgoing edge from this node
-    pub fn add_outgoing_edge(&mut self, edge: Edge) {
-        self.outgoing_edges.push(edge);
-    }
-
-    /// Get the incoming edges to this node
-    pub fn incoming_edges(&self) -> &[Edge] {
-        &self.incoming_edges
-    }
-
-    /// Get the outgoing edges from this node
-    pub fn outgoing_edges(&self) -> &[Edge] {
-        &self.outgoing_edges
-    }
-}
+use petgraph::algo::{dominators, has_path_connecting, toposort};
+use petgraph::dot::{Config, Dot};
+use petgraph::graph::{DiGraph, EdgeIndex, NodeIndex};
+use petgraph::visit::{Dfs, EdgeRef};
 
 /// The kind of edge in the control flow graph
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -57,21 +23,17 @@ pub enum EdgeKind {
     ConditionalFalse,
 }
 
-/// An edge in the control flow graph
-#[derive(Debug, Clone, Copy)]
-pub struct Edge {
-    /// The source node of the edge
-    pub source: usize,
-    /// The target node of the edge
-    pub target: usize,
-    /// The kind of edge
-    pub kind: EdgeKind,
+/// A node in the control flow graph
+#[derive(Debug, Clone)]
+pub struct Node {
+    /// The ID of the instruction this node represents
+    pub instruction_id: Option<LocalDefId>,
 }
 
-impl Edge {
-    /// Create a new edge
-    pub fn new(source: usize, target: usize, kind: EdgeKind) -> Self {
-        Self { source, target, kind }
+impl Node {
+    /// Create a new node
+    pub fn new(instruction_id: Option<LocalDefId>) -> Self {
+        Self { instruction_id }
     }
 }
 
@@ -83,22 +45,22 @@ impl Edge {
 #[derive(Debug, Clone)]
 pub struct BasicBlock {
     /// The nodes in this basic block
-    pub nodes: Vec<usize>,
+    pub nodes: Vec<NodeIndex>,
 }
 
 impl BasicBlock {
     /// Create a new basic block
-    pub fn new(nodes: Vec<usize>) -> Self {
+    pub fn new(nodes: Vec<NodeIndex>) -> Self {
         Self { nodes }
     }
 
     /// Get the entry node of this basic block
-    pub fn entry_node(&self) -> Option<usize> {
+    pub fn entry_node(&self) -> Option<NodeIndex> {
         self.nodes.first().copied()
     }
 
     /// Get the exit node of this basic block
-    pub fn exit_node(&self) -> Option<usize> {
+    pub fn exit_node(&self) -> Option<NodeIndex> {
         self.nodes.last().copied()
     }
 }
@@ -109,46 +71,47 @@ impl BasicBlock {
 /// where nodes are instructions and edges represent possible control flow paths.
 #[derive(Debug, Clone)]
 pub struct ControlFlowGraph {
-    /// The nodes in the graph
-    nodes: Vec<Node>,
+    /// The underlying petgraph directed graph
+    graph: DiGraph<Node, EdgeKind>,
     /// The basic blocks in the graph
     basic_blocks: Vec<BasicBlock>,
     /// The entry node of the graph
-    entry_node: Option<usize>,
+    entry_node: Option<NodeIndex>,
+    /// Map from instruction IDs to node indices
+    instr_to_node: HashMap<LocalDefId, NodeIndex>,
 }
 
 impl ControlFlowGraph {
     /// Create a new control flow graph
     pub fn new() -> Self {
-        Self { nodes: Vec::new(), basic_blocks: Vec::new(), entry_node: None }
+        Self {
+            graph: DiGraph::new(),
+            basic_blocks: Vec::new(),
+            entry_node: None,
+            instr_to_node: HashMap::new(),
+        }
     }
 
     /// Add a node to the graph
-    pub fn add_node(&mut self, node: Node) -> usize {
-        let node_id = self.nodes.len();
-        self.nodes.push(node);
+    pub fn add_node(&mut self, node: Node) -> NodeIndex {
+        let node_idx = self.graph.add_node(node);
 
         // If this is the first node, it's the entry node
         if self.entry_node.is_none() {
-            self.entry_node = Some(node_id);
+            self.entry_node = Some(node_idx);
         }
 
-        node_id
+        // If this node has an instruction ID, add it to the map
+        if let Some(instr_id) = self.graph[node_idx].instruction_id {
+            self.instr_to_node.insert(instr_id, node_idx);
+        }
+
+        node_idx
     }
 
     /// Add an edge to the graph
-    pub fn add_edge(&mut self, source: usize, target: usize, kind: EdgeKind) {
-        let edge = Edge::new(source, target, kind);
-
-        // Add the edge to the source node's outgoing edges
-        if let Some(source_node) = self.nodes.get_mut(source) {
-            source_node.add_outgoing_edge(edge);
-        }
-
-        // Add the edge to the target node's incoming edges
-        if let Some(target_node) = self.nodes.get_mut(target) {
-            target_node.add_incoming_edge(edge);
-        }
+    pub fn add_edge(&mut self, source: NodeIndex, target: NodeIndex, kind: EdgeKind) -> EdgeIndex {
+        self.graph.add_edge(source, target, kind)
     }
 
     /// Add a basic block to the graph
@@ -158,9 +121,14 @@ impl ControlFlowGraph {
         block_id
     }
 
-    /// Get a node by its ID
-    pub fn get_node(&self, node_id: usize) -> &Node {
-        &self.nodes[node_id]
+    /// Get a node by its index
+    pub fn get_node(&self, node_idx: NodeIndex) -> &Node {
+        &self.graph[node_idx]
+    }
+
+    /// Get a node by its instruction ID
+    pub fn get_node_by_instruction(&self, instr_id: LocalDefId) -> Option<NodeIndex> {
+        self.instr_to_node.get(&instr_id).copied()
     }
 
     /// Get a basic block by its ID
@@ -169,53 +137,59 @@ impl ControlFlowGraph {
     }
 
     /// Get the entry node of the graph
-    pub fn entry_node(&self) -> Option<usize> {
+    pub fn entry_node(&self) -> Option<NodeIndex> {
         self.entry_node
     }
 
     /// Get the incoming edges to a node
-    pub fn get_incoming_edges(&self, node_id: usize) -> Vec<Edge> {
-        self.nodes[node_id].incoming_edges().to_vec()
+    pub fn get_incoming_edges(&self, node_idx: NodeIndex) -> Vec<(NodeIndex, EdgeKind)> {
+        self.graph
+            .edges_directed(node_idx, petgraph::Direction::Incoming)
+            .map(|edge| (edge.source(), *edge.weight()))
+            .collect()
     }
 
     /// Get the outgoing edges from a node
-    pub fn get_outgoing_edges(&self, node_id: usize) -> Vec<Edge> {
-        self.nodes[node_id].outgoing_edges().to_vec()
+    pub fn get_outgoing_edges(&self, node_idx: NodeIndex) -> Vec<(NodeIndex, EdgeKind)> {
+        self.graph
+            .edges_directed(node_idx, petgraph::Direction::Outgoing)
+            .map(|edge| (edge.target(), *edge.weight()))
+            .collect()
     }
 
     /// Get the successors of a node
-    pub fn get_successors(&self, node_id: usize) -> Vec<usize> {
-        self.nodes[node_id].outgoing_edges().iter().map(|edge| edge.target).collect()
+    pub fn get_successors(&self, node_idx: NodeIndex) -> Vec<NodeIndex> {
+        self.graph.neighbors_directed(node_idx, petgraph::Direction::Outgoing).collect()
     }
 
     /// Get the predecessors of a node
-    pub fn get_predecessors(&self, node_id: usize) -> Vec<usize> {
-        self.nodes[node_id].incoming_edges().iter().map(|edge| edge.source).collect()
+    pub fn get_predecessors(&self, node_idx: NodeIndex) -> Vec<NodeIndex> {
+        self.graph.neighbors_directed(node_idx, petgraph::Direction::Incoming).collect()
     }
 
     /// Find unreachable nodes in the graph
-    pub fn find_unreachable_nodes(&self) -> Vec<usize> {
+    pub fn find_unreachable_nodes(&self) -> Vec<NodeIndex> {
         let mut unreachable = Vec::new();
-        let mut visited = HashSet::new();
+
+        // If there's no entry node, all nodes are unreachable
+        if self.entry_node.is_none() {
+            return self.graph.node_indices().collect();
+        }
+
+        let entry = self.entry_node.unwrap();
 
         // Perform a depth-first search from the entry node
-        if let Some(entry) = self.entry_node {
-            let mut stack = vec![entry];
+        let mut dfs = Dfs::new(&self.graph, entry);
+        let mut visited = HashSet::new();
 
-            while let Some(node_id) = stack.pop() {
-                if visited.insert(node_id) {
-                    // Add all successors to the stack
-                    for succ in self.get_successors(node_id) {
-                        stack.push(succ);
-                    }
-                }
-            }
+        while let Some(node_idx) = dfs.next(&self.graph) {
+            visited.insert(node_idx);
         }
 
         // Any node not visited is unreachable
-        for node_id in 0..self.nodes.len() {
-            if !visited.contains(&node_id) {
-                unreachable.push(node_id);
+        for node_idx in self.graph.node_indices() {
+            if !visited.contains(&node_idx) {
+                unreachable.push(node_idx);
             }
         }
 
@@ -223,183 +197,166 @@ impl ControlFlowGraph {
     }
 
     /// Find infinite loops in the graph
-    pub fn find_infinite_loops(&self) -> Vec<Vec<usize>> {
+    pub fn find_infinite_loops(&self) -> Vec<Vec<NodeIndex>> {
         let mut loops = Vec::new();
-        let mut visited = HashSet::new();
-        let mut stack = Vec::new();
-        let mut on_stack = HashSet::new();
 
-        // Perform a depth-first search to find strongly connected components
-        for node_id in 0..self.nodes.len() {
-            if !visited.contains(&node_id) {
-                self.find_loops_dfs(node_id, &mut visited, &mut stack, &mut on_stack, &mut loops);
+        // Check if the graph has cycles
+        if !is_cyclic_directed(&self.graph) {
+            return loops;
+        }
+
+        // Find strongly connected components
+        let sccs = petgraph::algo::kosaraju_scc(&self.graph);
+
+        // Filter out components with only one node (not loops)
+        // and components that have an exit (not infinite loops)
+        for scc in sccs {
+            if scc.len() > 1 {
+                let mut has_exit = false;
+
+                // Check if any node in the SCC has an edge to a node outside the SCC
+                for &node_idx in &scc {
+                    for succ in self.get_successors(node_idx) {
+                        if !scc.contains(&succ) {
+                            has_exit = true;
+                            break;
+                        }
+                    }
+
+                    if has_exit {
+                        break;
+                    }
+                }
+
+                if !has_exit {
+                    loops.push(scc);
+                }
             }
         }
 
         loops
     }
 
-    /// Helper function for finding loops using depth-first search
-    fn find_loops_dfs(
-        &self,
-        node_id: usize,
-        visited: &mut HashSet<usize>,
-        stack: &mut Vec<usize>,
-        on_stack: &mut HashSet<usize>,
-        loops: &mut Vec<Vec<usize>>,
-    ) {
-        visited.insert(node_id);
-        stack.push(node_id);
-        on_stack.insert(node_id);
-
-        for succ in self.get_successors(node_id) {
-            if !visited.contains(&succ) {
-                self.find_loops_dfs(succ, visited, stack, on_stack, loops);
-            } else if on_stack.contains(&succ) {
-                // Found a loop
-                let mut loop_nodes = Vec::new();
-                let mut i = stack.len() - 1;
-
-                while stack[i] != succ {
-                    loop_nodes.push(stack[i]);
-                    i -= 1;
-                }
-
-                loop_nodes.push(succ);
-                loops.push(loop_nodes);
-            }
-        }
-
-        stack.pop();
-        on_stack.remove(&node_id);
-    }
-
     /// Compute dominators for each node
-    pub fn compute_dominators(&self) -> HashMap<usize, HashSet<usize>> {
-        let mut dominators = HashMap::new();
+    pub fn compute_dominators(&self) -> HashMap<NodeIndex, HashSet<NodeIndex>> {
+        let mut result = HashMap::new();
 
-        // Initialize dominators
-        let all_nodes: HashSet<usize> = (0..self.nodes.len()).collect();
-
-        for node_id in 0..self.nodes.len() {
-            if Some(node_id) == self.entry_node {
-                // The entry node is only dominated by itself
-                let mut dom_set = HashSet::new();
-                dom_set.insert(node_id);
-                dominators.insert(node_id, dom_set);
-            } else {
-                // All other nodes are dominated by all nodes initially
-                dominators.insert(node_id, all_nodes.clone());
-            }
+        // If there's no entry node, return an empty map
+        if self.entry_node.is_none() {
+            return result;
         }
 
-        // Iteratively compute dominators
-        let mut changed = true;
+        let entry = self.entry_node.unwrap();
 
-        while changed {
-            changed = false;
+        // Use petgraph's dominators algorithm
+        let dom = dominators::simple_fast(&self.graph, entry);
 
-            for node_id in 0..self.nodes.len() {
-                if Some(node_id) == self.entry_node {
-                    continue;
-                }
+        // Convert the result to a HashMap<NodeIndex, HashSet<NodeIndex>>
+        for node_idx in self.graph.node_indices() {
+            let mut dom_set = HashSet::new();
 
-                let preds = self.get_predecessors(node_id);
-                if preds.is_empty() {
-                    continue;
-                }
-
-                // Compute the intersection of all predecessors' dominators
-                let mut new_dom = all_nodes.clone();
-
-                for &pred in &preds {
-                    if let Some(pred_dom) = dominators.get(&pred) {
-                        new_dom = new_dom.intersection(pred_dom).copied().collect();
-                    }
-                }
-
-                // Add the node itself to its dominators
-                new_dom.insert(node_id);
-
-                // Check if the dominators changed
-                if let Some(old_dom) = dominators.get(&node_id) {
-                    if &new_dom != old_dom {
-                        dominators.insert(node_id, new_dom);
-                        changed = true;
-                    }
-                }
+            // Add all dominators of this node
+            let mut current = Some(node_idx);
+            while let Some(idx) = current {
+                dom_set.insert(idx);
+                current = dom.immediate_dominator(idx);
             }
+
+            result.insert(node_idx, dom_set);
         }
 
-        dominators
+        result
     }
 
     /// Compute the post-dominators for each node
-    pub fn compute_post_dominators(&self) -> HashMap<usize, HashSet<usize>> {
-        let mut post_dominators = HashMap::new();
+    pub fn compute_post_dominators(&self) -> HashMap<NodeIndex, HashSet<NodeIndex>> {
+        let mut result = HashMap::new();
 
-        // Initialize post-dominators
-        let all_nodes: HashSet<usize> = (0..self.nodes.len()).collect();
+        // Create a reversed graph
+        let mut reversed = self.graph.clone();
+        reversed.reverse();
 
-        // Find exit nodes (nodes with no successors)
-        let mut exit_nodes = Vec::new();
+        // Find exit nodes (nodes with no successors in the original graph)
+        let exit_nodes: Vec<_> = self
+            .graph
+            .node_indices()
+            .filter(|&node_idx| self.get_successors(node_idx).is_empty())
+            .collect();
 
-        for node_id in 0..self.nodes.len() {
-            if self.get_successors(node_id).is_empty() {
-                exit_nodes.push(node_id);
-            }
+        // If there are no exit nodes, return an empty map
+        if exit_nodes.is_empty() {
+            return result;
         }
 
-        for node_id in 0..self.nodes.len() {
-            if exit_nodes.contains(&node_id) {
-                // Exit nodes are only post-dominated by themselves
-                let mut dom_set = HashSet::new();
-                dom_set.insert(node_id);
-                post_dominators.insert(node_id, dom_set);
-            } else {
-                // All other nodes are post-dominated by all nodes initially
-                post_dominators.insert(node_id, all_nodes.clone());
-            }
-        }
+        // For each exit node, compute dominators in the reversed graph
+        for &exit in &exit_nodes {
+            let dom = dominators::simple_fast(&reversed, exit);
 
-        // Iteratively compute post-dominators
-        let mut changed = true;
+            // Add the dominators to the result
+            for node_idx in reversed.node_indices() {
+                let dom_set = result.entry(node_idx).or_insert_with(HashSet::new);
 
-        while changed {
-            changed = false;
-
-            for node_id in 0..self.nodes.len() {
-                if exit_nodes.contains(&node_id) {
-                    continue;
-                }
-
-                let succs = self.get_successors(node_id);
-                if succs.is_empty() {
-                    continue;
-                }
-
-                // Compute the intersection of all successors' post-dominators
-                let mut new_dom = all_nodes.clone();
-
-                for &succ in &succs {
-                    if let Some(succ_dom) = post_dominators.get(&succ) {
-                        new_dom = new_dom.intersection(succ_dom).copied().collect();
-                    }
-                }
-
-                // Add the node itself to its post-dominators
-                new_dom.insert(node_id);
-
-                // Check if the post-dominators changed
-                if let Some(old_dom) = post_dominators.get(&node_id) {
-                    if &new_dom != old_dom {
-                        post_dominators.insert(node_id, new_dom);
-                        changed = true;
-                    }
+                // Add all dominators of this node
+                let mut current = Some(node_idx);
+                while let Some(idx) = current {
+                    dom_set.insert(idx);
+                    current = dom.immediate_dominator(idx);
                 }
             }
         }
 
-        post_dominators
+        result
     }
+
+    /// Get a DOT representation of the graph for visualization
+    pub fn to_dot(&self) -> String {
+        format!("{:?}", Dot::with_config(&self.graph, &[Config::EdgeNoLabel]))
+    }
+
+    /// Get the underlying petgraph directed graph
+    pub fn graph(&self) -> &DiGraph<Node, EdgeKind> {
+        &self.graph
+    }
+
+    /// Get a mutable reference to the underlying petgraph directed graph
+    pub fn graph_mut(&mut self) -> &mut DiGraph<Node, EdgeKind> {
+        &mut self.graph
+    }
+
+    /// Get all node indices in the graph
+    pub fn node_indices(&self) -> Vec<NodeIndex> {
+        self.graph.node_indices().collect()
+    }
+
+    /// Get the number of nodes in the graph
+    pub fn node_count(&self) -> usize {
+        self.graph.node_count()
+    }
+
+    /// Get the number of edges in the graph
+    pub fn edge_count(&self) -> usize {
+        self.graph.edge_count()
+    }
+
+    /// Check if the graph is empty
+    pub fn is_empty(&self) -> bool {
+        self.graph.node_count() == 0
+    }
+
+    /// Perform a topological sort of the graph
+    pub fn topological_sort(&self) -> Result<Vec<NodeIndex>, petgraph::algo::Cycle<NodeIndex>> {
+        toposort(&self.graph, None)
+    }
+
+    /// Check if there's a path from source to target
+    pub fn has_path(&self, source: NodeIndex, target: NodeIndex) -> bool {
+        has_path_connecting(&self.graph, source, target, None)
+    }
+}
+
+/// Check if a directed graph has cycles
+fn is_cyclic_directed<N, E>(graph: &DiGraph<N, E>) -> bool {
+    // Try to perform a topological sort
+    // If it fails, the graph has cycles
+    toposort(graph, None).is_err()
 }

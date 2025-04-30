@@ -2,6 +2,7 @@
 //!
 //! This module contains tests for the various analyzers in the analyzers module.
 
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use hir::body::{Body, Expr, ExprKind, Instruction, Label, Literal};
@@ -79,18 +80,28 @@ fn test_control_flow_analysis() {
     // Get the control flow graph
     let cfg = context.get_result::<ControlFlowAnalysis>().unwrap();
 
-    // Check that the graph has the correct number of nodes
-    assert_eq!(cfg.get_node(0).instruction_id, Some(LocalDefId(0)));
-    assert_eq!(cfg.get_node(1).instruction_id, Some(LocalDefId(1)));
-    assert_eq!(cfg.get_node(2).instruction_id, Some(LocalDefId(2)));
-    assert_eq!(cfg.get_node(3).instruction_id, Some(LocalDefId(3)));
+    // Check that the graph has nodes for all instructions
+    let node_indices = cfg.node_indices();
+    assert_eq!(node_indices.len(), 4);
 
-    // Check that there's an edge from JUMP to LOAD (the label target)
-    let jump_node = 3;
-    let load_node = 0;
-    let outgoing_edges = cfg.get_outgoing_edges(jump_node);
+    // Check that the nodes have the correct instruction IDs
+    let mut found_instrs = HashSet::new();
+    for node_idx in node_indices {
+        if let Some(instr_id) = cfg.get_node(node_idx).instruction_id {
+            found_instrs.insert(instr_id);
+        }
+    }
 
-    assert!(outgoing_edges.iter().any(|edge| edge.target == load_node));
+    assert!(found_instrs.contains(&LocalDefId(0)));
+    assert!(found_instrs.contains(&LocalDefId(1)));
+    assert!(found_instrs.contains(&LocalDefId(2)));
+    assert!(found_instrs.contains(&LocalDefId(3)));
+
+    // Check that there's a path from JUMP to LOAD (the label target)
+    let jump_node_idx = cfg.get_node_by_instruction(LocalDefId(3)).unwrap();
+    let load_node_idx = cfg.get_node_by_instruction(LocalDefId(0)).unwrap();
+
+    assert!(cfg.has_path(jump_node_idx, load_node_idx));
 }
 
 #[test]

@@ -16,7 +16,7 @@ use crate::pass::AnalysisPass;
 
 mod graph;
 
-pub use graph::{BasicBlock, ControlFlowGraph, Edge, EdgeKind, Node};
+pub use graph::{BasicBlock, ControlFlowGraph, EdgeKind, Node};
 
 /// Control flow analysis pass
 ///
@@ -86,8 +86,8 @@ struct ControlFlowGraphBuilder<'a> {
     body: &'a Body,
     /// The control flow graph being built
     cfg: ControlFlowGraph,
-    /// Map from instruction IDs to node IDs
-    instr_to_node: HashMap<LocalDefId, usize>,
+    /// Map from instruction IDs to node indices
+    instr_to_node: HashMap<LocalDefId, petgraph::graph::NodeIndex>,
     /// Map from label names to instruction IDs
     label_to_instr: HashMap<String, LocalDefId>,
 }
