@@ -8,4 +8,5 @@ pub mod nodes;
 mod syntax_kind;
 
 pub use ast::*;
+pub use cstree;
 pub use syntax_kind::*;

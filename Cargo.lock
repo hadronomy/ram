@@ -1681,12 +1681,23 @@ dependencies = [
 name = "ram_lsp"
 version = "0.1.0"
 dependencies = [
+ "base_db",
+ "dashmap 5.5.3",
+ "hir",
+ "hir_analysis",
  "miette",
+ "ram_core",
+ "ram_diagnostics",
  "ram_error",
+ "ram_parser",
+ "ram_syntax",
+ "rustc-hash 1.1.0",
+ "salsa",
  "serde_json",
  "tokio",
  "tower-lsp",
  "tracing",
+ "url",
 ]
 
 [[package]]

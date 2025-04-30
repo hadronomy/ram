@@ -11,6 +11,7 @@ lee:	read [1]
 			jump lee
 fin:	halt
 
+
 rogue_label:
 
   heyhey pepe

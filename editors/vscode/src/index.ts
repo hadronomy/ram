@@ -35,7 +35,25 @@ const { activate, deactivate } = defineExtension((ctx) => {
     clientOptions,
   );
 
-  client.start();
+  // Register the client's capabilities
+  client.registerProposedFeatures();
+
+  // Add logging for diagnostics
+  client.onDidChangeState((event) => {
+    if (event.newState === 1) {
+      client.info('RAM Language Server is now running');
+    }
+    else {
+      client.info('RAM Language Server has stopped');
+    }
+  });
+
+  // Log errors that might prevent proper file change detection
+  client.start().catch((error) => {
+    client.error(`Failed to start RAM Language Server: ${error}`);
+    console.error(error);
+  });
+
   client.outputChannel.show();
 });
 
