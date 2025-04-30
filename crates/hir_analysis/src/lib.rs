@@ -52,6 +52,7 @@
 //! // let result = context.get_result::<MyPass>().unwrap();
 //! ```
 
+pub mod analyzers;
 pub mod context;
 pub mod error;
 pub mod pass;
@@ -59,6 +60,9 @@ pub mod pipeline;
 pub mod visitors;
 
 // Re-export main components
+pub use analyzers::control_flow::{ControlFlowAnalysis, ControlFlowGraph};
+pub use analyzers::data_flow::{DataFlowAnalysis, DataFlowGraph};
+pub use analyzers::instruction_validation::InstructionValidationAnalysis;
 pub use context::AnalysisContext;
 pub use error::AnalysisError;
 pub use pass::AnalysisPass;

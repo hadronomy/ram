@@ -12,6 +12,7 @@ petgraph = "0.8.1"
 
 hir = { workspace = true }
 base_db = { workspace = true }
+ram_core = { workspace = true }
 ram_diagnostics = { workspace = true }
 ram_error = { workspace = true }
 hir_analysis_derive = { workspace = true, optional = true }

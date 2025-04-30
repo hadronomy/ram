@@ -827,6 +827,7 @@ dependencies = [
  "hir_analysis_derive",
  "miette",
  "petgraph",
+ "ram_core",
  "ram_diagnostics",
  "ram_error",
  "salsa",
