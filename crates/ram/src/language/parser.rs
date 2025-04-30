@@ -44,6 +44,11 @@ pub fn parse_program(source: &str) -> (Program, Vec<miette::Error>) {
     match pipeline.analyze(Arc::new(body)) {
         Ok(result) => {
             // Add any diagnostics from the analysis to our errors
+            let control_flow = result.get_result::<hir_analysis::analyzers::ControlFlowAnalysis>().ok();
+            if let Some(cfg) = control_flow {
+                println!("{}", cfg.to_dot())
+            }
+
             errors.extend(result.diagnostics().clone());
         },
         Err(err) => {
