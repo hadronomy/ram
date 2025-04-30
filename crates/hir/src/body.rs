@@ -35,6 +35,9 @@ pub struct Expr {
 
     /// The kind of expression
     pub kind: ExprKind,
+
+    /// Source span for this expression
+    pub span: std::ops::Range<usize>,
 }
 
 /// The kind of an expression
@@ -120,6 +123,9 @@ pub struct Instruction {
 
     /// The label associated with this instruction (if any)
     pub label_name: Option<String>,
+
+    /// Source span for this instruction
+    pub span: std::ops::Range<usize>,
 }
 
 /// A label in the body
@@ -133,6 +139,9 @@ pub struct Label {
 
     /// The instruction this label is mapped to (if any)
     pub instruction_id: Option<LocalDefId>,
+
+    /// Source span for this label
+    pub span: std::ops::Range<usize>,
 }
 
 /// Query implementation for retrieving a body from the database

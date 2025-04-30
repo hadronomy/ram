@@ -52,21 +52,21 @@ impl AnalysisPass for DataFlowAnalysis {
 
         // Check for uninitialized variables
         let uninit = dfg.find_uninitialized_reads();
-        for addr in uninit {
-            ctx.warning(
+        for (addr, instr_id) in uninit {
+            ctx.warning_at_instruction(
                 format!("Uninitialized memory read at address {}", addr),
                 "This memory location may not be initialized before it is read".to_string(),
-                None,
+                instr_id,
             );
         }
 
         // Check for unused values
         let unused = dfg.find_unused_writes();
-        for addr in unused {
-            ctx.info(
+        for (addr, instr_id) in unused {
+            ctx.info_at_instruction(
                 format!("Unused memory write at address {}", addr),
                 "This memory write is never read".to_string(),
-                None,
+                instr_id,
             );
         }
 

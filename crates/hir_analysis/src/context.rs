@@ -85,6 +85,7 @@ impl AnalysisContext {
     /// * `message` - The error message.
     /// * `help` - Additional help text.
     /// * `span` - The source span for the error, if available.
+    /// * `node_id` - The ID of the HIR node that caused the error, if available.
     #[instrument(skip(self, message, help))]
     pub fn error(
         &mut self,
@@ -94,6 +95,69 @@ impl AnalysisContext {
     ) {
         debug!("Adding error diagnostic");
         self.diagnostics.error(message, help, span);
+    }
+
+    /// Add an error diagnostic to the context using an instruction ID.
+    ///
+    /// This method extracts the span from the instruction and uses it for the diagnostic.
+    ///
+    /// # Parameters
+    ///
+    /// * `message` - The error message.
+    /// * `help` - Additional help text.
+    /// * `instr_id` - The ID of the instruction that caused the error.
+    #[instrument(skip(self, message, help))]
+    pub fn error_at_instruction(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        instr_id: hir::ids::LocalDefId,
+    ) {
+        debug!("Adding error diagnostic at instruction");
+        let span = self.get_instruction_span(instr_id);
+        self.diagnostics.error(message, help, Some(span));
+    }
+
+    /// Add an error diagnostic to the context using an expression ID.
+    ///
+    /// This method extracts the span from the expression and uses it for the diagnostic.
+    ///
+    /// # Parameters
+    ///
+    /// * `message` - The error message.
+    /// * `help` - Additional help text.
+    /// * `expr_id` - The ID of the expression that caused the error.
+    #[instrument(skip(self, message, help))]
+    pub fn error_at_expr(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        expr_id: hir::expr::ExprId,
+    ) {
+        debug!("Adding error diagnostic at expression");
+        let span = self.get_expr_span(expr_id);
+        self.diagnostics.error(message, help, Some(span));
+    }
+
+    /// Add an error diagnostic to the context using a label ID.
+    ///
+    /// This method extracts the span from the label and uses it for the diagnostic.
+    ///
+    /// # Parameters
+    ///
+    /// * `message` - The error message.
+    /// * `help` - Additional help text.
+    /// * `label_id` - The ID of the label that caused the error.
+    #[instrument(skip(self, message, help))]
+    pub fn error_at_label(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        label_id: hir::ids::LocalDefId,
+    ) {
+        debug!("Adding error diagnostic at label");
+        let span = self.get_label_span(label_id);
+        self.diagnostics.error(message, help, Some(span));
     }
 
     /// Add a warning diagnostic to the context.
@@ -116,6 +180,69 @@ impl AnalysisContext {
         self.diagnostics.warning(message, help, span);
     }
 
+    /// Add a warning diagnostic to the context using an instruction ID.
+    ///
+    /// This method extracts the span from the instruction and uses it for the diagnostic.
+    ///
+    /// # Parameters
+    ///
+    /// * `message` - The warning message.
+    /// * `help` - Additional help text.
+    /// * `instr_id` - The ID of the instruction that caused the warning.
+    #[instrument(skip(self, message, help))]
+    pub fn warning_at_instruction(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        instr_id: hir::ids::LocalDefId,
+    ) {
+        debug!("Adding warning diagnostic at instruction");
+        let span = self.get_instruction_span(instr_id);
+        self.diagnostics.warning(message, help, Some(span));
+    }
+
+    /// Add a warning diagnostic to the context using an expression ID.
+    ///
+    /// This method extracts the span from the expression and uses it for the diagnostic.
+    ///
+    /// # Parameters
+    ///
+    /// * `message` - The warning message.
+    /// * `help` - Additional help text.
+    /// * `expr_id` - The ID of the expression that caused the warning.
+    #[instrument(skip(self, message, help))]
+    pub fn warning_at_expr(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        expr_id: hir::expr::ExprId,
+    ) {
+        debug!("Adding warning diagnostic at expression");
+        let span = self.get_expr_span(expr_id);
+        self.diagnostics.warning(message, help, Some(span));
+    }
+
+    /// Add a warning diagnostic to the context using a label ID.
+    ///
+    /// This method extracts the span from the label and uses it for the diagnostic.
+    ///
+    /// # Parameters
+    ///
+    /// * `message` - The warning message.
+    /// * `help` - Additional help text.
+    /// * `label_id` - The ID of the label that caused the warning.
+    #[instrument(skip(self, message, help))]
+    pub fn warning_at_label(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        label_id: hir::ids::LocalDefId,
+    ) {
+        debug!("Adding warning diagnostic at label");
+        let span = self.get_label_span(label_id);
+        self.diagnostics.warning(message, help, Some(span));
+    }
+
     /// Add an info diagnostic to the context.
     ///
     /// This is a convenience method for adding an info diagnostic.
@@ -134,6 +261,69 @@ impl AnalysisContext {
     ) {
         debug!("Adding info diagnostic");
         self.diagnostics.info(message, help, span);
+    }
+
+    /// Add an info diagnostic to the context using an instruction ID.
+    ///
+    /// This method extracts the span from the instruction and uses it for the diagnostic.
+    ///
+    /// # Parameters
+    ///
+    /// * `message` - The info message.
+    /// * `help` - Additional help text.
+    /// * `instr_id` - The ID of the instruction that the info is about.
+    #[instrument(skip(self, message, help))]
+    pub fn info_at_instruction(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        instr_id: hir::ids::LocalDefId,
+    ) {
+        debug!("Adding info diagnostic at instruction");
+        let span = self.get_instruction_span(instr_id);
+        self.diagnostics.info(message, help, Some(span));
+    }
+
+    /// Add an info diagnostic to the context using an expression ID.
+    ///
+    /// This method extracts the span from the expression and uses it for the diagnostic.
+    ///
+    /// # Parameters
+    ///
+    /// * `message` - The info message.
+    /// * `help` - Additional help text.
+    /// * `expr_id` - The ID of the expression that the info is about.
+    #[instrument(skip(self, message, help))]
+    pub fn info_at_expr(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        expr_id: hir::expr::ExprId,
+    ) {
+        debug!("Adding info diagnostic at expression");
+        let span = self.get_expr_span(expr_id);
+        self.diagnostics.info(message, help, Some(span));
+    }
+
+    /// Add an info diagnostic to the context using a label ID.
+    ///
+    /// This method extracts the span from the label and uses it for the diagnostic.
+    ///
+    /// # Parameters
+    ///
+    /// * `message` - The info message.
+    /// * `help` - Additional help text.
+    /// * `label_id` - The ID of the label that the info is about.
+    #[instrument(skip(self, message, help))]
+    pub fn info_at_label(
+        &mut self,
+        message: impl Into<String>,
+        help: impl Into<String>,
+        label_id: hir::ids::LocalDefId,
+    ) {
+        debug!("Adding info diagnostic at label");
+        let span = self.get_label_span(label_id);
+        self.diagnostics.info(message, help, Some(span));
     }
 
     /// Get all diagnostics collected during analysis.
@@ -167,6 +357,101 @@ impl AnalysisContext {
     pub fn body(&self) -> &Arc<Body> {
         debug!("Accessing body from AnalysisContext");
         &self.body
+    }
+
+    /// Get the span for an instruction.
+    ///
+    /// # Parameters
+    ///
+    /// * `instr_id` - The ID of the instruction.
+    ///
+    /// # Returns
+    ///
+    /// The span of the instruction, or an empty span if the instruction is not found.
+    #[instrument(skip(self))]
+    pub fn get_instruction_span(&self, instr_id: hir::ids::LocalDefId) -> std::ops::Range<usize> {
+        debug!("Getting instruction span");
+        for instr in &self.body.instructions {
+            if instr.id == instr_id {
+                return instr.span.clone();
+            }
+        }
+        // Return an empty span if the instruction is not found
+        0..0
+    }
+
+    /// Get the span for an expression.
+    ///
+    /// # Parameters
+    ///
+    /// * `expr_id` - The ID of the expression.
+    ///
+    /// # Returns
+    ///
+    /// The span of the expression, or an empty span if the expression is not found.
+    #[instrument(skip(self))]
+    pub fn get_expr_span(&self, expr_id: hir::expr::ExprId) -> std::ops::Range<usize> {
+        debug!("Getting expression span");
+        for expr in &self.body.exprs {
+            if expr.id == expr_id {
+                return expr.span.clone();
+            }
+        }
+        // Return an empty span if the expression is not found
+        0..0
+    }
+
+    /// Get the span for a label.
+    ///
+    /// # Parameters
+    ///
+    /// * `label_id` - The ID of the label.
+    ///
+    /// # Returns
+    ///
+    /// The span of the label, or an empty span if the label is not found.
+    #[instrument(skip(self))]
+    pub fn get_label_span(&self, label_id: hir::ids::LocalDefId) -> std::ops::Range<usize> {
+        debug!("Getting label span");
+        for label in &self.body.labels {
+            if label.id == label_id {
+                return label.span.clone();
+            }
+        }
+        // Return an empty span if the label is not found
+        0..0
+    }
+
+    /// Store the result of an analysis pass.
+    ///
+    /// This method is used to store the result of an analysis pass in the context.
+    /// It is typically called by the analysis manager, but can also be called
+    /// directly in tests.
+    ///
+    /// # Type Parameters
+    ///
+    /// * `P` - The type of the analysis pass.
+    ///
+    /// # Parameters
+    ///
+    /// * `result` - The result of the analysis pass.
+    ///
+    /// # Examples
+    ///
+    /// ```ignore
+    /// // let mut context = /* ... */;
+    /// // let result = /* ... */;
+    /// // context.store_result::<MyPass>(result);
+    /// ```
+    #[instrument(skip(self, result), fields(pass_type = std::any::type_name::<P>()))]
+    pub fn store_result<P>(&mut self, result: P::Output)
+    where
+        P: AnalysisPass + 'static,
+    {
+        debug!("Storing result for pass");
+        let pass_id = TypeId::of::<P>();
+        let result = Arc::new(result);
+        self.results.insert(pass_id, Box::new(result));
     }
 
     /// Gets the result of an analysis pass.

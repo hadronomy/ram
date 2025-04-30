@@ -47,10 +47,10 @@ impl AnalysisPass for ControlFlowAnalysis {
         for node_id in unreachable {
             if let Some(instr_id) = cfg.get_node(node_id).instruction_id {
                 if let Some(instr) = body.instructions.iter().find(|i| i.id == instr_id) {
-                    ctx.warning(
+                    ctx.warning_at_instruction(
                         format!("Unreachable instruction: {}", instr.opcode),
                         "This instruction will never be executed".to_string(),
-                        None,
+                        instr_id,
                     );
                 }
             }
@@ -68,10 +68,12 @@ impl AnalysisPass for ControlFlowAnalysis {
                 .collect();
 
             if !loop_instrs.is_empty() {
-                ctx.warning(
+                // Use the first instruction in the loop for the warning
+                let first_instr_id = loop_instrs[0];
+                ctx.warning_at_instruction(
                     "Potential infinite loop detected".to_string(),
                     "This loop may not terminate".to_string(),
-                    None,
+                    first_instr_id,
                 );
             }
         }

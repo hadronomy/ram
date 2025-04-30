@@ -108,10 +108,14 @@ impl HirCollector {
             label_defs.insert(label_def.name.clone(), def_id);
             label_name_to_local_id.insert(label_def.name.clone(), local_id);
 
+            // Use a default span for now
+            let span = 0..0;
+
             labels.push(Label {
                 id: local_id,
                 name: label_def.name.clone(),
                 instruction_id: None, // To be filled during AST lowering
+                span,
             });
         }
 
@@ -204,7 +208,10 @@ impl HirCollector {
                 self.link_label_to_instruction(&label_name, last_id)?;
             } else {
                 // This is a rare case where there's a label but no instructions in the file
-                warn!("Label '{}' found at the end of the file with no instructions to link to", label_name);
+                warn!(
+                    "Label '{}' found at the end of the file with no instructions to link to",
+                    label_name
+                );
             }
         }
 
@@ -277,12 +284,18 @@ impl HirCollector {
 
         // Create the associated InstructionCall expression.
         let call_expr_id = self.next_expr_id();
+        // Convert TextRange to Range<usize>
+        let text_range = instruction.syntax().text_range();
+        let expr_span = text_range.start().into()..text_range.end().into();
+        let instr_span = expr_span.clone();
+
         let call_expr = Expr {
             id: call_expr_id,
             kind: ExprKind::InstructionCall(InstructionCall {
                 opcode: opcode.clone(),
                 operands: operand_exprs, // Store all lowered operands here.
             }),
+            span: expr_span,
         };
         self.body.exprs.push(call_expr);
 
@@ -291,7 +304,8 @@ impl HirCollector {
             id: instr_local_id,
             opcode,
             operand: first_operand_expr_id, // Link to the first operand expression.
-            label_name: None, // Will be set by the caller if needed
+            label_name: None,               // Will be set by the caller if needed
+            span: instr_span,               // Use the instruction span
         };
 
         Ok(hir_instruction)
@@ -313,7 +327,11 @@ impl HirCollector {
             return Err(HirError::UnknownOperand(operand.syntax().text_range()));
         };
 
-        let expr = Expr { id: expr_id, kind };
+        // Convert TextRange to Range<usize>
+        let text_range = operand.syntax().text_range();
+        let span = text_range.start().into()..text_range.end().into();
+
+        let expr = Expr { id: expr_id, kind, span };
         self.body.exprs.push(expr);
 
         Ok(expr_id)
@@ -438,7 +456,9 @@ impl HirCollector {
     /// Helper to create a literal expression and add it to the body.
     fn create_literal_expr(&mut self, literal: Literal) -> Result<ExprId, HirError> {
         let expr_id = self.next_expr_id();
-        let expr = Expr { id: expr_id, kind: ExprKind::Literal(literal) };
+        // Use a default span since we don't have the original AST node here
+        let span = 0..0;
+        let expr = Expr { id: expr_id, kind: ExprKind::Literal(literal), span };
         self.body.exprs.push(expr);
         Ok(expr_id)
     }
@@ -446,7 +466,9 @@ impl HirCollector {
     /// Helper to create a label reference expression and add it to the body.
     fn create_label_ref_expr(&mut self, label_id: DefId) -> Result<ExprId, HirError> {
         let expr_id = self.next_expr_id();
-        let expr = Expr { id: expr_id, kind: ExprKind::LabelRef(LabelRef { label_id }) };
+        // Use a default span since we don't have the original AST node here
+        let span = 0..0;
+        let expr = Expr { id: expr_id, kind: ExprKind::LabelRef(LabelRef { label_id }), span };
         self.body.exprs.push(expr);
         Ok(expr_id)
     }

@@ -102,7 +102,9 @@ impl DataFlowGraph {
     }
 
     /// Find memory addresses that are read before being written
-    pub fn find_uninitialized_reads(&self) -> HashSet<i64> {
+    ///
+    /// Returns a set of (address, instruction_id) pairs
+    pub fn find_uninitialized_reads(&self) -> HashSet<(i64, LocalDefId)> {
         let mut uninitialized = HashSet::new();
         let mut initialized = HashSet::new();
 
@@ -117,11 +119,14 @@ impl DataFlowGraph {
 
         // Analyze each node in topological order
         for node_idx in sorted_nodes {
+            let node = &self.graph[node_idx];
+            let instr_id = node.instruction_id;
+
             // Check incoming edges for reads
             for (_, value) in self.get_incoming_edges(node_idx) {
                 if let DataFlowValue::Memory(addr) = value {
                     if !initialized.contains(&addr) {
-                        uninitialized.insert(addr);
+                        uninitialized.insert((addr, instr_id));
                     }
                 }
             }
@@ -138,27 +143,37 @@ impl DataFlowGraph {
     }
 
     /// Find memory addresses that are written but never read
-    pub fn find_unused_writes(&self) -> HashSet<i64> {
-        let mut written = HashSet::new();
-        let mut read = HashSet::new();
+    ///
+    /// Returns a set of (address, instruction_id) pairs
+    pub fn find_unused_writes(&self) -> HashSet<(i64, LocalDefId)> {
+        let mut written_addrs = HashSet::new();
+        let mut read_addrs = HashSet::new();
+        let mut written_with_instr = HashMap::new();
 
         // Collect all memory addresses that are written to or read from
         for node_idx in self.graph.node_indices() {
+            let node = &self.graph[node_idx];
+            let instr_id = node.instruction_id;
+
             for (_, value) in self.get_outgoing_edges(node_idx) {
                 if let DataFlowValue::Memory(addr) = value {
-                    written.insert(addr);
+                    written_addrs.insert(addr);
+                    written_with_instr.insert(addr, instr_id);
                 }
             }
 
             for (_, value) in self.get_incoming_edges(node_idx) {
                 if let DataFlowValue::Memory(addr) = value {
-                    read.insert(addr);
+                    read_addrs.insert(addr);
                 }
             }
         }
 
         // Find addresses that are written to but never read from
-        written.difference(&read).copied().collect()
+        written_addrs
+            .difference(&read_addrs)
+            .filter_map(|addr| written_with_instr.get(addr).map(|instr_id| (*addr, *instr_id)))
+            .collect()
     }
 
     /// Perform a topological sort of the nodes
@@ -199,5 +214,11 @@ impl DataFlowGraph {
     /// Check if the graph is empty
     pub fn is_empty(&self) -> bool {
         self.graph.node_count() == 0
+    }
+}
+
+impl Default for DataFlowGraph {
+    fn default() -> Self {
+        Self::new()
     }
 }

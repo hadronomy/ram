@@ -46,27 +46,27 @@ impl AnalysisPass for InstructionValidationAnalysis {
                 // Check if the instruction has the correct number of operands
                 if kind.requires_operand() {
                     if instr.operand.is_none() {
-                        ctx.error(
+                        ctx.error_at_instruction(
                             format!("Instruction '{}' requires an operand", opcode),
                             "Add an operand".to_string(),
-                            None,
+                            instr.id,
                         );
                     } else if let Some(operand_id) = instr.operand {
                         // Validate the operand
                         self.validate_operand(ctx, &body, operand_id, &kind, &opcode);
                     }
                 } else if instr.operand.is_some() {
-                    ctx.error(
+                    ctx.error_at_instruction(
                         format!("Instruction '{}' does not take an operand", opcode),
                         "Remove the operand".to_string(),
-                        None,
+                        instr.id,
                     );
                 }
             } else {
-                ctx.error(
+                ctx.error_at_instruction(
                     format!("Unknown instruction: '{}'", opcode),
                     "Use a valid instruction from the instruction set".to_string(),
-                    None,
+                    instr.id,
                 );
             }
         }
@@ -92,20 +92,20 @@ impl InstructionValidationAnalysis {
                         Literal::Int(value) => {
                             // Check if the integer is in range
                             if *value < 0 {
-                                ctx.warning(
+                                ctx.warning_at_expr(
                                     format!("Negative memory address: {}", value),
                                     "Memory addresses should be non-negative".to_string(),
-                                    None,
+                                    operand_id,
                                 );
                             }
                         }
                         Literal::Label(label) => {
                             // Check if the label exists
                             if !body.labels.iter().any(|l| l.name == *label) {
-                                ctx.error(
+                                ctx.error_at_expr(
                                     format!("Undefined label: '{}'", label),
                                     "Define the label before using it".to_string(),
-                                    None,
+                                    operand_id,
                                 );
                             }
 
@@ -116,26 +116,26 @@ impl InstructionValidationAnalysis {
                                     | InstructionKind::JumpGtz
                                     | InstructionKind::JumpZero
                             ) {
-                                ctx.warning(
+                                ctx.warning_at_expr(
                                     format!(
                                         "Label used as operand for non-jump instruction: '{}'",
                                         opcode
                                     ),
                                     "Labels are typically used with jump instructions".to_string(),
-                                    None,
+                                    operand_id,
                                 );
                             }
                         }
                         Literal::String(_) => {
                             // String literals are generally not used in RAM instructions
-                            ctx.warning(
+                            ctx.warning_at_expr(
                                 format!(
                                     "String literal used as operand for instruction: '{}'",
                                     opcode
                                 ),
                                 "String literals are not typically used in RAM instructions"
                                     .to_string(),
-                                None,
+                                operand_id,
                             );
                         }
                     }
@@ -153,17 +153,17 @@ impl InstructionValidationAnalysis {
                                 | InstructionKind::JumpGtz
                                 | InstructionKind::JumpZero
                         ) {
-                            ctx.warning(
+                            ctx.warning_at_expr(
                                 format!("Label reference used as operand for non-jump instruction: '{}'", opcode),
                                 "Label references are typically used with jump instructions".to_string(),
-                                None,
+                                operand_id,
                             );
                         }
                     } else {
-                        ctx.error(
+                        ctx.error_at_expr(
                             "Invalid label reference".to_string(),
                             "Use a valid label".to_string(),
-                            None,
+                            operand_id,
                         );
                     }
                 }
@@ -173,31 +173,31 @@ impl InstructionValidationAnalysis {
                         match &addr_expr.kind {
                             ExprKind::Literal(Literal::Int(value)) => {
                                 if *value < 0 {
-                                    ctx.warning(
+                                    ctx.warning_at_expr(
                                         format!("Negative memory address: {}", value),
                                         "Memory addresses should be non-negative".to_string(),
-                                        None,
+                                        mem_ref.address,
                                     );
                                 }
                             }
                             _ => {
-                                ctx.error(
+                                ctx.error_at_expr(
                                     "Memory reference address must be an integer".to_string(),
                                     "Use an integer for the memory address".to_string(),
-                                    None,
+                                    mem_ref.address,
                                 );
                             }
                         }
                     }
                 }
                 ExprKind::InstructionCall(_) => {
-                    ctx.error(
+                    ctx.error_at_expr(
                         format!(
                             "Instruction '{}' cannot have an instruction call as an operand",
                             opcode
                         ),
                         "Use a valid operand type".to_string(),
-                        None,
+                        operand_id,
                     );
                 }
             }
