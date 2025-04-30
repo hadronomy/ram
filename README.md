@@ -28,7 +28,18 @@
 
 </div>
 
-</div>
+## About This Project
+
+This project aims to develop a complete ecosystem for the Random Access Machine (RAM) model of computation. `RAM` provides both a formally defined **language** based on this model and a robust **emulator** to execute programs written in that language.
+
+### Objectives
+
+*   **Formal Language Definition:** Define a clear, consistent, and unambiguous specification for the RAM programming language.
+*   **Accurate Emulation:** Implement an emulator that faithfully executes RAM programs according to the defined semantics.
+*   **Performance:** Strive for reasonable performance in the emulator to handle non-trivial programs.
+*   **Educational Resource:** Serve as a practical tool and codebase for learning about the RAM model, theoretical computer science concepts, and potentially compiler/interpreter design.
+*   **(Future) LLVM Backend:** Explore replacing the emulator with an LLVM-based backend for potentially higher performance code generation.
+*   **(Future) Extensibility:** Design the core components with potential future extensions in mind, such as debugging tools, visualization, or integration with other systems.
 
 > [!CAUTION]
 > This project is under heavy development
