@@ -7,10 +7,11 @@
 
 <!-- configs -->
 
-| Key               | Description                          | Type     | Default       |
-| ----------------- | ------------------------------------ | -------- | ------------- |
-| `ram.server.host` | The host for the RAM language server | `string` | `"localhost"` |
-| `ram.server.port` | The port for the RAM language server | `number` | `9257`        |
+| Key                       | Description                                          | Type      | Default       |
+| ------------------------- | ---------------------------------------------------- | --------- | ------------- |
+| `ram.server.host`         | The host for the RAM language server                 | `string`  | `"localhost"` |
+| `ram.server.port`         | The port for the RAM language server                 | `number`  | `9257`        |
+| `ram.decorations.enabled` | Enable custom decorations for RAM language operators | `boolean` | `true`        |
 
 <!-- configs -->
 
@@ -18,10 +19,11 @@
 
 <!-- commands -->
 
-| Command             | Title               |
-| ------------------- | ------------------- |
-| `ram.lspStatus`     | RAM: Show Status    |
-| `ram.restartServer` | RAM: Restart Server |
+| Command                 | Title                            |
+| ----------------------- | -------------------------------- |
+| `ram.lspStatus`         | RAM: Show Status                 |
+| `ram.restartServer`     | RAM: Restart Server              |
+| `ram.toggleDecorations` | RAM: Toggle Operator Decorations |
 
 <!-- commands -->
 

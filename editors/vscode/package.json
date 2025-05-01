@@ -49,6 +49,11 @@
           "type": "number",
           "default": 9257,
           "description": "The port for the RAM language server"
+        },
+        "ram.decorations.enabled": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable custom decorations for RAM language operators"
         }
       }
     },
@@ -83,7 +88,14 @@
       {
         "command": "ram.restartServer",
         "title": "RAM: Restart Server"
+      },
+      {
+        "command": "ram.toggleDecorations",
+        "title": "RAM: Toggle Operator Decorations"
       }
+    ],
+    "markdown.previewStyles": [
+      "./res/decorations.css"
     ]
   },
   "scripts": {

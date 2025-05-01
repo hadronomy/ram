@@ -7,6 +7,7 @@ import { defineExtension } from 'reactive-vscode';
 import {
   LanguageClient,
 } from 'vscode-languageclient/node';
+import { disposeDecorations, initDecorations } from './decorations';
 
 let client: LanguageClient;
 
@@ -55,6 +56,16 @@ const { activate, deactivate } = defineExtension((ctx) => {
   });
 
   client.outputChannel.show();
+
+  // Initialize custom decorations
+  initDecorations(ctx);
+
+  // Return a disposable for cleanup
+  return {
+    dispose: () => {
+      disposeDecorations();
+    },
+  };
 });
 
 export { activate, deactivate };
