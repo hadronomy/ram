@@ -41,6 +41,11 @@ ram_syntax      = { workspace = true }
 
 [dev-dependencies]
 proptest = { workspace = true }
+criterion = "0.5.1"
+
+[[bench]]
+name = "bench_main"
+harness = false
 
 [lints]
 workspace = true
