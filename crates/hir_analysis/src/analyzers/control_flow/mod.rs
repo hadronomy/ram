@@ -109,6 +109,43 @@ impl<'a> ControlFlowGraphBuilder<'a> {
         Self { body, cfg: ControlFlowGraph::new(), instr_to_node: HashMap::new(), label_to_instr }
     }
 
+    /// Helper method to find a label by its DefId
+    fn find_label_by_id(&self, label_id: hir::ids::DefId) -> Option<&hir::body::Label> {
+        self.body.labels.iter().find(|l| {
+            // We need to compare the file_id and local_id parts of DefId
+            // since we can't directly compare DefId with LocalDefId
+            label_id.file_id == self.body.owner.file_id && label_id.local_id.0 == l.id.0
+        })
+    }
+
+    /// Helper method to add appropriate edges for a jump instruction
+    fn add_jump_edges(
+        &mut self,
+        node_id: petgraph::graph::NodeIndex,
+        target_node_id: petgraph::graph::NodeIndex,
+        opcode: &str,
+        instr_index: usize,
+    ) {
+        // Add a jump edge
+        let edge_kind = match opcode.to_uppercase().as_str() {
+            "JUMP" | "JMP" => EdgeKind::Unconditional,
+            "JGTZ" => EdgeKind::ConditionalTrue,
+            "JZERO" => EdgeKind::ConditionalTrue,
+            _ => EdgeKind::Unconditional,
+        };
+
+        self.cfg.add_edge(node_id, target_node_id, edge_kind);
+
+        // For conditional jumps, also add a fallthrough edge
+        if (opcode.to_uppercase() == "JGTZ" || opcode.to_uppercase() == "JZERO")
+            && instr_index + 1 < self.body.instructions.len()
+        {
+            let next_instr_id = self.body.instructions[instr_index + 1].id;
+            let next_node_id = self.instr_to_node[&next_instr_id];
+            self.cfg.add_edge(node_id, next_node_id, EdgeKind::ConditionalFalse);
+        }
+    }
+
     /// Build the control flow graph
     fn build(&mut self) -> ControlFlowGraph {
         // Create nodes for all instructions
@@ -133,33 +170,39 @@ impl<'a> ControlFlowGraphBuilder<'a> {
                 if let Some(operand_id) = instr.operand {
                     if let Some(expr) = self.body.exprs.get(operand_id.0 as usize) {
                         match &expr.kind {
+                            // Handle literal label references (string literals representing labels)
                             hir::body::ExprKind::Literal(hir::body::Literal::Label(label_name)) => {
                                 if let Some(&target_instr_id) = self.label_to_instr.get(label_name)
                                 {
                                     if let Some(&target_node_id) =
                                         self.instr_to_node.get(&target_instr_id)
                                     {
-                                        // Add a jump edge
-                                        let edge_kind = match instr.opcode.to_uppercase().as_str() {
-                                            "JUMP" | "JMP" => EdgeKind::Unconditional,
-                                            "JGTZ" => EdgeKind::ConditionalTrue,
-                                            "JZERO" => EdgeKind::ConditionalTrue,
-                                            _ => EdgeKind::Unconditional,
-                                        };
-
-                                        self.cfg.add_edge(node_id, target_node_id, edge_kind);
-
-                                        // For conditional jumps, also add a fallthrough edge
-                                        if (instr.opcode.to_uppercase() == "JGTZ"
-                                            || instr.opcode.to_uppercase() == "JZERO")
-                                            && i + 1 < self.body.instructions.len()
+                                        // Add appropriate edges for this jump instruction
+                                        self.add_jump_edges(
+                                            node_id,
+                                            target_node_id,
+                                            &instr.opcode,
+                                            i,
+                                        );
+                                    }
+                                }
+                            }
+                            // Handle LabelRef type - this is what we were missing
+                            hir::body::ExprKind::LabelRef(label_ref) => {
+                                // Find the label by its ID
+                                if let Some(label) = self.find_label_by_id(label_ref.label_id) {
+                                    if let Some(&target_instr_id) =
+                                        self.label_to_instr.get(&label.name)
+                                    {
+                                        if let Some(&target_node_id) =
+                                            self.instr_to_node.get(&target_instr_id)
                                         {
-                                            let next_instr_id = self.body.instructions[i + 1].id;
-                                            let next_node_id = self.instr_to_node[&next_instr_id];
-                                            self.cfg.add_edge(
+                                            // Add appropriate edges for this jump instruction
+                                            self.add_jump_edges(
                                                 node_id,
-                                                next_node_id,
-                                                EdgeKind::ConditionalFalse,
+                                                target_node_id,
+                                                &instr.opcode,
+                                                i,
                                             );
                                         }
                                     }
