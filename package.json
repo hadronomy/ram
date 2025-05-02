@@ -1,18 +1,18 @@
 {
   "name": "ram",
-  "packageManager": "pnpm@10.8.1",
+  "packageManager": "pnpm@10.10.0",
   "author": "Pablo Hernández <hadronomy@gmail.com> (https://hadronomy.com)",
   "license": "MIT",
   "keywords": [],
   "devDependencies": {
     "@hadronomy/eslint-config": "^4.1.2",
     "autoprefixer": "10.4.21",
-    "eslint": "^9.25.0",
-    "oxlint": "^0.16.6",
+    "eslint": "^9.25.1",
+    "oxlint": "^0.16.8",
     "postcss": "8.5.3",
     "prettier": "^3.5.3",
     "taze": "^19.0.4",
-    "turbo": "^2.5.0",
+    "turbo": "^2.5.2",
     "typescript": "~5.8.3"
   },
   "pnpm": {
@@ -28,7 +28,7 @@
     ],
     "overrides": {
       "@types/react": "19.1.2",
-      "@types/react-dom": "19.1.2"
+      "@types/react-dom": "19.1.3"
     }
   }
 }

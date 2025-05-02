@@ -2,7 +2,7 @@
   "name": "@ram/grammar",
   "type": "module",
   "version": "0.1.0",
-  "packageManager": "pnpm@10.8.1",
+  "packageManager": "pnpm@10.10.0",
   "description": "The grammar for the ram assembly language",
   "keywords": [],
   "exports": {
@@ -39,7 +39,7 @@
     "generate": "esno scripts/generate.ts"
   },
   "dependencies": {
-    "bunchee": "^6.5.0",
+    "bunchee": "^6.5.1",
     "monaco-editor": "^0.52.2"
   },
   "devDependencies": {
