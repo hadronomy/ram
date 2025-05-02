@@ -1,8 +1,6 @@
 use std::sync::Arc;
 
-use base_db::input::FileId;
 use hir_analysis::AnalysisPipeline;
-use hir_def::item_tree::ItemTree;
 use ram_parser::{AstNode, Program, SyntaxNode, build_tree, convert_errors, parse};
 
 /// Create a parser for RAM assembly language.
@@ -32,7 +30,8 @@ pub fn parse_program(source: &str) -> (Program, Vec<miette::Error>) {
     let item_tree = hir_def::item_tree::ItemTree::lower(&program, file_id);
 
     // Lower the program to HIR
-    let body = hir::lower::lower_program(&program, hir::ids::DefId::default(), file_id, &item_tree).unwrap();
+    let body = hir::lower::lower_program(&program, hir::ids::DefId::default(), file_id, &item_tree)
+        .unwrap();
 
     let mut pipeline = AnalysisPipeline::new();
 
@@ -44,13 +43,14 @@ pub fn parse_program(source: &str) -> (Program, Vec<miette::Error>) {
     match pipeline.analyze(Arc::new(body)) {
         Ok(result) => {
             // Add any diagnostics from the analysis to our errors
-            let control_flow = result.get_result::<hir_analysis::analyzers::ControlFlowAnalysis>().ok();
+            let control_flow =
+                result.get_result::<hir_analysis::analyzers::ControlFlowAnalysis>().ok();
             if let Some(cfg) = control_flow {
                 println!("{}", cfg.to_dot())
             }
 
             errors.extend(result.diagnostics().clone());
-        },
+        }
         Err(err) => {
             // If analysis fails, add a diagnostic about it
             let range = program.syntax().text_range();
@@ -62,7 +62,6 @@ pub fn parse_program(source: &str) -> (Program, Vec<miette::Error>) {
             ));
         }
     }
-
 
     // Convert the errors into miette errors
     let miette_errors = if errors.is_empty() {

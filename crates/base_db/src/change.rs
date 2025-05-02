@@ -1,4 +1,5 @@
 //! Change tracking for the database
+#![allow(dead_code)]
 
 use std::sync::Arc;
 
@@ -14,7 +15,7 @@ pub enum FileChange {
         /// The new text
         new_text: Arc<str>,
     },
-    
+
     /// The file was removed
     Removed {
         /// The file ID
@@ -27,7 +28,7 @@ pub enum FileChange {
 pub struct Change {
     /// Changes to files
     pub files: Vec<FileChange>,
-    
+
     /// Changes to source roots
     pub roots: Vec<(SourceRootId, Arc<SourceRoot>)>,
 }
@@ -40,10 +41,7 @@ impl Change {
 
     /// Add a file modification
     pub fn modify_file(&mut self, file_id: FileId, new_text: String) {
-        self.files.push(FileChange::Modified {
-            file_id,
-            new_text: Arc::from(new_text),
-        });
+        self.files.push(FileChange::Modified { file_id, new_text: Arc::from(new_text) });
     }
 
     /// Add a file removal

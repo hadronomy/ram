@@ -160,6 +160,7 @@ fn test_find_instruction() {
 }
 
 #[test]
+#[allow(clippy::field_reassign_with_default)]
 fn test_collect_int_literals() {
     let body = create_test_body();
     // Create a new collector for each test

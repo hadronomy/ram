@@ -11,7 +11,7 @@ use cstree::text::TextRange;
 use hir_def::item_tree::ItemTree;
 use ram_core::instruction::InstructionKind;
 use ram_syntax::{AstNode, SyntaxKind, ast};
-use tracing::{debug, error, warn};
+use tracing::{error, warn};
 
 use crate::body::{
     AddressingMode, Body, Expr, ExprKind, Instruction, InstructionCall, Label, LabelRef, Literal,

@@ -122,10 +122,8 @@ impl<'a> ControlFlowGraphBuilder<'a> {
             let node_id = self.instr_to_node[&instr.id];
 
             // Check if this is a jump instruction
-            let is_jump = match instr.opcode.to_uppercase().as_str() {
-                "JUMP" | "JMP" | "JGTZ" | "JZERO" => true,
-                _ => false,
-            };
+            let is_jump =
+                matches!(instr.opcode.to_uppercase().as_str(), "JUMP" | "JMP" | "JGTZ" | "JZERO");
 
             // Check if this is a halt instruction
             let is_halt = instr.opcode.to_uppercase() == "HALT";
@@ -152,20 +150,17 @@ impl<'a> ControlFlowGraphBuilder<'a> {
                                         self.cfg.add_edge(node_id, target_node_id, edge_kind);
 
                                         // For conditional jumps, also add a fallthrough edge
-                                        if instr.opcode.to_uppercase() == "JGTZ"
-                                            || instr.opcode.to_uppercase() == "JZERO"
+                                        if (instr.opcode.to_uppercase() == "JGTZ"
+                                            || instr.opcode.to_uppercase() == "JZERO")
+                                            && i + 1 < self.body.instructions.len()
                                         {
-                                            if i + 1 < self.body.instructions.len() {
-                                                let next_instr_id =
-                                                    self.body.instructions[i + 1].id;
-                                                let next_node_id =
-                                                    self.instr_to_node[&next_instr_id];
-                                                self.cfg.add_edge(
-                                                    node_id,
-                                                    next_node_id,
-                                                    EdgeKind::ConditionalFalse,
-                                                );
-                                            }
+                                            let next_instr_id = self.body.instructions[i + 1].id;
+                                            let next_node_id = self.instr_to_node[&next_instr_id];
+                                            self.cfg.add_edge(
+                                                node_id,
+                                                next_node_id,
+                                                EdgeKind::ConditionalFalse,
+                                            );
                                         }
                                     }
                                 }

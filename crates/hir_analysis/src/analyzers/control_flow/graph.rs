@@ -354,6 +354,12 @@ impl ControlFlowGraph {
     }
 }
 
+impl Default for ControlFlowGraph {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Check if a directed graph has cycles
 fn is_cyclic_directed<N, E>(graph: &DiGraph<N, E>) -> bool {
     // Try to perform a topological sort
