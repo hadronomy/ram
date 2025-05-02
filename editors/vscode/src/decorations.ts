@@ -15,11 +15,10 @@ function generateRegisterColor(registerNum: number): { text: string } {
   // Convert to HSL color - pastel colors have high lightness and medium saturation
   const h = hue.toFixed(0);
   const s = 70;
-  const l = 88;
+  const l = 70;
 
   return {
-    // Only generate the text color now
-    text: `hsla(${h}, ${s}%, ${l - 30}%, 1)`, // Darker text for contrast
+    text: `hsla(${h}, ${s}%, ${l}%, 1)`,
   };
 }
 
