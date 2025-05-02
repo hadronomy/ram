@@ -2,6 +2,8 @@ use std::sync::Arc;
 
 use dashmap::DashMap;
 use hir::body::Body;
+use hir_analysis::analyzers::constant_propagation::ConstantPropagationAnalysis;
+use hir_analysis::analyzers::control_flow_optimizer::ControlFlowOptimizer;
 use hir_analysis::{
     AnalysisPipeline, ControlFlowAnalysis, DataFlowAnalysis, InstructionValidationAnalysis,
 };
@@ -139,6 +141,8 @@ impl LspDatabase {
                 pipeline.register::<InstructionValidationAnalysis>().ok();
                 pipeline.register::<ControlFlowAnalysis>().ok();
                 pipeline.register::<DataFlowAnalysis>().ok();
+                pipeline.register::<ConstantPropagationAnalysis>().ok();
+                pipeline.register::<ControlFlowOptimizer>().ok();
 
                 // Run the analysis
                 if let Ok(context) = pipeline.analyze(Arc::new(body)) {

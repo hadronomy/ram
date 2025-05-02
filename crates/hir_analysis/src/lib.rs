@@ -60,7 +60,11 @@ pub mod pipeline;
 pub mod visitors;
 
 // Re-export main components
+pub use analyzers::constant_propagation::{
+    BranchTaken, ConstantPropagationAnalysis, ConstantPropagationResult,
+};
 pub use analyzers::control_flow::{ControlFlowAnalysis, ControlFlowGraph};
+pub use analyzers::control_flow_optimizer::{ControlFlowOptimizer, OptimizedControlFlowGraph};
 pub use analyzers::data_flow::{DataFlowAnalysis, DataFlowGraph};
 pub use analyzers::instruction_validation::InstructionValidationAnalysis;
 pub use context::AnalysisContext;

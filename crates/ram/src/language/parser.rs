@@ -38,6 +38,8 @@ pub fn parse_program(source: &str) -> (Program, Vec<miette::Error>) {
     pipeline.register::<hir_analysis::analyzers::InstructionValidationAnalysis>().ok();
     pipeline.register::<hir_analysis::analyzers::ControlFlowAnalysis>().ok();
     pipeline.register::<hir_analysis::analyzers::DataFlowAnalysis>().ok();
+    pipeline.register::<hir_analysis::analyzers::ConstantPropagationAnalysis>().ok();
+    pipeline.register::<hir_analysis::analyzers::ControlFlowOptimizer>().ok();
 
     // Run the analysis pipeline
     match pipeline.analyze(Arc::new(body)) {
