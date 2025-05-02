@@ -55,6 +55,7 @@
 pub mod analyzers;
 pub mod context;
 pub mod error;
+pub mod export;
 pub mod pass;
 pub mod pipeline;
 pub mod visitors;
@@ -69,6 +70,7 @@ pub use analyzers::data_flow::{DataFlowAnalysis, DataFlowGraph};
 pub use analyzers::instruction_validation::InstructionValidationAnalysis;
 pub use context::AnalysisContext;
 pub use error::AnalysisError;
+pub use export::{ExportFormat, ExportOptions};
 pub use pass::AnalysisPass;
 pub use pipeline::AnalysisPipeline;
 

@@ -26,6 +26,7 @@ miette             = "7.6.0"
 num-derive         = "0.4.2"
 num-traits         = "0.2.19"
 owo-colors         = "4.2.0"
+petgraph           = "0.8.1"
 rowan              = "0.16.1"
 rustc-hash         = "2.1.1"
 salsa              = "0.21.1"
@@ -73,10 +74,10 @@ ram_core            = { path = "crates/ram_core" }
 ram_derive          = { path = "crates/ram_derive" }
 ram_diagnostics     = { path = "crates/ram_diagnostics" }
 ram_error           = { path = "crates/ram_error" }
+ram_lsp             = { path = "crates/ram_lsp" }
 ram_parser          = { path = "crates/ram_parser" }
 ram_syntax          = { path = "crates/ram_syntax" }
 ram_vm              = { path = "crates/ram_vm" }
-ram_lsp             = { path = "crates/ram_lsp" }
 
 # Lint rules that I like taken from
 # https://github.com/rolldown/rolldown/blob/main/Cargo.toml

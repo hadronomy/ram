@@ -924,6 +924,7 @@ dependencies = [
  "ram_diagnostics",
  "ram_error",
  "salsa",
+ "serde_json",
  "thiserror 2.0.12",
  "tracing",
 ]

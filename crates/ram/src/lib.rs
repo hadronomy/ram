@@ -125,11 +125,11 @@ async fn handle_command_iner(
             Cli::command().print_help().into_diagnostic()?;
             Ok::<_, Error>(ExitCode::SUCCESS)
         }
-        Command::Validate { program, ast, reprint } => {
+        Command::Validate { program, ast, reprint, show_pipeline } => {
             let src = std::fs::read_to_string(program.clone())
                 .into_diagnostic()
                 .wrap_err(format!("Failed to read file: {}", program))?;
-            let (program, errors) = language::parser()(&src);
+            let (program, pipeline, errors) = language::parser()(&src);
 
             // Report any errors
             for error in errors {
@@ -144,6 +144,17 @@ async fn handle_command_iner(
             if reprint {
                 // Print the program back out
                 println!("{program}");
+            }
+
+            if show_pipeline {
+                // Print the analysis pipeline
+                println!(
+                    "{}",
+                    pipeline.export_dependency_graph(
+                        hir_analysis::ExportFormat::Mermaid,
+                        &Default::default()
+                    )
+                );
             }
 
             Ok::<_, Error>(ExitCode::SUCCESS)

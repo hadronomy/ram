@@ -34,6 +34,7 @@ use tracing::{debug, error, info, instrument, warn};
 
 use crate::context::AnalysisContext;
 use crate::error::AnalysisError;
+use crate::export::{ExportFormat, ExportOptions, PipelineExporter};
 use crate::pass::AnalysisPass;
 
 /// Manages the registration and execution of analysis passes.
@@ -263,6 +264,148 @@ impl Default for AnalysisPipeline {
     fn default() -> Self {
         debug!("Creating default AnalysisPipeline");
         Self::new()
+    }
+}
+
+impl AnalysisPipeline {
+    /// Returns a reference to the dependency graph.
+    ///
+    /// This method provides access to the internal dependency graph of analysis passes.
+    ///
+    /// # Returns
+    ///
+    /// A reference to the dependency graph.
+    pub fn dependency_graph(&self) -> &DiGraph<TypeId, ()> {
+        &self.graph
+    }
+
+    /// Returns a reference to the pass nodes map.
+    ///
+    /// This method provides access to the internal map from TypeId to NodeIndex.
+    ///
+    /// # Returns
+    ///
+    /// A reference to the pass nodes map.
+    pub fn pass_nodes(&self) -> &HashMap<TypeId, NodeIndex> {
+        &self.pass_nodes
+    }
+
+    /// Returns a map of pass names.
+    ///
+    /// This method collects the names of all registered passes.
+    ///
+    /// # Returns
+    ///
+    /// A map from TypeId to pass name.
+    pub fn pass_names(&self) -> HashMap<TypeId, &'static str> {
+        let mut pass_names = HashMap::new();
+        for (&pass_id, runner) in &self.passes {
+            pass_names.insert(pass_id, runner.name());
+        }
+        pass_names
+    }
+
+    /// Exports the dependency graph of analysis passes.
+    ///
+    /// This method generates an export of the dependency graph in the specified format.
+    /// The dependency graph shows the relationships between analysis passes, where an edge
+    /// from pass A to pass B indicates that B depends on A.
+    ///
+    /// # Parameters
+    ///
+    /// * `format` - The format to generate.
+    /// * `options` - Options for customizing the export.
+    ///
+    /// # Returns
+    ///
+    /// A string containing the export in the specified format.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hir_analysis::pipeline::AnalysisPipeline;
+    /// use hir_analysis::export::{ExportFormat, ExportOptions};
+    ///
+    /// let pipeline = AnalysisPipeline::new();
+    /// // Generate a DOT export of the dependency graph
+    /// let dot = pipeline.export_dependency_graph(ExportFormat::Dot, &Default::default());
+    /// ```
+    #[instrument(skip(self, options))]
+    pub fn export_dependency_graph(&self, format: ExportFormat, options: &ExportOptions) -> String {
+        debug!("Exporting dependency graph in {} format", format);
+
+        let pass_names = self.pass_names();
+        let exporter = PipelineExporter::new(&self.graph, &self.pass_nodes, pass_names);
+        exporter.export_dependency_graph(format, options)
+    }
+
+    /// Exports the execution order of analysis passes.
+    ///
+    /// This method generates an export of the execution order in the specified format.
+    /// The execution order is determined by topologically sorting the dependency graph.
+    ///
+    /// # Parameters
+    ///
+    /// * `format` - The format to generate.
+    /// * `options` - Options for customizing the export.
+    ///
+    /// # Returns
+    ///
+    /// * `Ok(String)` containing the export in the specified format.
+    /// * `Err(AnalysisError::DependencyCycle)` if the dependency graph contains a cycle.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hir_analysis::pipeline::AnalysisPipeline;
+    /// use hir_analysis::export::{ExportFormat, ExportOptions};
+    ///
+    /// let pipeline = AnalysisPipeline::new();
+    /// // Generate a Mermaid export of the execution order
+    /// let mermaid = pipeline.export_execution_order(ExportFormat::Mermaid, &Default::default()).unwrap();
+    /// ```
+    #[instrument(skip(self, options))]
+    pub fn export_execution_order(
+        &self,
+        format: ExportFormat,
+        options: &ExportOptions,
+    ) -> Result<String, AnalysisError> {
+        debug!("Exporting execution order in {} format", format);
+
+        // Perform topological sort to get execution order
+        let sorted_nodes = toposort(&self.graph, None).map_err(|cycle| {
+            let node_id = cycle.node_id();
+            let type_id = self.graph.node_weight(node_id).cloned();
+            error!(?node_id, ?type_id, "Dependency cycle detected in analysis passes");
+            AnalysisError::DependencyCycle(format!(
+                "Cycle detected involving node index {:?} (TypeId: {:?})",
+                node_id, type_id
+            ))
+        })?;
+
+        // Create a new graph with the execution order
+        let mut order_graph = DiGraph::new();
+        let mut pass_node_map = HashMap::new();
+        let mut prev_node = None;
+
+        let pass_names = self.pass_names();
+
+        // Add nodes in execution order
+        for node_index in &sorted_nodes {
+            let pass_id = self.graph[*node_index];
+            let new_idx = order_graph.add_node(pass_id);
+            pass_node_map.insert(pass_id, new_idx);
+
+            // Add edge from previous node to current node
+            if let Some(prev) = prev_node {
+                order_graph.add_edge(prev, new_idx, ());
+            }
+
+            prev_node = Some(new_idx);
+        }
+
+        let exporter = PipelineExporter::new(&order_graph, &pass_node_map, pass_names);
+        Ok(exporter.export_dependency_graph(format, options))
     }
 }
 

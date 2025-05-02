@@ -72,6 +72,9 @@ pub enum Command {
 
         #[arg(long, short, action)]
         reprint: bool,
+
+        #[arg(long, action)]
+        show_pipeline: bool,
     },
 
     /// Run a RAM program in the virtual machine.
