@@ -11,45 +11,44 @@ version    = "0.1.0"
 
 [workspace.dependencies]
 anstream           = "0.6.18"
-anyhow             = "1.0.95"
-chumsky            = "0.10.0"
-clap               = { version = "4.5.23", features = ["derive", "env", "string", "wrap_help"] }
+anyhow             = "1.0.98"
+chumsky            = "0.10.1"
+clap               = { version = "4.5.37", features = ["derive", "env", "string", "wrap_help"] }
 cstree             = { version = "0.12.2", features = ["derive", "serde"] }
-dashmap            = "5.5.3"
+dashmap            = "6.1.0"
 drop_bomb          = "0.1.5"
-globset            = { version = "0.4.15", features = ["serde"] }
+globset            = { version = "0.4.16", features = ["serde"] }
 human-panic        = "2.0.2"
 indexmap           = "2.9.0"
 itertools          = "0.14.0"
 la-arena           = "0.3.1"
-miette             = "7.4.0"
+miette             = "7.6.0"
 num-derive         = "0.4.2"
 num-traits         = "0.2.19"
-owo-colors         = "4.1.0"
-query-group        = "0.2.0"
-rowan              = "0.15.11"
-rustc-hash         = "1.1.0"
-salsa              = "0.18.0"
-semver             = "1.0.24"
-shadow-rs          = "1.0.1"
+owo-colors         = "4.2.0"
+rowan              = "0.16.1"
+rustc-hash         = "2.1.1"
+salsa              = "0.21.1"
+semver             = "1.0.26"
+shadow-rs          = "1.1.1"
 syntect            = { version = "5.2.0", features = ["default-fancy"] }
-tempfile           = "3.15.0"
-textwrap           = "0.16.1"
-thiserror          = "2.0.9"
-tokio              = "1.42.0"
-tokio-util         = { version = "0.7.13", features = ["codec", "compat"] }
+tempfile           = "3.19.1"
+textwrap           = "0.16.2"
+thiserror          = "2.0.12"
+tokio              = "1.44.2"
+tokio-util         = { version = "0.7.15", features = ["codec", "compat"] }
 tracing            = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-triomphe           = "0.1.11"
+triomphe           = "0.1.14"
 typed-arena        = "2.0.2"
 walkdir            = "2.5.0"
 
 # Serde and serialization
-serde        = "1.0.217"
-serde_derive = "1.0.217"
-serde_json   = "1.0.134"
+serde        = "1.0.219"
+serde_derive = "1.0.219"
+serde_json   = "1.0.140"
 taplo        = "0.13.2"
-toml         = "0.8.20"
+toml         = "0.8.22"
 
 # Tower crates
 tower            = { version = "0.5.2" }
@@ -57,12 +56,12 @@ tower-lsp        = { version = "0.20.0" }
 tower-lsp-macros = "0.9.0"
 
 # Macros
-proc-macro2 = "1.0.94"
+proc-macro2 = "1.0.95"
 quote       = "1.0.40"
-syn         = { version = "2.0.100", features = ["full"] }
+syn         = { version = "2.0.101", features = ["full"] }
 
 # Dev
-proptest = "1.4.0"
+proptest = "1.6.0"
 
 # Workspace crates
 base_db             = { path = "crates/base_db" }

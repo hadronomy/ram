@@ -175,6 +175,7 @@ impl InternedFileId {
 
 /// File text input for salsa
 #[salsa::input]
+#[derive(Debug)]
 pub struct FileText {
     pub text: Arc<str>,
     pub file_id: FileId,
@@ -182,12 +183,14 @@ pub struct FileText {
 
 /// File source root input for salsa
 #[salsa::input]
+#[derive(Debug)]
 pub struct FileSourceRootInput {
     pub source_root_id: SourceRootId,
 }
 
 /// Source root input for salsa
 #[salsa::input]
+#[derive(Debug)]
 pub struct SourceRootInput {
     pub source_root: Arc<SourceRoot>,
 }

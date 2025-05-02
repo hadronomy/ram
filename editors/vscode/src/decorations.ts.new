@@ -1,0 +1,356 @@
+import * as path from 'node:path';
+import * as vscode from 'vscode';
+
+// Define decoration types
+let operatorDecoration: vscode.TextEditorDecorationType;
+let indirectOperatorDecoration: vscode.TextEditorDecorationType;
+let immediateOperatorDecoration: vscode.TextEditorDecorationType;
+let bracketOpenDecoration: vscode.TextEditorDecorationType;
+let bracketCloseDecoration: vscode.TextEditorDecorationType;
+
+// Registry decoration types (one for each register)
+const MAX_REGISTERS = 10;
+const registerDecorations: vscode.TextEditorDecorationType[] = [];
+
+// Pastel color palette
+const pastelColors = {
+  gray: { bg: 'rgba(220, 220, 220, 0.3)', border: 'rgba(180, 180, 180, 0.5)' },
+  blue: { bg: 'rgba(173, 216, 230, 0.3)', border: 'rgba(135, 206, 235, 0.5)' },
+  green: { bg: 'rgba(152, 251, 152, 0.3)', border: 'rgba(144, 238, 144, 0.5)' },
+  gold: { bg: 'rgba(250, 218, 94, 0.3)', border: 'rgba(238, 232, 170, 0.5)' },
+  pink: { bg: 'rgba(255, 182, 193, 0.3)', border: 'rgba(255, 105, 180, 0.5)' },
+  purple: { bg: 'rgba(221, 160, 221, 0.3)', border: 'rgba(186, 85, 211, 0.5)' },
+  // Register colors will be generated dynamically
+};
+
+// Initialize decorations
+export function initDecorations(context: vscode.ExtensionContext) {
+  // Create decoration types with proper styling
+  operatorDecoration = vscode.window.createTextEditorDecorationType({
+    backgroundColor: pastelColors.gray.bg,
+    border: `1px solid ${pastelColors.gray.border}`,
+    borderRadius: '3px',
+    fontWeight: 'bold',
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+  });
+
+  indirectOperatorDecoration = vscode.window.createTextEditorDecorationType({
+    backgroundColor: pastelColors.green.bg,
+    border: `1px solid ${pastelColors.green.border}`,
+    borderRadius: '3px',
+    fontWeight: 'bold',
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+  });
+
+  immediateOperatorDecoration = vscode.window.createTextEditorDecorationType({
+    backgroundColor: pastelColors.blue.bg,
+    border: `1px solid ${pastelColors.blue.border}`,
+    borderRadius: '3px',
+    fontWeight: 'bold',
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+  });
+
+  bracketOpenDecoration = vscode.window.createTextEditorDecorationType({
+    backgroundColor: pastelColors.gold.bg,
+    border: `1px solid ${pastelColors.gold.border}`,
+    borderRadius: '3px 0 0 3px',
+    fontWeight: 'bold',
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+  });
+
+  bracketCloseDecoration = vscode.window.createTextEditorDecorationType({
+    backgroundColor: pastelColors.gold.bg,
+    border: `1px solid ${pastelColors.gold.border}`,
+    borderRadius: '0 3px 3px 0',
+    fontWeight: 'bold',
+    rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+  });
+
+  // Create register decorations (R0-R9)
+  const pastelHues = [
+    { h: 350, s: 100, l: 90 }, // Light pink
+    { h: 30, s: 100, l: 90 },  // Light orange
+    { h: 60, s: 100, l: 90 },  // Light yellow
+    { h: 120, s: 70, l: 85 },  // Light green
+    { h: 180, s: 70, l: 85 },  // Light teal
+    { h: 210, s: 70, l: 85 },  // Light blue
+    { h: 240, s: 70, l: 85 },  // Light indigo
+    { h: 270, s: 70, l: 85 },  // Light purple
+    { h: 300, s: 70, l: 85 },  // Light magenta
+    { h: 330, s: 70, l: 85 },  // Light rose
+  ];
+
+  for (let i = 0; i < MAX_REGISTERS; i++) {
+    const { h, s, l } = pastelHues[i];
+    registerDecorations[i] = vscode.window.createTextEditorDecorationType({
+      backgroundColor: `hsla(${h}, ${s}%, ${l}%, 0.3)`,
+      border: `1px solid hsla(${h}, ${s}%, ${l - 10}%, 0.5)`,
+      borderRadius: '3px',
+      fontWeight: 'bold',
+      rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+      before: {
+        contentText: `R${i}`,
+        margin: '0 -0.1em 0 0',
+        color: `hsla(${h}, ${s}%, ${l - 30}%, 1)`, // Darker text for contrast
+        backgroundColor: `hsla(${h}, ${s}%, ${l}%, 0.5)`,
+        border: `1px solid hsla(${h}, ${s}%, ${l - 10}%, 0.5)`,
+        borderRadius: '3px 0 0 3px',
+        padding: '0 3px',
+      },
+      textDecoration: 'none; opacity: 0;', // Hide the original number
+    });
+  }
+
+  // Register the toggle command
+  context.subscriptions.push(
+    vscode.commands.registerCommand('ram.toggleDecorations', () => {
+      const config = vscode.workspace.getConfiguration('ram');
+      const currentValue = config.get<boolean>('decorations.enabled', true);
+
+      // Toggle the value
+      config.update('decorations.enabled', !currentValue, vscode.ConfigurationTarget.Global)
+        .then(() => {
+          vscode.window.showInformationMessage(
+            `RAM operator decorations ${!currentValue ? 'enabled' : 'disabled'}`,
+          );
+
+          // Update decorations immediately
+          if (vscode.window.activeTextEditor) {
+            updateDecorations(vscode.window.activeTextEditor);
+          }
+        });
+    }),
+  );
+
+  // Set up event listeners
+  let activeEditor = vscode.window.activeTextEditor;
+
+  // Update when text changes
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeTextDocument((event) => {
+      if (activeEditor && event.document === activeEditor.document) {
+        updateDecorations(activeEditor);
+      }
+    }),
+  );
+
+  // Update when active editor changes
+  context.subscriptions.push(
+    vscode.window.onDidChangeActiveTextEditor((editor) => {
+      activeEditor = editor;
+      if (editor) {
+        updateDecorations(editor);
+      }
+    }),
+  );
+
+  // Update when configuration changes
+  context.subscriptions.push(
+    vscode.workspace.onDidChangeConfiguration((e) => {
+      if (e.affectsConfiguration('ram.decorations.enabled') && activeEditor) {
+        updateDecorations(activeEditor);
+      }
+    }),
+  );
+
+  // Initial update for the active editor
+  if (activeEditor) {
+    updateDecorations(activeEditor);
+  }
+}
+
+// Update decorations in the editor
+function updateDecorations(editor: vscode.TextEditor | undefined) {
+  if (!editor || editor.document.languageId !== 'ram') {
+    return;
+  }
+
+  // Check if decorations are enabled in settings
+  const config = vscode.workspace.getConfiguration('ram');
+  const decorationsEnabled = config.get<boolean>('decorations.enabled', true);
+  if (!decorationsEnabled) {
+    // Clear decorations if disabled
+    clearDecorations(editor);
+    return;
+  }
+
+  const text = editor.document.getText();
+  const operatorDecorations: vscode.DecorationOptions[] = [];
+  const indirectOperatorDecorations: vscode.DecorationOptions[] = [];
+  const immediateOperatorDecorations: vscode.DecorationOptions[] = [];
+  const bracketOpenDecorations: vscode.DecorationOptions[] = [];
+  const bracketCloseDecorations: vscode.DecorationOptions[] = [];
+  const registerDecorationArrays: vscode.DecorationOptions[][] = Array.from(
+    { length: MAX_REGISTERS },
+    () => []
+  );
+
+  // Find all operators
+  const operatorRegex = /[*=[\]]/g;
+  let match: RegExpExecArray | null;
+
+  // eslint-disable-next-line no-cond-assign
+  while ((match = operatorRegex.exec(text)) !== null) {
+    const startPos = editor.document.positionAt(match.index);
+    const endPos = editor.document.positionAt(match.index + match[0].length);
+    const range = new vscode.Range(startPos, endPos);
+
+    // Categorize by operator type
+    if (match[0] === '*') {
+      // Check if it's an indirect operator (*N)
+      const afterMatchIndex = match.index + 1;
+      if (afterMatchIndex < text.length) {
+        const afterMatch = text.substring(afterMatchIndex, afterMatchIndex + 1);
+        if (/\d/.test(afterMatch)) {
+          const registerNum = parseInt(afterMatch, 10);
+          if (registerNum < MAX_REGISTERS) {
+            // Create decoration for the operator
+            const decoration: vscode.DecorationOptions = {
+              range,
+              hoverMessage: new vscode.MarkdownString(`**Indirect addressing mode** (Register ${registerNum})`),
+            };
+            indirectOperatorDecorations.push(decoration);
+
+            // Create decoration for the register number
+            const registerStartPos = editor.document.positionAt(afterMatchIndex);
+            const registerEndPos = editor.document.positionAt(afterMatchIndex + 1);
+            const registerRange = new vscode.Range(registerStartPos, registerEndPos);
+            const registerDecoration: vscode.DecorationOptions = {
+              range: registerRange,
+              hoverMessage: new vscode.MarkdownString(`**Register ${registerNum}**`),
+            };
+            registerDecorationArrays[registerNum].push(registerDecoration);
+          }
+        } else {
+          const decoration: vscode.DecorationOptions = {
+            range,
+            hoverMessage: new vscode.MarkdownString('**Multiplication operator**'),
+          };
+          operatorDecorations.push(decoration);
+        }
+      } else {
+        const decoration: vscode.DecorationOptions = {
+          range,
+          hoverMessage: new vscode.MarkdownString('**Multiplication operator**'),
+        };
+        operatorDecorations.push(decoration);
+      }
+    }
+    else if (match[0] === '=') {
+      // Check if it's an immediate operator (=N)
+      const afterMatchIndex = match.index + 1;
+      if (afterMatchIndex < text.length) {
+        const afterMatch = text.substring(afterMatchIndex, afterMatchIndex + 1);
+        if (/\d/.test(afterMatch)) {
+          const registerNum = parseInt(afterMatch, 10);
+          if (registerNum < MAX_REGISTERS) {
+            // Create decoration for the operator
+            const decoration: vscode.DecorationOptions = {
+              range,
+              hoverMessage: new vscode.MarkdownString(`**Immediate addressing mode** (Register ${registerNum})`),
+            };
+            immediateOperatorDecorations.push(decoration);
+
+            // Create decoration for the register number
+            const registerStartPos = editor.document.positionAt(afterMatchIndex);
+            const registerEndPos = editor.document.positionAt(afterMatchIndex + 1);
+            const registerRange = new vscode.Range(registerStartPos, registerEndPos);
+            const registerDecoration: vscode.DecorationOptions = {
+              range: registerRange,
+              hoverMessage: new vscode.MarkdownString(`**Register ${registerNum}**`),
+            };
+            registerDecorationArrays[registerNum].push(registerDecoration);
+          }
+        } else {
+          const decoration: vscode.DecorationOptions = {
+            range,
+            hoverMessage: new vscode.MarkdownString('**Assignment operator**'),
+          };
+          operatorDecorations.push(decoration);
+        }
+      } else {
+        const decoration: vscode.DecorationOptions = {
+          range,
+          hoverMessage: new vscode.MarkdownString('**Assignment operator**'),
+        };
+        operatorDecorations.push(decoration);
+      }
+    }
+    else if (match[0] === '[') {
+      const decoration: vscode.DecorationOptions = {
+        range,
+        hoverMessage: new vscode.MarkdownString('**Opening bracket**'),
+      };
+      bracketOpenDecorations.push(decoration);
+    }
+    else if (match[0] === ']') {
+      const decoration: vscode.DecorationOptions = {
+        range,
+        hoverMessage: new vscode.MarkdownString('**Closing bracket**'),
+      };
+      bracketCloseDecorations.push(decoration);
+    }
+  }
+
+  // Find standalone register numbers (not part of operators)
+  const registerRegex = /\b(\d)\b/g;
+  // eslint-disable-next-line no-cond-assign
+  while ((match = registerRegex.exec(text)) !== null) {
+    const registerNum = parseInt(match[0], 10);
+    if (registerNum < MAX_REGISTERS) {
+      const startPos = editor.document.positionAt(match.index);
+      const endPos = editor.document.positionAt(match.index + match[0].length);
+      const range = new vscode.Range(startPos, endPos);
+
+      // Check if this is not part of an operator (already handled)
+      const prevChar = match.index > 0 ? text.charAt(match.index - 1) : '';
+      if (prevChar !== '*' && prevChar !== '=') {
+        const decoration: vscode.DecorationOptions = {
+          range,
+          hoverMessage: new vscode.MarkdownString(`**Register ${registerNum}**`),
+        };
+        registerDecorationArrays[registerNum].push(decoration);
+      }
+    }
+  }
+
+  // Apply decorations
+  editor.setDecorations(operatorDecoration, operatorDecorations);
+  editor.setDecorations(indirectOperatorDecoration, indirectOperatorDecorations);
+  editor.setDecorations(immediateOperatorDecoration, immediateOperatorDecorations);
+  editor.setDecorations(bracketOpenDecoration, bracketOpenDecorations);
+  editor.setDecorations(bracketCloseDecoration, bracketCloseDecorations);
+
+  // Apply register decorations
+  for (let i = 0; i < MAX_REGISTERS; i++) {
+    editor.setDecorations(registerDecorations[i], registerDecorationArrays[i]);
+  }
+}
+
+// Clear all decorations
+function clearDecorations(editor: vscode.TextEditor) {
+  editor.setDecorations(operatorDecoration, []);
+  editor.setDecorations(indirectOperatorDecoration, []);
+  editor.setDecorations(immediateOperatorDecoration, []);
+  editor.setDecorations(bracketOpenDecoration, []);
+  editor.setDecorations(bracketCloseDecoration, []);
+
+  // Clear register decorations
+  for (let i = 0; i < MAX_REGISTERS; i++) {
+    editor.setDecorations(registerDecorations[i], []);
+  }
+}
+
+// Dispose decorations
+export function disposeDecorations() {
+  operatorDecoration.dispose();
+  indirectOperatorDecoration.dispose();
+  immediateOperatorDecoration.dispose();
+  bracketOpenDecoration.dispose();
+  bracketCloseDecoration.dispose();
+
+  // Dispose register decorations
+  for (let i = 0; i < MAX_REGISTERS; i++) {
+    registerDecorations[i].dispose();
+  }
+}

@@ -16,7 +16,7 @@ serde_json         = { workspace = true }
 tokio              = { workspace = true, features = ["io-util", "io-std", "macros", "rt-multi-thread", "time"] }
 tower-lsp          = { workspace = true }
 tracing            = { workspace = true }
-url                = "2.5.0"
+url                = "2.5.4"
 
 base_db            = { workspace = true }
 hir                = { workspace = true }
