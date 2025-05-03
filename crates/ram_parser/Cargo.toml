@@ -49,6 +49,3 @@ harness = false
 
 [lints]
 workspace = true
-
-[profile.bench]
-debug = true

@@ -142,3 +142,6 @@ codegen-units = 1
 incremental   = true
 lto           = true
 opt-level     = 3    # Optimize for speed
+
+[profile.bench]
+debug = true
