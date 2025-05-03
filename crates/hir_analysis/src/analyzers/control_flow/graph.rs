@@ -362,8 +362,8 @@ impl ControlFlowGraph {
 
             let label = if let Some(instr_id) = node.instruction_id {
                 // Find the instruction in the body
-                let instr = body
-                    .instructions
+
+                body.instructions
                     .iter()
                     .find(|i| i.id == instr_id)
                     .map(|i| {
@@ -382,8 +382,7 @@ impl ControlFlowGraph {
                                         hir::body::ExprKind::LabelRef(label_ref) => {
                                             // Find the label name from the label_id
                                             // We need to match on the local_id part of the DefId
-                                            let label_name = body
-                                                .labels
+                                            body.labels
                                                 .iter()
                                                 .find(|l| l.id.0 == label_ref.label_id.local_id.0)
                                                 .map(|l| format!(":{}", l.name))
@@ -392,8 +391,7 @@ impl ControlFlowGraph {
                                                         "label_{}",
                                                         label_ref.label_id.local_id.0
                                                     )
-                                                });
-                                            label_name
+                                                })
                                         }
                                         hir::body::ExprKind::MemoryRef(mem_ref) => {
                                             let mode_prefix = match mem_ref.mode {
@@ -434,9 +432,7 @@ impl ControlFlowGraph {
                             format!("{} {}", i.opcode, operand_str)
                         }
                     })
-                    .unwrap_or_else(|| format!("Instr {}", instr_id.0));
-
-                instr
+                    .unwrap_or_else(|| format!("Instr {}", instr_id.0))
             } else {
                 "Unknown".to_string()
             };
