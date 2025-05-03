@@ -1,17 +1,18 @@
 [package]
+name = "ram_vm"
+
 authors.workspace    = true
-edition              = "2024"
+edition.workspace    = true
 license.workspace    = true
-name                 = "ram_vm"
 repository.workspace = true
-version              = "0.1.0"
+version.workspace    = true
 
 [dependencies]
 # Core dependencies
 dashmap.workspace     = true
 indexmap.workspace    = true
 la-arena.workspace    = true
-miette = { workspace = true, features = ["fancy", "syntect-highlighter"] }
+miette                = { workspace = true, features = ["fancy", "syntect-highlighter"] }
 rustc-hash.workspace  = true
 salsa.workspace       = true
 thiserror.workspace   = true

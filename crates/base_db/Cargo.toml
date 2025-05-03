@@ -1,19 +1,23 @@
 [package]
 name = "base_db"
-version = "0.1.0"
-edition = "2021"
+
+authors.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+version.workspace    = true
 
 [dependencies]
 # Core dependencies
-salsa.workspace = true
-la-arena = "0.3.1"
-typed-arena = "2.0.2"
-indexmap = "2.9.0"
-dashmap.workspace = true
+dashmap.workspace    = true
+indexmap             = "2.9.0"
+la-arena             = "0.3.1"
 rustc-hash.workspace = true
-triomphe.workspace = true
-tracing.workspace = true
+salsa.workspace      = true
+tracing.workspace    = true
+triomphe.workspace   = true
+typed-arena          = "2.0.2"
 
 # Workspace dependencies
-ram_error.workspace = true
+ram_error.workspace  = true
 ram_syntax.workspace = true

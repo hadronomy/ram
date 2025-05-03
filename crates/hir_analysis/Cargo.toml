@@ -1,7 +1,11 @@
 [package]
-edition = "2021"
-name    = "hir_analysis"
-version = "0.1.0"
+name = "hir_analysis"
+
+authors.workspace    = true
+edition.workspace    = true
+license.workspace    = true
+repository.workspace = true
+version.workspace    = true
 
 [dependencies]
 miette     = { workspace = true }

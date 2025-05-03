@@ -40,12 +40,12 @@ ram_error       = { workspace = true }
 ram_syntax      = { workspace = true }
 
 [dev-dependencies]
-proptest = { workspace = true }
 criterion = "0.5.1"
+proptest  = { workspace = true }
 
 [[bench]]
-name = "bench_main"
 harness = false
+name    = "bench_main"
 
 [lints]
 workspace = true

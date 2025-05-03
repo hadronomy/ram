@@ -1,29 +1,30 @@
 [package]
 name = "ram_core"
-version = "0.1.0"
-edition = "2024"
-authors.workspace = true
-license.workspace = true
+
+authors.workspace    = true
+edition.workspace    = true
+license.workspace    = true
 repository.workspace = true
+version.workspace    = true
 
 [features]
-default = []
+default  = []
 examples = []
 
 [dependencies]
 # Core dependencies
-salsa.workspace = true
-la-arena.workspace = true
+dashmap.workspace     = true
+indexmap.workspace    = true
+la-arena.workspace    = true
+miette.workspace      = true
+once_cell             = "1.21.3"
+rustc-hash.workspace  = true
+salsa.workspace       = true
+thiserror.workspace   = true
+tracing.workspace     = true
 typed-arena.workspace = true
-indexmap.workspace = true
-dashmap.workspace = true
-rustc-hash.workspace = true
-tracing.workspace = true
-thiserror.workspace = true
-miette.workspace = true
-once_cell = "1.21.3"
 
 # Workspace dependencies
-base_db.workspace = true
-ram_error.workspace = true
+base_db.workspace    = true
+ram_error.workspace  = true
 ram_syntax.workspace = true

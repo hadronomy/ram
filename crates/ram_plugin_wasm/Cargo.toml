@@ -32,5 +32,4 @@ default = []
 
 [package.metadata.component]
 package = "ram:plugin"
-world = "ram-plugin"
-
+world   = "ram-plugin"
