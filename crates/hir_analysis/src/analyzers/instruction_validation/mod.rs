@@ -200,6 +200,47 @@ impl InstructionValidationAnalysis {
                         operand_id,
                     );
                 }
+                ExprKind::ArrayAccess(array_access) => {
+                    // Validate the array base
+                    if let Some(base_expr) = body.exprs.get(array_access.array.0 as usize) {
+                        match &base_expr.kind {
+                            ExprKind::Literal(Literal::Int(value)) => {
+                                if *value < 0 {
+                                    ctx.warning_at_expr(
+                                        format!("Negative array base address: {}", value),
+                                        "Array base addresses should be non-negative".to_string(),
+                                        array_access.array,
+                                    );
+                                }
+                            }
+                            _ => {
+                                // Other base types are allowed (e.g., variables, labels)
+                            }
+                        }
+                    }
+
+                    // Validate the array index
+                    if let Some(index_expr) = body.exprs.get(array_access.index.0 as usize) {
+                        match &index_expr.kind {
+                            ExprKind::Literal(Literal::Int(value)) => {
+                                if *value < 0 {
+                                    ctx.warning_at_expr(
+                                        format!("Negative array index: {}", value),
+                                        "Array indices should be non-negative".to_string(),
+                                        array_access.index,
+                                    );
+                                }
+                            }
+                            _ => {
+                                ctx.warning_at_expr(
+                                    "Non-literal array index".to_string(),
+                                    "Array indices are typically literals".to_string(),
+                                    array_access.index,
+                                );
+                            }
+                        }
+                    }
+                }
             }
         }
     }

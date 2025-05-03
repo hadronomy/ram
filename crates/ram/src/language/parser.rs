@@ -12,7 +12,8 @@ use ram_parser::{AstNode, Program, SyntaxNode, build_tree, convert_errors, parse
 /// - The analysis context
 /// - Any errors encountered during parsing or analysis
 pub fn parser()
--> impl FnOnce(&str) -> (Program, AnalysisPipeline, AnalysisContext, Vec<miette::Error>) {
+-> impl FnOnce(&str) -> (Program, hir::body::Body, AnalysisPipeline, AnalysisContext, Vec<miette::Error>)
+{
     |source| parse_program(source)
 }
 
@@ -23,7 +24,7 @@ pub fn parser()
 /// encountered during parsing.
 pub fn parse_program(
     source: &str,
-) -> (Program, AnalysisPipeline, AnalysisContext, Vec<miette::Error>) {
+) -> (Program, hir::body::Body, AnalysisPipeline, AnalysisContext, Vec<miette::Error>) {
     // Parse the source text using our recursive descent parser
     let (events, errors) = parse(source);
     let mut errors = errors;
@@ -51,7 +52,7 @@ pub fn parse_program(
     pipeline.register::<hir_analysis::analyzers::ControlFlowOptimizer>().ok();
 
     // Run the analysis pipeline
-    let analysis_context = match pipeline.analyze(Arc::new(body)) {
+    let analysis_context = match pipeline.analyze(Arc::new(body.clone())) {
         Ok(context) => {
             // Add any diagnostics from the analysis to our errors
             errors.extend(context.diagnostics().clone());
@@ -81,5 +82,5 @@ pub fn parse_program(
         vec![miette::Error::new(parser_error)]
     };
 
-    (program, pipeline, analysis_context, miette_errors)
+    (program, body, pipeline, analysis_context, miette_errors)
 }

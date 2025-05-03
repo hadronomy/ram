@@ -124,6 +124,20 @@ pub fn walk_expr<V: Visitor>(
             // Visit the address expression
             visitor.visit_expr_id(memory_ref.address, body)
         }
+        ExprKind::ArrayAccess(array_access) => {
+            // Visit the array access
+            if let ControlFlow::Break(result) = visitor.visit_array_access(array_access) {
+                return ControlFlow::Break(result);
+            }
+
+            // Visit the array expression
+            if let ControlFlow::Break(result) = visitor.visit_expr_id(array_access.array, body) {
+                return ControlFlow::Break(result);
+            }
+
+            // Visit the index expression
+            visitor.visit_expr_id(array_access.index, body)
+        }
         ExprKind::InstructionCall(call) => {
             // Visit the instruction call
             if let ControlFlow::Break(result) = visitor.visit_instruction_call(call) {

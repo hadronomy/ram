@@ -5,7 +5,7 @@
 
 use std::ops::ControlFlow;
 
-use hir::body::{Body, Expr, Instruction, InstructionCall, Label, Literal, MemoryRef};
+use hir::body::{ArrayAccess, Body, Expr, Instruction, InstructionCall, Label, Literal, MemoryRef};
 use hir::expr::ExprId;
 
 /// Result type for visitor methods
@@ -113,6 +113,13 @@ pub trait Visitor {
     ///
     /// This method is called when visiting an instruction call expression.
     fn visit_instruction_call(&mut self, _call: &InstructionCall) -> VisitorResult<Self::Result> {
+        ControlFlow::Continue(())
+    }
+
+    /// Visit an array access expression
+    ///
+    /// This method is called when visiting an array access expression.
+    fn visit_array_access(&mut self, _array_access: &ArrayAccess) -> VisitorResult<Self::Result> {
         ControlFlow::Continue(())
     }
 

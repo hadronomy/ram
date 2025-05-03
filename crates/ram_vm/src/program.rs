@@ -140,6 +140,69 @@ impl Program {
                                 // Use the label name as a string
                                 OperandValue::String(label.name.clone())
                             }
+                            body::ExprKind::ArrayAccess(array_access) => {
+                                // Handle array access expressions
+                                // Get the base expression
+                                let base_expr = body
+                                    .exprs
+                                    .get(array_access.array.0 as usize)
+                                    .ok_or_else(|| {
+                                        VmError::InvalidInstruction(format!(
+                                            "Invalid array base expression: {:?}",
+                                            array_access.array
+                                        ))
+                                    })?;
+
+                                // Get the index expression
+                                let index_expr = body
+                                    .exprs
+                                    .get(array_access.index.0 as usize)
+                                    .ok_or_else(|| {
+                                        VmError::InvalidInstruction(format!(
+                                            "Invalid array index expression: {:?}",
+                                            array_access.index
+                                        ))
+                                    })?;
+
+                                // Extract the base value
+                                let base_value = match &base_expr.kind {
+                                    body::ExprKind::Literal(body::Literal::Int(value)) => *value,
+                                    body::ExprKind::LabelRef(label_ref) => {
+                                        // Find the label by its ID
+                                        let label =
+                                            Self::find_label_by_id(body, label_ref.label_id)?;
+
+                                        // Use the label name as a string
+                                        return Err(VmError::InvalidInstruction(format!(
+                                            "Label references in array access not yet supported: {}",
+                                            label.name
+                                        )));
+                                    }
+                                    _ => {
+                                        return Err(VmError::InvalidInstruction(format!(
+                                            "Unsupported array base expression: {:?}",
+                                            base_expr.kind
+                                        )));
+                                    }
+                                };
+
+                                // Extract the index value
+                                let index_value = match &index_expr.kind {
+                                    body::ExprKind::Literal(body::Literal::Int(value)) => *value,
+                                    _ => {
+                                        return Err(VmError::InvalidInstruction(format!(
+                                            "Unsupported array index expression: {:?}",
+                                            index_expr.kind
+                                        )));
+                                    }
+                                };
+
+                                // Calculate the effective address: base + index
+                                let effective_address = base_value + index_value;
+
+                                // Return the effective address as the operand value
+                                OperandValue::Number(effective_address)
+                            }
                             _ => {
                                 return Err(VmError::InvalidInstruction(format!(
                                     "Unsupported address expression: {:?}",

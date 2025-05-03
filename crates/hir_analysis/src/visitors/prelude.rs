@@ -7,7 +7,7 @@
 pub use std::ops::ControlFlow;
 
 pub use hir::body::{
-    Body, Expr, ExprKind, Instruction, InstructionCall, Label, Literal, MemoryRef,
+    ArrayAccess, Body, Expr, ExprKind, Instruction, InstructionCall, Label, Literal, MemoryRef,
 };
 pub use hir::expr::ExprId;
 pub use hir::ids::{DefId, LocalDefId};

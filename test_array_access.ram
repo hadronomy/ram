@@ -1,0 +1,44 @@
+# Test program for array access
+# This program uses array access to implement a simple array operation
+
+# Initialize array at addresses 10-14 with values 1-5
+LOAD =1
+STORE 10
+LOAD =2
+STORE 11
+LOAD =3
+STORE 12
+LOAD =4
+STORE 13
+LOAD =5
+STORE 14
+
+# Use array access to sum the array
+LOAD =0      # Initialize sum to 0
+STORE 20     # Store sum at address 20
+LOAD =0      # Initialize index to 0
+STORE 21     # Store index at address 21
+
+loop:
+    LOAD 21           # Load index
+    SUB =5            # Check if index >= 5
+    JGTZ end          # If so, end loop
+
+    LOAD 21           # Load index
+    ADD =10           # Add base address (10) to get array address
+    STORE 22          # Store array address
+
+    LOAD 20           # Load current sum
+    ADD 22[0]         # Add array[index] using array access
+    STORE 20          # Store updated sum
+
+    LOAD 21           # Load index
+    ADD =1            # Increment index
+    STORE 21          # Store updated index
+
+    JUMP loop         # Repeat loop
+
+end:
+    LOAD 20           # Load final sum
+    WRITE             # Output the sum (should be 15)
+    HALT              # End program

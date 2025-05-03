@@ -78,6 +78,9 @@ pub enum Command {
 
         #[arg(long, alias = "cfg", action)]
         show_cfg: bool,
+
+        #[arg(long, action)]
+        show_hir: bool,
     },
 
     /// Run a RAM program in the virtual machine.

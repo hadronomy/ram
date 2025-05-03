@@ -14,8 +14,8 @@ use ram_syntax::{AstNode, SyntaxKind, ast};
 use tracing::{error, warn};
 
 use crate::body::{
-    AddressingMode, Body, Expr, ExprKind, Instruction, InstructionCall, Label, LabelRef, Literal,
-    MemoryRef,
+    AddressingMode, ArrayAccess, Body, Expr, ExprKind, Instruction, InstructionCall, Label,
+    LabelRef, Literal, MemoryRef,
 };
 // Assume HirDatabase trait exists or will be added if needed for context lookups
 // use crate::db::HirDatabase;
@@ -33,6 +33,8 @@ pub enum HirError {
     InvalidIndirectOperandValue(TextRange),
     MissingImmediateOperandValue(TextRange),
     InvalidImmediateOperandValue(TextRange),
+    MissingArrayAccessorIndex(TextRange),
+    InvalidArrayAccessorIndex(TextRange),
     LabelNotFoundInItemTree(String, TextRange),
     LabelNotFoundInBody(String, LocalDefId),
     // Consider adding: UnknownIdentifier(String, TextRange),
@@ -60,6 +62,12 @@ impl std::fmt::Display for HirError {
             }
             HirError::InvalidImmediateOperandValue(range) => {
                 write!(f, "Invalid value for immediate operand at {:?}", range)
+            }
+            HirError::MissingArrayAccessorIndex(range) => {
+                write!(f, "Missing index for array accessor at {:?}", range)
+            }
+            HirError::InvalidArrayAccessorIndex(range) => {
+                write!(f, "Invalid index for array accessor at {:?}", range)
             }
             HirError::LabelNotFoundInItemTree(name, range) => {
                 write!(f, "Label '{}' defined at {:?} not found in ItemTree", name, range)
@@ -337,11 +345,16 @@ impl HirCollector {
         Ok(expr_id)
     }
 
-    /// Lower a direct operand (e.g., `LOAD 100`, `LOAD label`).
+    /// Lower a direct operand (e.g., `LOAD 100`, `LOAD label`, `LOAD 2[3]`).
     fn lower_direct_operand(&mut self, operand: ast::DirectOperand) -> Result<ExprKind, HirError> {
         let value_node = operand
             .value()
             .ok_or_else(|| HirError::MissingDirectOperandValue(operand.syntax().text_range()))?;
+
+        // Check if this is an array access (e.g., 2[3])
+        if let Some(array_accessor) = value_node.array_accessor() {
+            return self.lower_array_accessor(&value_node, &array_accessor, AddressingMode::Direct);
+        }
 
         if let Some(num) = value_node.as_number() {
             // Direct numeric address: `LOAD 100` -> MemoryRef(Direct, Literal(100))
@@ -360,7 +373,7 @@ impl HirCollector {
         Err(HirError::InvalidDirectOperandValue(value_node.syntax().text_range()))
     }
 
-    /// Lower an indirect operand (e.g., `LOAD *100`, `LOAD *label`).
+    /// Lower an indirect operand (e.g., `LOAD *100`, `LOAD *label`, `LOAD *2[3]`).
     fn lower_indirect_operand(
         &mut self,
         operand: ast::IndirectOperand,
@@ -368,6 +381,15 @@ impl HirCollector {
         let value_node = operand
             .value()
             .ok_or_else(|| HirError::MissingIndirectOperandValue(operand.syntax().text_range()))?;
+
+        // Check if this is an array access (e.g., *2[3])
+        if let Some(array_accessor) = value_node.array_accessor() {
+            return self.lower_array_accessor(
+                &value_node,
+                &array_accessor,
+                AddressingMode::Indirect,
+            );
+        }
 
         if let Some(num) = value_node.as_number() {
             // Indirect numeric address: `LOAD *100` -> MemoryRef(Indirect, Literal(100))
@@ -386,7 +408,7 @@ impl HirCollector {
         Err(HirError::InvalidIndirectOperandValue(value_node.syntax().text_range()))
     }
 
-    /// Lower an immediate operand (e.g., `LOAD #100`, `LOAD #label`).
+    /// Lower an immediate operand (e.g., `LOAD #100`, `LOAD #label`, `LOAD #2[3]`).
     fn lower_immediate_operand(
         &mut self,
         operand: ast::ImmediateOperand,
@@ -394,6 +416,15 @@ impl HirCollector {
         let value_node = operand
             .value()
             .ok_or_else(|| HirError::MissingImmediateOperandValue(operand.syntax().text_range()))?;
+
+        // Check if this is an array access (e.g., #2[3])
+        if let Some(array_accessor) = value_node.array_accessor() {
+            return self.lower_array_accessor(
+                &value_node,
+                &array_accessor,
+                AddressingMode::Immediate,
+            );
+        }
 
         if let Some(num) = value_node.as_number() {
             // Immediate numeric value: `LOAD #100` -> Literal(100)
@@ -471,6 +502,65 @@ impl HirCollector {
         let expr = Expr { id: expr_id, kind: ExprKind::LabelRef(LabelRef { label_id }), span };
         self.body.exprs.push(expr);
         Ok(expr_id)
+    }
+
+    /// Lower an array accessor expression (e.g., `2[3]`).
+    fn lower_array_accessor(
+        &mut self,
+        value_node: &ast::OperandValue,
+        array_accessor: &ast::ArrayAccessor,
+        mode: AddressingMode,
+    ) -> Result<ExprKind, HirError> {
+        // Get the base value (array)
+        let base_expr_id = if let Some(num) = value_node.as_number() {
+            // Numeric base (e.g., 2[3])
+            self.create_literal_expr(Literal::Int(num))?
+        } else if let Some(ident) = value_node.as_identifier() {
+            // Identifier base (e.g., label[3])
+            if let Some(def_id) = self.label_defs.get(&ident).copied() {
+                // Known label
+                self.create_label_ref_expr(def_id)?
+            } else {
+                // Unknown identifier, treat as a label literal
+                self.create_literal_expr(Literal::Label(ident.to_string()))?
+            }
+        } else {
+            // This should be unreachable if the grammar is correct
+            return Err(HirError::InvalidDirectOperandValue(value_node.syntax().text_range()));
+        };
+
+        // Get the index value
+        let index_expr_id = if let Some(index) = array_accessor.index() {
+            // Numeric index (e.g., 2[3])
+            self.create_literal_expr(Literal::Int(index))?
+        } else {
+            // This should be unreachable if the grammar is correct
+            return Err(HirError::MissingArrayAccessorIndex(array_accessor.syntax().text_range()));
+        };
+
+        // Create the array access expression
+        let array_access_expr_id = self.next_expr_id();
+        let text_range = array_accessor.syntax().text_range();
+        let span = text_range.start().into()..text_range.end().into();
+
+        let array_access_expr = Expr {
+            id: array_access_expr_id,
+            kind: ExprKind::ArrayAccess(ArrayAccess { array: base_expr_id, index: index_expr_id }),
+            span,
+        };
+        self.body.exprs.push(array_access_expr);
+
+        // Based on the addressing mode, return the appropriate expression kind
+        match mode {
+            AddressingMode::Direct | AddressingMode::Indirect => {
+                // For direct and indirect addressing, wrap in a MemoryRef
+                Ok(ExprKind::MemoryRef(MemoryRef { mode, address: array_access_expr_id }))
+            }
+            AddressingMode::Immediate => {
+                // For immediate addressing, the array access expression itself is the value
+                Ok(ExprKind::ArrayAccess(ArrayAccess { array: base_expr_id, index: index_expr_id }))
+            }
+        }
     }
 
     /// Finish building the body and return it.

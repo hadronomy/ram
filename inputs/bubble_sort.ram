@@ -21,6 +21,7 @@ end_read: load 10
         store 1     # n-1 in R1 (outer loop counter)
 
 outer:  load 1      # Check if outer loop done
+        load =10
         jzero end_outer
         load =0
         store 2     # j = 0 (inner loop counter)
@@ -62,6 +63,7 @@ end_outer: load =0
         store 2     # Reset counter
 print:  load 10
         sub 2
+        load =10
         jzero terminate
         load 3[2]
         write 0

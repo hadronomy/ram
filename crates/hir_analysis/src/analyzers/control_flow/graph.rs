@@ -418,6 +418,36 @@ impl ControlFlowGraph {
                                         hir::body::ExprKind::InstructionCall(_) => {
                                             "call".to_string()
                                         }
+                                        hir::body::ExprKind::ArrayAccess(array_access) => {
+                                            // Try to get the base and index expressions
+                                            let base_str = if let Some(base_expr) =
+                                                body.exprs.get(array_access.array.0 as usize)
+                                            {
+                                                match &base_expr.kind {
+                                                    hir::body::ExprKind::Literal(
+                                                        hir::body::Literal::Int(val),
+                                                    ) => val.to_string(),
+                                                    _ => "?".to_string(),
+                                                }
+                                            } else {
+                                                "?".to_string()
+                                            };
+
+                                            let index_str = if let Some(index_expr) =
+                                                body.exprs.get(array_access.index.0 as usize)
+                                            {
+                                                match &index_expr.kind {
+                                                    hir::body::ExprKind::Literal(
+                                                        hir::body::Literal::Int(val),
+                                                    ) => val.to_string(),
+                                                    _ => "?".to_string(),
+                                                }
+                                            } else {
+                                                "?".to_string()
+                                            };
+
+                                            format!("{}[{}]", base_str, index_str)
+                                        }
                                     }
                                 } else {
                                     "?".to_string()

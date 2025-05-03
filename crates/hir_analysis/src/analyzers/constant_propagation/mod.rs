@@ -7,7 +7,7 @@
 use std::any::TypeId;
 use std::collections::HashMap;
 
-use hir::body::{Body, ExprKind, Instruction, Literal};
+use hir::body::{AddressingMode, Body, ExprKind, Instruction, Literal};
 use hir::ids::LocalDefId;
 use miette::Diagnostic;
 
@@ -59,7 +59,7 @@ impl AnalysisPass for ConstantPropagationAnalysis {
         // Analyze the control flow graph to find branches that can be optimized
         let optimized_edges = analyzer.analyze_conditional_branches();
 
-        // Report optimizations
+        // Report optimizations only for branches that can be statically determined
         let mut diagnostics = Vec::new();
         for (instr_id, branch_taken) in &optimized_edges {
             if let Some(instr) = body.instructions.iter().find(|i| i.id == *instr_id) {
@@ -161,6 +161,8 @@ impl<'a> ConstantPropagationAnalyzer<'a> {
             "LOAD" => {
                 // LOAD sets the accumulator to the value at the memory address
                 if let Some(operand_id) = instr.operand {
+                    // Only consider immediate values (like =10) as constants
+                    // All other memory references (including array accesses) are not statically known
                     self.get_constant_operand_value(operand_id)
                 } else {
                     None
@@ -245,6 +247,25 @@ impl<'a> ConstantPropagationAnalyzer<'a> {
         if let Some(expr) = self.body.exprs.get(operand_id.0 as usize) {
             match &expr.kind {
                 ExprKind::Literal(Literal::Int(value)) => Some(*value),
+                ExprKind::MemoryRef(mem_ref) => {
+                    // Memory references (including array accesses) are not statically known
+                    // unless they are direct literals with a constant address and immediate mode
+                    if let AddressingMode::Immediate = mem_ref.mode {
+                        // For immediate addressing (e.g., =5), we can use the literal value
+                        if let Some(addr_expr) = self.body.exprs.get(mem_ref.address.0 as usize) {
+                            if let ExprKind::Literal(Literal::Int(value)) = &addr_expr.kind {
+                                return Some(*value);
+                            }
+                        }
+                    }
+                    // For all other memory references, the value is not statically known
+                    None
+                }
+                ExprKind::ArrayAccess(_) => {
+                    // Array accesses are not statically known
+                    // They require runtime evaluation
+                    None
+                }
                 _ => None,
             }
         } else {
@@ -338,6 +359,8 @@ impl<'a> ConstantPropagationAnalyzer<'a> {
                         }
                     }
                 }
+                // If the accumulator value is not statically known, we can't optimize this branch
+                // So we don't add anything to optimized_edges
             }
         }
 
