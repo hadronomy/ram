@@ -106,11 +106,7 @@ impl<'a> PipelineExporter<'a> {
     /// # Returns
     ///
     /// A string containing the export in the specified format.
-    pub fn export_dependency_graph(
-        &self,
-        format: ExportFormat,
-        options: &ExportOptions,
-    ) -> String {
+    pub fn export_dependency_graph(&self, format: ExportFormat, options: &ExportOptions) -> String {
         match format {
             ExportFormat::Dot => self.to_dot(options),
             ExportFormat::Mermaid => self.to_mermaid(options),
@@ -194,7 +190,7 @@ impl<'a> PipelineExporter<'a> {
     ///
     /// A string containing the Mermaid representation.
     fn to_mermaid(&self, options: &ExportOptions) -> String {
-        let mut result = String::from("```mermaid\ngraph TD\n");
+        let mut result = String::from("graph TD\n");
 
         // Add nodes
         for (&type_id, &node_idx) in self.pass_nodes {
@@ -239,7 +235,6 @@ impl<'a> PipelineExporter<'a> {
             result.push_str(&format!("    {} --> {}\n", source_id, target_id));
         }
 
-        result.push_str("```\n");
         result
     }
 

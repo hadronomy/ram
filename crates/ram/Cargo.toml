@@ -47,10 +47,14 @@ tracing            = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["time"] }
 walkdir            = { workspace = true }
 
+
+base64       = { workspace = true }
 base_db      = { workspace = true }
+flate2       = { workspace = true }
 hir          = { workspace = true }
 hir_analysis = { workspace = true }
 hir_def      = { workspace = true }
+open         = { workspace = true }
 ram_core     = { workspace = true }
 ram_error    = { workspace = true }
 ram_lsp      = { workspace = true }

@@ -9,7 +9,9 @@ use clap::{CommandFactory, Parser};
 use human_panic::{Metadata, setup_panic};
 use miette::*;
 use ram_error::Error;
+use serde::Serialize;
 use shadow_rs::shadow;
+use tracing::debug;
 use tracing::level_filters::LevelFilter;
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::layer::SubscriberExt;
@@ -114,7 +116,7 @@ async fn handle_command_iner(
     command: Box<Command>,
     tracing_controls: &TracingControls,
 ) -> std::result::Result<ExitCode, ErrReport> {
-    use std::io::Write; // Add this import to bring Write trait into scope
+    use std::io::Write;
 
     // Create a color config from user preference
     let color_config = color::ColorConfig::new(global_args.color.unwrap_or(ColorChoice::Auto));
@@ -147,14 +149,58 @@ async fn handle_command_iner(
             }
 
             if show_pipeline {
-                // Print the analysis pipeline
-                println!(
-                    "{}",
-                    pipeline.export_dependency_graph(
-                        hir_analysis::ExportFormat::Mermaid,
-                        &Default::default()
-                    )
+                // TODO: Use [https://mermaid.live] for now
+                use base64::Engine;
+                use base64::engine::general_purpose;
+                use flate2::Compression;
+                use flate2::write::ZlibEncoder;
+                #[derive(Serialize)]
+                struct Pan {
+                    x: f64,
+                    y: f64,
+                }
+
+                #[derive(Serialize)]
+                #[serde(rename_all = "camelCase")]
+                struct Payload {
+                    code: String,
+                    grid: bool,
+                    mermaid: String,
+                    pan_zoom: bool,
+                    rough: bool,
+                    update_diagram: bool,
+                    render_count: u32,
+                    pan: Pan,
+                    zoom: f64,
+                    editor_mode: String,
+                }
+
+                let mermaid = pipeline.export_dependency_graph(
+                    hir_analysis::ExportFormat::Mermaid,
+                    &Default::default(),
                 );
+
+                let payload = Payload {
+                    code: mermaid,
+                    grid: true,
+                    mermaid: "{\n  \"theme\": \"dark\"\n}".to_string(),
+                    pan_zoom: true,
+                    rough: false,
+                    update_diagram: true,
+                    render_count: 85,
+                    pan: Pan { x: 181.0, y: 181.0 },
+                    zoom: 0.7,
+                    editor_mode: "code".to_string(),
+                };
+                let json_bytes = serde_json::to_vec(&payload).into_diagnostic()?;
+
+                let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+                encoder.write_all(&json_bytes).into_diagnostic()?;
+                let compressed = encoder.finish().into_diagnostic()?;
+                let encoded = general_purpose::STANDARD.encode(compressed);
+                let url = format!("https://mermaid.live/edit#pako:{}", encoded);
+                debug!("Opening URL: {}", url);
+                open::that(url).into_diagnostic()?;
             }
 
             Ok::<_, Error>(ExitCode::SUCCESS)
