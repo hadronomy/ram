@@ -12,11 +12,13 @@ version    = "0.1.0"
 [workspace.dependencies]
 anstream           = "0.6.18"
 anyhow             = "1.0.98"
+base64             = "0.22.1"
 chumsky            = "0.10.1"
 clap               = { version = "4.5.37", features = ["derive", "env", "string", "wrap_help"] }
 cstree             = { version = "0.12.2", features = ["derive", "serde"] }
 dashmap            = "6.1.0"
 drop_bomb          = "0.1.5"
+flate2             = "1.1.1"
 globset            = { version = "0.4.16", features = ["serde"] }
 human-panic        = "2.0.2"
 indexmap           = "2.9.0"
@@ -25,6 +27,7 @@ la-arena           = "0.3.1"
 miette             = "7.6.0"
 num-derive         = "0.4.2"
 num-traits         = "0.2.19"
+open               = "5.3.2"
 owo-colors         = "4.2.0"
 petgraph           = "0.8.1"
 rowan              = "0.16.1"
@@ -43,9 +46,6 @@ tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
 triomphe           = "0.1.14"
 typed-arena        = "2.0.2"
 walkdir            = "2.5.0"
-open         = "5.3.2"
-flate2       = "1.1.1"
-base64       = "0.22.1"
 
 # Serde and serialization
 serde        = "1.0.219"
