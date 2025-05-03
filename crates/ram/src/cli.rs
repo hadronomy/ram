@@ -75,6 +75,9 @@ pub enum Command {
 
         #[arg(long, action)]
         show_pipeline: bool,
+
+        #[arg(long, alias = "cfg", action)]
+        show_cfg: bool,
     },
 
     /// Run a RAM program in the virtual machine.

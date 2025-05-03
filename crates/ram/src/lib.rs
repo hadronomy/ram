@@ -11,8 +11,8 @@ use miette::*;
 use ram_error::Error;
 use serde::Serialize;
 use shadow_rs::shadow;
-use tracing::debug;
 use tracing::level_filters::LevelFilter;
+use tracing::{debug, error};
 use tracing_subscriber::fmt::time::UtcTime;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
@@ -127,11 +127,11 @@ async fn handle_command_iner(
             Cli::command().print_help().into_diagnostic()?;
             Ok::<_, Error>(ExitCode::SUCCESS)
         }
-        Command::Validate { program, ast, reprint, show_pipeline } => {
+        Command::Validate { program, ast, reprint, show_pipeline, show_cfg } => {
             let src = std::fs::read_to_string(program.clone())
                 .into_diagnostic()
                 .wrap_err(format!("Failed to read file: {}", program))?;
-            let (program, pipeline, errors) = language::parser()(&src);
+            let (program, pipeline, context, errors) = language::parser()(&src);
 
             // Report any errors
             for error in errors {
@@ -148,59 +148,24 @@ async fn handle_command_iner(
                 println!("{program}");
             }
 
+            if show_cfg {
+                // Get the control flow graph from the context
+                if let Ok(cfg) =
+                    context.get_result::<hir_analysis::analyzers::ControlFlowAnalysis>()
+                {
+                    // Convert the CFG to a mermaid diagram with detailed instruction information
+                    let mermaid = cfg.to_mermaid_with_context(&context);
+                    open_mermaid(mermaid)?;
+                } else {
+                    error!("Failed to get control flow graph from context");
+                }
+            }
+
             if show_pipeline {
-                // TODO: Use [https://mermaid.live] for now
-                use base64::Engine;
-                use base64::engine::general_purpose;
-                use flate2::Compression;
-                use flate2::write::ZlibEncoder;
-                #[derive(Serialize)]
-                struct Pan {
-                    x: f64,
-                    y: f64,
-                }
-
-                #[derive(Serialize)]
-                #[serde(rename_all = "camelCase")]
-                struct Payload {
-                    code: String,
-                    grid: bool,
-                    mermaid: String,
-                    pan_zoom: bool,
-                    rough: bool,
-                    update_diagram: bool,
-                    render_count: u32,
-                    pan: Pan,
-                    zoom: f64,
-                    editor_mode: String,
-                }
-
-                let mermaid = pipeline.export_dependency_graph(
+                open_mermaid(pipeline.export_dependency_graph(
                     hir_analysis::ExportFormat::Mermaid,
                     &Default::default(),
-                );
-
-                let payload = Payload {
-                    code: mermaid,
-                    grid: true,
-                    mermaid: "{\n  \"theme\": \"dark\"\n}".to_string(),
-                    pan_zoom: true,
-                    rough: false,
-                    update_diagram: true,
-                    render_count: 85,
-                    pan: Pan { x: 181.0, y: 181.0 },
-                    zoom: 0.7,
-                    editor_mode: "code".to_string(),
-                };
-                let json_bytes = serde_json::to_vec(&payload).into_diagnostic()?;
-
-                let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
-                encoder.write_all(&json_bytes).into_diagnostic()?;
-                let compressed = encoder.finish().into_diagnostic()?;
-                let encoded = general_purpose::STANDARD.encode(compressed);
-                let url = format!("https://mermaid.live/edit#pako:{}", encoded);
-                debug!("Opening URL: {}", url);
-                open::that(url).into_diagnostic()?;
+                ))?;
             }
 
             Ok::<_, Error>(ExitCode::SUCCESS)
@@ -251,6 +216,54 @@ async fn handle_command_iner(
         }
     }
     .wrap_err("Failed to execute command")
+}
+
+fn open_mermaid(mermaid_str: impl Into<String>) -> Result<(), ErrReport> {
+    // TODO: Use [https://mermaid.live] for now
+    use base64::Engine;
+    use base64::engine::general_purpose;
+    use flate2::Compression;
+    use flate2::write::ZlibEncoder;
+    #[derive(Serialize)]
+    struct Pan {
+        x: f64,
+        y: f64,
+    }
+    #[derive(Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct Payload {
+        code: String,
+        grid: bool,
+        mermaid: String,
+        pan_zoom: bool,
+        rough: bool,
+        update_diagram: bool,
+        render_count: u32,
+        pan: Pan,
+        zoom: f64,
+        editor_mode: String,
+    }
+    let payload = Payload {
+        code: mermaid_str.into(),
+        grid: true,
+        mermaid: "{\n  \"theme\": \"dark\"\n}".to_string(),
+        pan_zoom: true,
+        rough: false,
+        update_diagram: true,
+        render_count: 85,
+        pan: Pan { x: 181.0, y: 181.0 },
+        zoom: 0.7,
+        editor_mode: "code".to_string(),
+    };
+    let json_bytes = serde_json::to_vec(&payload).into_diagnostic()?;
+    let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+    encoder.write_all(&json_bytes).into_diagnostic()?;
+    let compressed = encoder.finish().into_diagnostic()?;
+    let encoded = general_purpose::STANDARD.encode(compressed);
+    let url = format!("https://mermaid.live/edit#pako:{}", encoded);
+    debug!("Opening URL: {}", url);
+    open::that(url).into_diagnostic()?;
+    Ok(())
 }
 
 pub type LogFilterReloadHandle = reload::Handle<EnvFilter, Registry>;

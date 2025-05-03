@@ -1,20 +1,29 @@
 use std::sync::Arc;
 
-use hir_analysis::AnalysisPipeline;
+use hir_analysis::{AnalysisContext, AnalysisPipeline};
 use ram_parser::{AstNode, Program, SyntaxNode, build_tree, convert_errors, parse};
 
 /// Create a parser for RAM assembly language.
 ///
 /// This function returns a parser that can be used to parse RAM assembly code.
-pub fn parser() -> impl FnOnce(&str) -> (Program, AnalysisPipeline, Vec<miette::Error>) {
+/// It returns a tuple containing:
+/// - The parsed program
+/// - The analysis pipeline
+/// - The analysis context
+/// - Any errors encountered during parsing or analysis
+pub fn parser()
+-> impl FnOnce(&str) -> (Program, AnalysisPipeline, AnalysisContext, Vec<miette::Error>) {
     |source| parse_program(source)
 }
 
 /// Parse RAM assembly code into a syntax tree.
 ///
 /// This function uses the recursive descent parser to parse the input string
-/// and returns a syntax tree and any errors encountered during parsing.
-pub fn parse_program(source: &str) -> (Program, AnalysisPipeline, Vec<miette::Error>) {
+/// and returns a syntax tree, analysis pipeline, analysis context, and any errors
+/// encountered during parsing.
+pub fn parse_program(
+    source: &str,
+) -> (Program, AnalysisPipeline, AnalysisContext, Vec<miette::Error>) {
     // Parse the source text using our recursive descent parser
     let (events, errors) = parse(source);
     let mut errors = errors;
@@ -42,10 +51,11 @@ pub fn parse_program(source: &str) -> (Program, AnalysisPipeline, Vec<miette::Er
     pipeline.register::<hir_analysis::analyzers::ControlFlowOptimizer>().ok();
 
     // Run the analysis pipeline
-    match pipeline.analyze(Arc::new(body)) {
-        Ok(result) => {
+    let analysis_context = match pipeline.analyze(Arc::new(body)) {
+        Ok(context) => {
             // Add any diagnostics from the analysis to our errors
-            errors.extend(result.diagnostics().clone());
+            errors.extend(context.diagnostics().clone());
+            context
         }
         Err(err) => {
             // If analysis fails, add a diagnostic about it
@@ -56,8 +66,10 @@ pub fn parse_program(source: &str) -> (Program, AnalysisPipeline, Vec<miette::Er
                 "Check your program for semantic errors".to_string(),
                 span,
             ));
+            // Create an empty context since analysis failed
+            AnalysisContext::from(hir::body::Body::default())
         }
-    }
+    };
 
     // Convert the errors into miette errors
     let miette_errors = if errors.is_empty() {
@@ -69,5 +81,5 @@ pub fn parse_program(source: &str) -> (Program, AnalysisPipeline, Vec<miette::Er
         vec![miette::Error::new(parser_error)]
     };
 
-    (program, pipeline, miette_errors)
+    (program, pipeline, analysis_context, miette_errors)
 }

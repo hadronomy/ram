@@ -313,6 +313,158 @@ impl ControlFlowGraph {
         format!("{:?}", Dot::with_config(&self.graph, &[Config::EdgeNoLabel]))
     }
 
+    /// Get a Mermaid representation of the graph for visualization
+    pub fn to_mermaid(&self) -> String {
+        let mut result = String::from("graph TD\n");
+
+        // Add nodes
+        for node_idx in self.graph.node_indices() {
+            let node_id = format!("N{}", node_idx.index());
+            let node = &self.graph[node_idx];
+
+            let label = if let Some(instr_id) = node.instruction_id {
+                format!("Instr {}", instr_id.0)
+            } else {
+                "Unknown".to_string()
+            };
+
+            result.push_str(&format!("    {}[\"{}\"]\n", node_id, label));
+        }
+
+        // Add edges
+        for edge in self.graph.edge_indices() {
+            let (source, target) = self.graph.edge_endpoints(edge).unwrap();
+            let source_id = format!("N{}", source.index());
+            let target_id = format!("N{}", target.index());
+            let edge_kind = self.graph.edge_weight(edge).unwrap();
+
+            let edge_style = match edge_kind {
+                EdgeKind::Unconditional => "-->",
+                EdgeKind::ConditionalTrue => "-.->|true|",
+                EdgeKind::ConditionalFalse => "-.->|false|",
+            };
+
+            result.push_str(&format!("    {} {} {}\n", source_id, edge_style, target_id));
+        }
+
+        result
+    }
+
+    /// Get a Mermaid representation of the graph with detailed instruction information
+    pub fn to_mermaid_with_context(&self, context: &crate::context::AnalysisContext) -> String {
+        let mut result = String::from("graph TD\n");
+        let body = context.body();
+
+        // Add nodes with detailed instruction information
+        for node_idx in self.graph.node_indices() {
+            let node_id = format!("N{}", node_idx.index());
+            let node = &self.graph[node_idx];
+
+            let label = if let Some(instr_id) = node.instruction_id {
+                // Find the instruction in the body
+                let instr = body
+                    .instructions
+                    .iter()
+                    .find(|i| i.id == instr_id)
+                    .map(|i| {
+                        let operand_str = match i.operand {
+                            Some(expr_id) => {
+                                // Try to find the expression
+                                if let Some(expr) = body.exprs.get(expr_id.0 as usize) {
+                                    match &expr.kind {
+                                        hir::body::ExprKind::Literal(lit) => match lit {
+                                            hir::body::Literal::Int(val) => format!("{}", val),
+                                            hir::body::Literal::String(s) => format!("\"{}\"", s),
+                                            hir::body::Literal::Label(label) => {
+                                                format!(":{}", label)
+                                            }
+                                        },
+                                        hir::body::ExprKind::LabelRef(label_ref) => {
+                                            // Find the label name from the label_id
+                                            // We need to match on the local_id part of the DefId
+                                            let label_name = body
+                                                .labels
+                                                .iter()
+                                                .find(|l| l.id.0 == label_ref.label_id.local_id.0)
+                                                .map(|l| format!(":{}", l.name))
+                                                .unwrap_or_else(|| {
+                                                    format!(
+                                                        "label_{}",
+                                                        label_ref.label_id.local_id.0
+                                                    )
+                                                });
+                                            label_name
+                                        }
+                                        hir::body::ExprKind::MemoryRef(mem_ref) => {
+                                            let mode_prefix = match mem_ref.mode {
+                                                hir::body::AddressingMode::Direct => "",
+                                                hir::body::AddressingMode::Indirect => "*",
+                                                hir::body::AddressingMode::Immediate => "=",
+                                            };
+
+                                            if let Some(addr_expr) =
+                                                body.exprs.get(mem_ref.address.0 as usize)
+                                            {
+                                                if let hir::body::ExprKind::Literal(
+                                                    hir::body::Literal::Int(val),
+                                                ) = &addr_expr.kind
+                                                {
+                                                    format!("{}{}", mode_prefix, val)
+                                                } else {
+                                                    format!("{}?", mode_prefix)
+                                                }
+                                            } else {
+                                                format!("{}?", mode_prefix)
+                                            }
+                                        }
+                                        hir::body::ExprKind::InstructionCall(_) => {
+                                            "call".to_string()
+                                        }
+                                    }
+                                } else {
+                                    "?".to_string()
+                                }
+                            }
+                            None => "".to_string(),
+                        };
+
+                        if operand_str.is_empty() {
+                            i.opcode.to_string()
+                        } else {
+                            format!("{} {}", i.opcode, operand_str)
+                        }
+                    })
+                    .unwrap_or_else(|| format!("Instr {}", instr_id.0));
+
+                instr
+            } else {
+                "Unknown".to_string()
+            };
+
+            // Escape quotes for Mermaid
+            let escaped_label = label.replace("\"", "\\\"");
+            result.push_str(&format!("    {}[\"{}\"] \n", node_id, escaped_label));
+        }
+
+        // Add edges
+        for edge in self.graph.edge_indices() {
+            let (source, target) = self.graph.edge_endpoints(edge).unwrap();
+            let source_id = format!("N{}", source.index());
+            let target_id = format!("N{}", target.index());
+            let edge_kind = self.graph.edge_weight(edge).unwrap();
+
+            let edge_style = match edge_kind {
+                EdgeKind::Unconditional => "-->",
+                EdgeKind::ConditionalTrue => "-.->|true|",
+                EdgeKind::ConditionalFalse => "-.->|false|",
+            };
+
+            result.push_str(&format!("    {} {} {}\n", source_id, edge_style, target_id));
+        }
+
+        result
+    }
+
     /// Get the underlying petgraph directed graph
     pub fn graph(&self) -> &DiGraph<Node, EdgeKind> {
         &self.graph
