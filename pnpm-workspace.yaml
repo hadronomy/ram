@@ -1,4 +1,6 @@
 packages:
-  - 'apps/*'
-  - 'libs/*'
-  - 'editors/*'
+  - apps/*
+  - libs/*
+  - editors/*
+  - packages/*
+  - packages/rolldown/npm/*

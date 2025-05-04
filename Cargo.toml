@@ -1,5 +1,5 @@
 [workspace]
-members  = ["./crates/*", "crates/ram_derive", "crates/ram_syntax", "xtask"]
+members  = ["./crates/*", "xtask"]
 resolver = "2"
 
 [workspace.package]
