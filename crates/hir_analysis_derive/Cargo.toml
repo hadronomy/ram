@@ -1,6 +1,8 @@
 [package]
 name = "hir_analysis_derive"
 
+publish.workspace    = true
+
 authors.workspace    = true
 edition.workspace    = true
 license.workspace    = true
