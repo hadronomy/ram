@@ -194,7 +194,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "base_db"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "dashmap 6.1.0",
  "indexmap",
@@ -891,7 +891,7 @@ checksum = "fbd780fe5cc30f81464441920d82ac8740e2e46b29a6fad543ddd075229ce37e"
 
 [[package]]
 name = "hir"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "anyhow",
  "base_db",
@@ -913,7 +913,7 @@ dependencies = [
 
 [[package]]
 name = "hir_analysis"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "base_db",
  "hir",
@@ -931,7 +931,7 @@ dependencies = [
 
 [[package]]
 name = "hir_analysis_derive"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -940,7 +940,7 @@ dependencies = [
 
 [[package]]
 name = "hir_def"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 dependencies = [
  "anyhow",
  "base_db",
@@ -1777,8 +1777,162 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "74765f6d916ee2faa39bc8e68e4f3ed8949b48cccdac59983d287a7cb71ce9c5"
 
 [[package]]
-name = "ram"
-version = "0.1.0"
+name = "ram_core"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "base_db",
+ "dashmap 6.1.0",
+ "indexmap",
+ "la-arena",
+ "miette",
+ "once_cell",
+ "ram_error",
+ "ram_syntax",
+ "rustc-hash 2.1.1",
+ "salsa",
+ "thiserror 2.0.12",
+ "tracing",
+ "typed-arena",
+]
+
+[[package]]
+name = "ram_derive"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.101",
+]
+
+[[package]]
+name = "ram_diagnostics"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "miette",
+ "ram_error",
+ "thiserror 2.0.12",
+]
+
+[[package]]
+name = "ram_error"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "miette",
+ "thiserror 2.0.12",
+]
+
+[[package]]
+name = "ram_lsp"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "base_db",
+ "dashmap 6.1.0",
+ "hir",
+ "hir_analysis",
+ "hir_def",
+ "miette",
+ "ram_core",
+ "ram_diagnostics",
+ "ram_error",
+ "ram_parser",
+ "ram_syntax",
+ "rustc-hash 2.1.1",
+ "salsa",
+ "serde_json",
+ "tokio",
+ "tower-lsp",
+ "tracing",
+ "url",
+]
+
+[[package]]
+name = "ram_parser"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "anstream",
+ "anyhow",
+ "clap",
+ "criterion",
+ "cstree",
+ "drop_bomb",
+ "globset",
+ "human-panic",
+ "itertools 0.14.0",
+ "miette",
+ "num-derive",
+ "num-traits",
+ "owo-colors",
+ "proptest",
+ "ram_derive",
+ "ram_diagnostics",
+ "ram_error",
+ "ram_syntax",
+ "rowan 0.16.1",
+ "salsa",
+ "semver",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "syntect",
+ "tempfile",
+ "textwrap",
+ "thiserror 2.0.12",
+ "tracing",
+ "tracing-subscriber",
+ "walkdir",
+]
+
+[[package]]
+name = "ram_plugin_wasm"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "dashmap 6.1.0",
+ "js-sys",
+ "proptest",
+ "ram_core",
+ "thiserror 2.0.12",
+ "tracing",
+ "wasm-bindgen",
+ "wit-bindgen",
+]
+
+[[package]]
+name = "ram_syntax"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "cstree",
+ "either",
+ "ram_derive",
+ "serde",
+ "serde_derive",
+ "tracing",
+]
+
+[[package]]
+name = "ram_vm"
+version = "0.1.0-alpha.1"
+dependencies = [
+ "base_db",
+ "dashmap 6.1.0",
+ "hir",
+ "hir_def",
+ "indexmap",
+ "la-arena",
+ "miette",
+ "ram_core",
+ "ram_error",
+ "ram_parser",
+ "ram_syntax",
+ "rustc-hash 2.1.1",
+ "salsa",
+ "thiserror 2.0.12",
+ "tracing",
+ "typed-arena",
+]
+
+[[package]]
+name = "ramlang"
+version = "0.1.0-alpha.1"
 dependencies = [
  "anstream",
  "anyhow",
@@ -1825,160 +1979,6 @@ dependencies = [
  "tracing",
  "tracing-subscriber",
  "walkdir",
-]
-
-[[package]]
-name = "ram_core"
-version = "0.1.0"
-dependencies = [
- "base_db",
- "dashmap 6.1.0",
- "indexmap",
- "la-arena",
- "miette",
- "once_cell",
- "ram_error",
- "ram_syntax",
- "rustc-hash 2.1.1",
- "salsa",
- "thiserror 2.0.12",
- "tracing",
- "typed-arena",
-]
-
-[[package]]
-name = "ram_derive"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.101",
-]
-
-[[package]]
-name = "ram_diagnostics"
-version = "0.1.0"
-dependencies = [
- "miette",
- "ram_error",
- "thiserror 2.0.12",
-]
-
-[[package]]
-name = "ram_error"
-version = "0.1.0"
-dependencies = [
- "miette",
- "thiserror 2.0.12",
-]
-
-[[package]]
-name = "ram_lsp"
-version = "0.1.0"
-dependencies = [
- "base_db",
- "dashmap 6.1.0",
- "hir",
- "hir_analysis",
- "hir_def",
- "miette",
- "ram_core",
- "ram_diagnostics",
- "ram_error",
- "ram_parser",
- "ram_syntax",
- "rustc-hash 2.1.1",
- "salsa",
- "serde_json",
- "tokio",
- "tower-lsp",
- "tracing",
- "url",
-]
-
-[[package]]
-name = "ram_parser"
-version = "0.1.0"
-dependencies = [
- "anstream",
- "anyhow",
- "clap",
- "criterion",
- "cstree",
- "drop_bomb",
- "globset",
- "human-panic",
- "itertools 0.14.0",
- "miette",
- "num-derive",
- "num-traits",
- "owo-colors",
- "proptest",
- "ram_derive",
- "ram_diagnostics",
- "ram_error",
- "ram_syntax",
- "rowan 0.16.1",
- "salsa",
- "semver",
- "serde",
- "serde_derive",
- "serde_json",
- "syntect",
- "tempfile",
- "textwrap",
- "thiserror 2.0.12",
- "tracing",
- "tracing-subscriber",
- "walkdir",
-]
-
-[[package]]
-name = "ram_plugin_wasm"
-version = "0.1.0"
-dependencies = [
- "dashmap 6.1.0",
- "js-sys",
- "proptest",
- "ram_core",
- "thiserror 2.0.12",
- "tracing",
- "wasm-bindgen",
- "wit-bindgen",
-]
-
-[[package]]
-name = "ram_syntax"
-version = "0.1.0"
-dependencies = [
- "cstree",
- "either",
- "ram_derive",
- "serde",
- "serde_derive",
- "tracing",
-]
-
-[[package]]
-name = "ram_vm"
-version = "0.1.0"
-dependencies = [
- "base_db",
- "dashmap 6.1.0",
- "hir",
- "hir_def",
- "indexmap",
- "la-arena",
- "miette",
- "ram_core",
- "ram_error",
- "ram_parser",
- "ram_syntax",
- "rustc-hash 2.1.1",
- "salsa",
- "thiserror 2.0.12",
- "tracing",
- "typed-arena",
 ]
 
 [[package]]
@@ -3491,7 +3491,7 @@ checksum = "1e9df38ee2d2c3c5948ea468a8406ff0db0b29ae1ffde1bcf20ef305bcc95c51"
 
 [[package]]
 name = "xtask"
-version = "0.1.0"
+version = "0.1.0-alpha.1"
 
 [[package]]
 name = "yaml-rust"
