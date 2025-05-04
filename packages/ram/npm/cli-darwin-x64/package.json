@@ -1,6 +1,6 @@
 {
-  "name": "${node_pkg}",
-  "version": "${version}",
+  "name": "@ramlang/cli-darwin-x64",
+  "version": "0.1.0-alpha.1",
   "description": "Language tools for the `ram` language",
   "repository": {
     "type": "git",
@@ -20,12 +20,12 @@
     "README.md"
   ],
   "os": [
-    "${os}"
+    "darwin"
   ],
   "cpu": [
-    "${arch}"
+    "x64"
   ],
-  ${libc_field}
+  
   "publishConfig": {
     "access": "public"
   }

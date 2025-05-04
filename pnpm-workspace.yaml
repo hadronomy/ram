@@ -3,4 +3,5 @@ packages:
   - libs/*
   - editors/*
   - packages/*
-  - packages/rolldown/npm/*
+  - packages/ram/npm/*
+  - scripts

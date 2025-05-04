@@ -16,17 +16,17 @@ const baseOptions: Options = {
 export default [
   defineConfig({
     ...baseOptions,
-    outDir: "lib/cjs",
+    outDir: "dist/cjs",
     format: "cjs",
   }),
   defineConfig({
     ...baseOptions,
-    outDir: "lib/esm",
+    outDir: "dist/esm",
     format: "esm",
   }),
   defineConfig({
     ...baseOptions,
-    outDir: "lib/cli",
+    outDir: "dist/cli",
     entry: ["src/cli.ts"],
     dts: false,
     sourcemap: false,

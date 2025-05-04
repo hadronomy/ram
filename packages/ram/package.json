@@ -15,24 +15,26 @@
   ],
   "license": "MIT",
   "files": [
-    "lib"
+    "dist"
   ],
-  "main": "lib/cjs/index.d.cts",
-  "module": "lib/esm/index.d.ts",
-  "types": "lib/cjs/index.d.cts",
-  "bin": "lib/cli/cli.js",
+  "main": "dist/cjs/index.d.cts",
+  "module": "dist/esm/index.d.ts",
+  "types": "dist/cjs/index.d.cts",
+  "bin": {
+    "ram": "dist/cli/cli.js"
+  },
   "exports": {
     "./cli": {
-      "import": "./lib/cli/cli.js"
+      "import": "./dist/cli/cli.js"
     },
     ".": {
       "import": {
-        "types": "./lib/esm/index.d.ts",
-        "default": "./lib/esm/index.js"
+        "types": "./dist/esm/index.d.ts",
+        "default": "./dist/esm/index.js"
       },
       "require": {
-        "types": "./lib/cjs/index.d.cts",
-        "default": "./lib/cjs/index.cjs"
+        "types": "./dist/cjs/index.d.cts",
+        "default": "./dist/cjs/index.cjs"
       }
     }
   },
@@ -41,13 +43,29 @@
     "lint": "eslint src",
     "lint:fix": "eslint src --fix",
     "build": "tsdown -c tsdown.config.ts",
-    "dev": "yarn build && node lib/cli/cli.js"
+    "build-binary": "oxnode build-binary.ts",
+    "artifacts": "oxnode organize-artifacts.ts",
+    "generate-packages": "oxnode generate-npm-packages.ts",
+    "dev": "pnpm build && node dist/cli/cli.js"
   },
   "packageManager": "pnpm@10.10.0",
   "dependencies": {
     "execa": "^9.5.2"
   },
   "devDependencies": {
+    "@oxc-node/cli": "^0.0.27",
+    "@oxc-node/core": "^0.0.27",
+    "glob": "^11.0.2",
     "tsdown": "^0.10.2"
+  },
+  "optionalDependencies": {
+    "@ramlang/cli-darwin-x64": "workspace:0.1.0-alpha.1",
+    "@ramlang/cli-darwin-arm64": "workspace:0.1.0-alpha.1",
+    "@ramlang/cli-linux-x64-gnu": "workspace:0.1.0-alpha.1",
+    "@ramlang/cli-linux-x64-musl": "workspace:0.1.0-alpha.1",
+    "@ramlang/cli-linux-arm64-gnu": "workspace:0.1.0-alpha.1",
+    "@ramlang/cli-linux-arm64-musl": "workspace:0.1.0-alpha.1",
+    "@ramlang/cli-win32-x64": "workspace:0.1.0-alpha.1",
+    "@ramlang/cli-win32-arm64": "workspace:0.1.0-alpha.1"
   }
 }

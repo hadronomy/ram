@@ -1,0 +1,78 @@
+name: Publish to NPM
+
+permissions: {}
+
+on:
+  push:
+    tags:
+      - 'v*' # Push events to matching v*, i.e. v1.0, v20.15.10
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build binaries and node packages
+    uses: ./.github/workflows/reusable-release-build.yml
+
+  publish:
+    if: github.repository == 'hadronomy/ram'
+    name: Publish npm Packages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # for softprops/action-gh-release@v1
+      id-token: write # for `npm publish --provenance`
+    needs:
+      - build
+    steps:
+      - uses: taiki-e/checkout-action@b13d20b7cda4e2f325ef19895128f7ff735c0b3d # v1.3.1
+
+      - name: Setup Node
+        uses: ./.github/actions/setup-node
+
+      - name: Git Reset Hard
+        run: git reset --hard # fix pnpm install add new line for package.json
+
+      - name: Download Binary Artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: packages/ram/artifacts
+
+      - name: Move Binary Artifacts
+        run: pnpm --filter @ramlang/cli artifacts
+
+      - name: List Ram binaries
+        run: ls -R ./packages/ram/npm
+        shell: bash
+
+      - name: Download Node Artifacts
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: packages/ram/dist
+          name: node-artifact
+
+      - name: Copy Licenses
+        run: |
+          find ./packages/ -type d -maxdepth 1 -exec cp LICENSE {} \;
+          find ./packages/ -type d -maxdepth 1 -exec cp THIRD-PARTY-LICENSE {} \;
+
+      - name: Set Publishing Config
+        run: pnpm config set '//registry.npmjs.org/:_authToken' "${NPM_TOKEN}"
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish(Dry Run)
+        run: |
+          pnpm publish -r --tag latest --dry-run --no-git-checks
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish
+        run: |
+          pnpm publish -r --tag latest --no-git-checks
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
