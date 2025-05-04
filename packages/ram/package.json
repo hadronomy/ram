@@ -1,0 +1,53 @@
+{
+  "name": "@ramlang/cli",
+  "version": "0.1.0-alpha.1",
+  "description": "Language tools for the `ram` language",
+  "author": "Pablo Hernández <hadronomy@gmail.com> (https://hadronomy.com)",
+  "homepage": "https://ram.hadronomy.com",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hadronomy/ram.git",
+    "directory": "packages/ram"
+  },
+  "keywords": [
+    "language"
+  ],
+  "license": "MIT",
+  "files": [
+    "lib"
+  ],
+  "main": "lib/cjs/index.d.cts",
+  "module": "lib/esm/index.d.ts",
+  "types": "lib/cjs/index.d.cts",
+  "bin": "lib/cli/cli.js",
+  "exports": {
+    "./cli": {
+      "import": "./lib/cli/cli.js"
+    },
+    ".": {
+      "import": {
+        "types": "./lib/esm/index.d.ts",
+        "default": "./lib/esm/index.js"
+      },
+      "require": {
+        "types": "./lib/cjs/index.d.cts",
+        "default": "./lib/cjs/index.cjs"
+      }
+    }
+  },
+  "scripts": {
+    "typecheck": "tsc",
+    "lint": "eslint src",
+    "lint:fix": "eslint src --fix",
+    "build": "tsdown -c tsdown.config.ts",
+    "dev": "yarn build && node lib/cli/cli.js"
+  },
+  "packageManager": "pnpm@10.10.0",
+  "dependencies": {
+    "execa": "^9.5.2"
+  },
+  "devDependencies": {
+    "tsdown": "^0.10.2"
+  }
+}

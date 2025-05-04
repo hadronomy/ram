@@ -1,13 +1,15 @@
 [workspace]
-members  = ["./crates/*", "crates/ram_derive", "crates/ram_syntax", "xtask"]
+members  = ["./crates/*", "xtask"]
 resolver = "2"
 
 [workspace.package]
-authors    = ["Pablo Hernandez <hadronomy@gmail.com> (https://hadronomy.com/)"]
-edition    = "2024"
-license    = "MIT"
-repository = "https://github.com/hadronomy/ram"
-version    = "0.1.0"
+authors     = ["Pablo Hernandez <hadronomy@gmail.com> (https://hadronomy.com/)"]
+description = "Language tools for the `ram` language"
+edition     = "2024"
+license     = "MIT"
+publish     = false
+repository  = "https://github.com/hadronomy/ram"
+version     = "0.1.0-alpha.1"
 
 [workspace.dependencies]
 anstream           = "0.6.18"
@@ -145,3 +147,8 @@ opt-level     = 3    # Optimize for speed
 
 [profile.bench]
 debug = true
+
+# The profile that 'dist' will build with
+[profile.dist]
+inherits = "release"
+lto      = "thin"
