@@ -43,7 +43,16 @@ export async function findRamBinary(context: vscode.ExtensionContext): Promise<s
 
   // Check if 'ram' is in the PATH
   if (await commandExists('ram')) {
-    return 'ram';
+    try {
+      const platform = os.platform();
+      const cmd = platform === 'win32' ? 'where' : 'which';
+      const { stdout } = await execAsync(`${cmd} ram`);
+      return stdout.trim();
+    }
+    // eslint-disable-next-line unused-imports/no-unused-vars
+    catch (_) {
+      return null;
+    }
   }
 
   return null;
