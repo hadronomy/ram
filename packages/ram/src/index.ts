@@ -1,5 +1,4 @@
 import { execa, type Options as ExecaOptions, type ResultPromise } from "execa";
-import { fileURLToPath } from "node:url";
 import { getExePath } from "./get-exe-path.js";
 
 
@@ -18,7 +17,7 @@ async function run(argsOrOptions: string[], execaOptions?: ExecaOptions): Promis
   const exePath = await getExePath();
   const args = argsOrOptions;
 
-  return execa(fileURLToPath(exePath), args, {
+  return execa(exePath, args, {
     stdio: "inherit",
     ...execaOptions,
   });
