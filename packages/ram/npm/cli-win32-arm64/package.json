@@ -1,6 +1,6 @@
 {
   "name": "@ramlang/cli-win32-arm64",
-  "version": "0.1.0-alpha.10",
+  "version": "0.1.0-alpha.11",
   "description": "Language tools for the `ram` language",
   "repository": {
     "type": "git",
@@ -25,7 +25,7 @@
   "cpu": [
     "arm64"
   ],
-  
+
   "publishConfig": {
     "access": "public"
   }
