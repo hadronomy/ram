@@ -166,10 +166,8 @@ async function tryImportPackage(packageName: string, binaryPath: string): Promis
         }
       }
     }
-  } catch (error: unknown) {
-    // Log the error for debugging but continue with other methods
-    console.debug(`import.meta.resolve failed for ${packageName}: ${error instanceof Error ? error.message : String(error)}`);
-  }
+// eslint-disable-next-line no-unused-vars
+  } catch (error: unknown) {}
 
   // If dynamic import and import.meta.resolve fail, try file system search
   return findBinaryInFileSystem(packageName, binaryPath);
