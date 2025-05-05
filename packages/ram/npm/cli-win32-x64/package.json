@@ -1,6 +1,6 @@
 {
   "name": "@ramlang/cli-win32-x64",
-  "version": "0.1.0-alpha.8",
+  "version": "0.1.0-alpha.9",
   "description": "Language tools for the `ram` language",
   "repository": {
     "type": "git",
