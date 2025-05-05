@@ -21,7 +21,7 @@ jobs:
           registry-url: https://registry.npmjs.org/
       - run: npm i -g @antfu/ni
       - run: nci
-      - run: nr ci:publish
+      - run: nr ci:publish-vscode
         env:
           NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
           NPM_CONFIG_PROVENANCE: true
