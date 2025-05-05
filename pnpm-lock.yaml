@@ -198,28 +198,28 @@ importers:
         version: 0.10.2(typescript@5.8.3)
     optionalDependencies:
       '@ramlang/cli-darwin-arm64':
-        specifier: workspace:0.1.0-alpha.11
+        specifier: workspace:0.1.0-alpha.12
         version: link:npm/cli-darwin-arm64
       '@ramlang/cli-darwin-x64':
-        specifier: workspace:0.1.0-alpha.11
+        specifier: workspace:0.1.0-alpha.12
         version: link:npm/cli-darwin-x64
       '@ramlang/cli-linux-arm64-gnu':
-        specifier: workspace:0.1.0-alpha.11
+        specifier: workspace:0.1.0-alpha.12
         version: link:npm/cli-linux-arm64-gnu
       '@ramlang/cli-linux-arm64-musl':
-        specifier: workspace:0.1.0-alpha.11
+        specifier: workspace:0.1.0-alpha.12
         version: link:npm/cli-linux-arm64-musl
       '@ramlang/cli-linux-x64-gnu':
-        specifier: workspace:0.1.0-alpha.11
+        specifier: workspace:0.1.0-alpha.12
         version: link:npm/cli-linux-x64-gnu
       '@ramlang/cli-linux-x64-musl':
-        specifier: workspace:0.1.0-alpha.11
+        specifier: workspace:0.1.0-alpha.12
         version: link:npm/cli-linux-x64-musl
       '@ramlang/cli-win32-arm64':
-        specifier: workspace:0.1.0-alpha.11
+        specifier: workspace:0.1.0-alpha.12
         version: link:npm/cli-win32-arm64
       '@ramlang/cli-win32-x64':
-        specifier: workspace:0.1.0-alpha.11
+        specifier: workspace:0.1.0-alpha.12
         version: link:npm/cli-win32-x64
 
   packages/ram/npm/cli-darwin-arm64: {}

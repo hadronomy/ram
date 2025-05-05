@@ -1,6 +1,6 @@
 {
   "name": "@ramlang/cli",
-  "version": "0.1.0-alpha.11",
+  "version": "0.1.0-alpha.12",
   "description": "Language tools for the `ram` language",
   "author": "Pablo Hernández <hadronomy@gmail.com> (https://hadronomy.com)",
   "homepage": "https://ram.hadronomy.com",
@@ -62,13 +62,13 @@
     "tsdown": "^0.10.2"
   },
   "optionalDependencies": {
-    "@ramlang/cli-darwin-x64": "workspace:0.1.0-alpha.11",
-    "@ramlang/cli-darwin-arm64": "workspace:0.1.0-alpha.11",
-    "@ramlang/cli-linux-x64-gnu": "workspace:0.1.0-alpha.11",
-    "@ramlang/cli-linux-x64-musl": "workspace:0.1.0-alpha.11",
-    "@ramlang/cli-linux-arm64-gnu": "workspace:0.1.0-alpha.11",
-    "@ramlang/cli-linux-arm64-musl": "workspace:0.1.0-alpha.11",
-    "@ramlang/cli-win32-x64": "workspace:0.1.0-alpha.11",
-    "@ramlang/cli-win32-arm64": "workspace:0.1.0-alpha.11"
+    "@ramlang/cli-darwin-x64": "workspace:0.1.0-alpha.12",
+    "@ramlang/cli-darwin-arm64": "workspace:0.1.0-alpha.12",
+    "@ramlang/cli-linux-x64-gnu": "workspace:0.1.0-alpha.12",
+    "@ramlang/cli-linux-x64-musl": "workspace:0.1.0-alpha.12",
+    "@ramlang/cli-linux-arm64-gnu": "workspace:0.1.0-alpha.12",
+    "@ramlang/cli-linux-arm64-musl": "workspace:0.1.0-alpha.12",
+    "@ramlang/cli-win32-x64": "workspace:0.1.0-alpha.12",
+    "@ramlang/cli-win32-arm64": "workspace:0.1.0-alpha.12"
   }
 }
