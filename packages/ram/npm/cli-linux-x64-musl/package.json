@@ -1,6 +1,6 @@
 {
   "name": "@ramlang/cli-linux-x64-musl",
-  "version": "0.1.0-alpha.5",
+  "version": "0.1.0-alpha.6",
   "description": "Language tools for the `ram` language",
   "repository": {
     "type": "git",
