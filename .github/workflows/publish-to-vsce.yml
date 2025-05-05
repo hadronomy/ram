@@ -1,0 +1,34 @@
+name: Publish vscode extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    permissions:
+      id-token: write
+      contents: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          registry-url: https://registry.npmjs.org/
+      - run: npm i -g @antfu/ni
+      - run: nci
+      - run: nr ci:publish
+        env:
+          NODE_AUTH_TOKEN: ${{secrets.NPM_TOKEN}}
+          NPM_CONFIG_PROVENANCE: true
+
+      - name: Publish to VSCE & OVSX
+        run: npm run publish
+        working-directory: ./editors/vscode
+        env:
+          VSCE_TOKEN: ${{secrets.VSCE_TOKEN}}
+          OVSX_TOKEN: ${{secrets.OVSX_TOKEN}}
