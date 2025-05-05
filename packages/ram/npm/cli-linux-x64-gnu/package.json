@@ -25,7 +25,7 @@
   "cpu": [
     "x64"
   ],
-  "libc": ["gnu"],
+  "libc": ["glibc"],
   "publishConfig": {
     "access": "public"
   }

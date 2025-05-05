@@ -142,7 +142,7 @@ async function generatePackages(): Promise<void> {
       await ensureDir(join(packageDir, 'bin'));
 
       // Create properly formatted libc field for JSON
-      const libcField = libc ? `"libc": ["${libc}"],` : '';
+      const libcField = libc ? `"libc": ["${libc === "gnu" ? "glibc" : "musl"}"],` : '';
 
       // Process templates with values using the hash template syntax matching the template files
       const values = {
