@@ -21,7 +21,8 @@
     <code>RAM</code> <i>(Random Access Machine)</i> <strong>language</strong> and <strong>emulator</strong>.
   </span>
   <p></p>
-  <!-- <a href="#installation">Installation</a> • -->
+  <a href="#about-this-project">About</a> •
+  <a href="#usage">Usage</a> •
   <a href="#requirements">Requirements</a> •
   <a href="#license">License</a>
   <hr />
@@ -46,6 +47,88 @@ This project aims to develop a complete ecosystem for the Random Access Machine 
 > It's not in any way stable or even functional in some cases.
 > **Until the first release** the `main` branch is not guaranteed
 > to work in any way.
+
+## Usage
+
+### Installation
+
+RAM is available as an npm package. You can install it globally using npm, yarn, or pnpm:
+
+```bash
+# Using npm
+npm install -g @ramlang/cli
+
+# Using yarn
+yarn global add @ramlang/cli
+
+# Using pnpm
+pnpm add -g @ramlang/cli
+```
+
+After installation, you should have access to the `ram` command in your terminal.
+
+### Verifying Installation
+
+To verify that RAM is installed correctly, run:
+
+```bash
+ram --version
+```
+
+### Available Commands
+
+The RAM CLI provides several commands:
+
+```bash
+# Run a RAM program
+ram run <program-file> [--input <values>] [--memory]
+
+# Validate a RAM program
+ram validate <program-file> [--ast] [--reprint] [--show-pipeline] [--show-cfg] [--show-hir]
+
+# Start the Language Server Protocol (LSP) server
+ram server
+
+# Display help information
+ram help
+
+# Display version information
+ram version
+```
+
+### Running a Program
+
+To run a RAM program, use the `run` command:
+
+```bash
+# Run a program with input values
+ram run program.ram --input "5 7"
+
+# Run a program and display memory contents after execution
+ram run program.ram --memory
+```
+
+### Example Program
+
+Here's a simple RAM program that adds two numbers:
+
+```
+# Simple RAM program that adds two numbers
+LOAD 1    # Load value from address 1
+ADD 2     # Add value from address 2
+STORE 3   # Store result in address 3
+HALT      # Stop execution
+```
+
+Save this to a file (e.g., `add.ram`) and run it with:
+
+```bash
+ram run add.ram --input "5 7"
+```
+
+The program will load the value 5 from address 1, add the value 7 from address 2, and store the result (12) in address 3.
+
+For more detailed information about the RAM language and its usage, refer to the [documentation](https://ram.hadronomy.dev/docs).
 
 ## Requirements
 
