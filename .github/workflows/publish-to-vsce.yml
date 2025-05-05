@@ -25,5 +25,5 @@ jobs:
         run: npm run publish
         working-directory: ./editors/vscode
         env:
-          VSCE_TOKEN: ${{secrets.VSCE_TOKEN}}
+          VSCE_PAT: ${{secrets.VSCE_TOKEN}}
           # OVSX_TOKEN: ${{secrets.OVSX_TOKEN}}
