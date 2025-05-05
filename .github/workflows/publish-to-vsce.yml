@@ -31,4 +31,4 @@ jobs:
         working-directory: ./editors/vscode
         env:
           VSCE_TOKEN: ${{secrets.VSCE_TOKEN}}
-          OVSX_TOKEN: ${{secrets.OVSX_TOKEN}}
+          # OVSX_TOKEN: ${{secrets.OVSX_TOKEN}}
