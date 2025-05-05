@@ -105,7 +105,7 @@
     "update": "vscode-ext-gen --output src/generated/meta.ts",
     "lint": "eslint .",
     "vscode:prepublish": "nr build",
-    "publish": "vsce publish --no-dependencies",
+    "publish": "vsce publish --no-dependencies --no-git-checks",
     "pack": "vsce package --no-dependencies",
     "test": "vitest",
     "typecheck": "tsc --noEmit",
