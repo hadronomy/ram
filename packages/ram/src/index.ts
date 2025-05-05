@@ -26,4 +26,5 @@ async function run(argsOrOptions: string[], execaOptions?: ExecaOptions): Promis
 
 export const ram = {
   run,
+  getExePath,
 };
