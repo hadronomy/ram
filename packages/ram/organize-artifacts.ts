@@ -1,5 +1,5 @@
 import { globSync } from 'glob';
-import { copyFileSync, existsSync, mkdirSync, statSync, readdirSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, statSync, readdirSync, chmodSync } from 'node:fs';
 import { dirname, basename, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -44,7 +44,7 @@ function mapRustTargetToNpmTarget(rustTarget: string): { os: string, arch: strin
  */
 function processBinary(binaryPath: string, targetTriple: string): void {
   console.log(`Processing binary for target: ${targetTriple}`);
-  
+
   const npmTarget = mapRustTargetToNpmTarget(targetTriple);
   if (!npmTarget) {
     console.error(`Unsupported target triple: ${targetTriple}`);
@@ -54,7 +54,7 @@ function processBinary(binaryPath: string, targetTriple: string): void {
   const { os, arch, libc } = npmTarget;
   const binaryName = 'ram' + (os === 'win32' ? '.exe' : '');
   const npmDir = join(__dirname, 'npm');
-  
+
   // Create directory name with libc variant if applicable
   let dirName = `cli-${os}-${arch}`;
   if (os === 'linux' && libc) {
@@ -62,7 +62,7 @@ function processBinary(binaryPath: string, targetTriple: string): void {
   } else if (os === 'freebsd') {
     dirName = `cli-${os}-${arch}`;
   }
-  
+
   const destDir = join(npmDir, dirName, 'bin');
   const destPath = join(destDir, binaryName);
 
@@ -78,11 +78,11 @@ function processBinary(binaryPath: string, targetTriple: string): void {
     // If path is a directory, look for the binary inside it
     if (statSync(binaryPath).isDirectory()) {
       console.log(`${binaryPath} is a directory, looking for binary inside...`);
-      
+
       // Try to find the binary file within the directory
       const files = readdirSync(binaryPath);
       const binFile = files.find((file: string) => file === binaryName || file.startsWith('ram'));
-      
+
       if (binFile) {
         actualBinaryPath = join(binaryPath, binFile);
         console.log(`Found binary at ${actualBinaryPath}`);
@@ -95,6 +95,10 @@ function processBinary(binaryPath: string, targetTriple: string): void {
 
   console.log(`Copying binary from ${actualBinaryPath} to ${destPath}`);
   copyFileSync(actualBinaryPath, destPath);
+
+  // Set executable permissions (rwxr-xr-x = 0755)
+  console.log(`Setting executable permissions on ${destPath}`);
+  chmodSync(destPath, 0o755);
 }
 
 // Find all binary files that match the pattern binary-${target}
@@ -111,12 +115,12 @@ binaryFiles.forEach(binaryPath => {
   const fileName = basename(binaryPath);
   // Extract target triple from file name (format: binary-${targetTriple})
   const targetTriple = fileName.replace('binary-', '');
-  
+
   if (!targetTriple) {
     console.warn(`Could not extract target triple from file name: ${fileName}`);
     return;
   }
-  
+
   // Process the binary
   processBinary(binaryPath, targetTriple);
 });

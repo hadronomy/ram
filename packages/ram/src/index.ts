@@ -14,6 +14,7 @@ import { getExePath } from "./get-exe-path.js";
  * @returns A promise that resolves when the `@ramlang/cli` has finished running.
  */
 async function run(argsOrOptions: string[], execaOptions?: ExecaOptions): Promise<ResultPromise> {
+  // Get the executable path - errors will propagate to the caller
   const exePath = await getExePath();
   const args = argsOrOptions;
 

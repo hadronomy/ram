@@ -35,6 +35,47 @@ function detectLibc(): "musl" | "gnu" {
 }
 
 /**
+ * Checks if a file is executable and attempts to make it executable if it's not
+ * This is important for binaries that might have lost their executable permissions
+ */
+function ensureExecutable(filePath: string): boolean {
+  try {
+    // Check if the file exists
+    if (!fs.existsSync(filePath)) {
+      return false;
+    }
+
+    // On Windows, we don't need to check executable permissions
+    if (process.platform === 'win32') {
+      return true;
+    }
+
+    // Try to check if the file is executable
+    try {
+      // Check if the file is executable by the current user
+      fs.accessSync(filePath, fs.constants.X_OK);
+      return true;
+    } catch {
+      try {
+        // Get current permissions
+        const stats = fs.statSync(filePath);
+        const newMode = stats.mode | 0o111; // Add executable bit for user, group, and others
+
+        // Set new permissions
+        fs.chmodSync(filePath, newMode);
+        return true;
+      } catch (error) {
+        console.debug(`Failed to set executable permissions on ${filePath}: ${error}`);
+        return false;
+      }
+    }
+  } catch (error) {
+    console.debug(`Error checking executable permissions: ${error}`);
+    return false;
+  }
+}
+
+/**
  * Attempts to find the binary by directly checking the file system
  * This is useful for global installations where import.meta.resolve might not work
  */
@@ -79,7 +120,11 @@ function findBinaryInFileSystem(packageName: string, binaryPath: string): string
   // Check each path
   for (const possiblePath of possiblePaths) {
     if (fs.existsSync(possiblePath)) {
-      return possiblePath;
+
+      // Ensure the binary is executable
+      if (ensureExecutable(possiblePath)) {
+        return possiblePath;
+      }
     }
   }
 
@@ -90,33 +135,40 @@ function findBinaryInFileSystem(packageName: string, binaryPath: string): string
  * Attempts to dynamically import a package and get its binary path
  */
 async function tryImportPackage(packageName: string, binaryPath: string): Promise<string | null> {
+  // First try to dynamically import the package
   try {
-    // First try to dynamically import the package
     const pkg = await import(packageName);
     if (pkg) {
       // If the package has a path property, use it
       if (pkg.path) {
         const fullPath = path.join(pkg.path, binaryPath);
         if (fs.existsSync(fullPath)) {
-          return fullPath;
+          // Ensure the binary is executable
+          if (ensureExecutable(fullPath)) {
+            return fullPath;
+          }
         }
       }
     }
-  } catch {
-    // Ignore import errors and continue with other methods
+// eslint-disable-next-line no-unused-vars
+  } catch (error: unknown) {
   }
 
+  // Try using import.meta.resolve as a fallback
   try {
-    // Try using import.meta.resolve as a fallback
     const resolvedPath = import.meta.resolve(`${packageName}/${binaryPath}`);
     if (resolvedPath) {
       const filePath = fileURLToPath(resolvedPath);
       if (fs.existsSync(filePath)) {
-        return filePath;
+        // Ensure the binary is executable
+        if (ensureExecutable(filePath)) {
+          return filePath;
+        }
       }
     }
-  } catch {
-    // Ignore resolve errors and continue with other methods
+  } catch (error: unknown) {
+    // Log the error for debugging but continue with other methods
+    console.debug(`import.meta.resolve failed for ${packageName}: ${error instanceof Error ? error.message : String(error)}`);
   }
 
   // If dynamic import and import.meta.resolve fail, try file system search
@@ -177,31 +229,30 @@ export async function getExePath() {
     });
   }
 
-  // Try each package option until we find one that exists
+  // Try each package option and collect results
   const errors = [];
+  const attemptedPaths = [];
+
   for (const { packageName, binaryPath: binPath } of packageOptions) {
     try {
       const resolvedPath = await tryImportPackage(packageName, binPath);
       if (resolvedPath) {
         return resolvedPath;
       }
+      attemptedPaths.push(`${packageName}/${binPath} (not found)`);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      errors.push(`Failed to import ${packageName}: ${errorMessage}`);
+      const errorDetail = `Failed to import ${packageName}: ${errorMessage}`;
+      errors.push(errorDetail);
+      attemptedPaths.push(`${packageName}/${binPath} (error)`);
     }
   }
 
-  // As a last resort, try to find the binary in the artifacts directory
-  // This is useful for local development scenarios
-  const localArtifactPath = path.join(process.cwd(), 'artifacts', `ram${extension}`);
-  if (fs.existsSync(localArtifactPath)) {
-    return localArtifactPath;
-  }
-
   // If we get here, none of the options worked
-  throw new Error(
-    `Couldn't find @ramlang/cli binary for ${os}-${arch}${libcSuffix}. ` +
-    `Tried packages: ${packageOptions.map(opt => opt.packageName).join(", ")}. ` +
-    `Errors: ${errors.join("; ")}`
-  );
+  const errorMessage = `Couldn't find @ramlang/cli binary for ${os}-${arch}${libcSuffix}.\n` +
+    `Attempted paths:\n${attemptedPaths.map(p => `- ${p}`).join('\n')}\n` +
+    `Errors:\n${errors.map(e => `- ${e}`).join('\n')}`;
+
+  console.error(errorMessage);
+  throw new Error(errorMessage);
 }
