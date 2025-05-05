@@ -1,6 +1,6 @@
 {
   "name": "@ramlang/cli-linux-arm64-gnu",
-  "version": "0.1.0-alpha.4",
+  "version": "0.1.0-alpha.5",
   "description": "Language tools for the `ram` language",
   "repository": {
     "type": "git",
