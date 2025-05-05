@@ -1,0 +1,109 @@
+---
+title: Execution
+description: How RAM programs are executed
+---
+
+## Compilation Pipeline
+
+The RAM compiler follows a multi-stage pipeline to transform source code into executable instructions:
+
+1. **Lexer**: Scans the raw source code text and breaks it down into tokens (keywords, identifiers, literals, operators)
+2. **Parser**: Applies grammatical rules to construct a structured representation of the program
+3. **Concrete Syntax Tree (CST)**: A detailed, lossless tree that mirrors the original source code structure
+4. **Abstract Syntax Tree (AST)**: A simplified tree that represents the semantic structure of the program
+5. **ItemTree**: Extracts definitions from the AST
+6. **High-level Intermediate Representation (HIR)**: A semantic representation of the program
+7. **Analysis Pipeline**: Performs various analyses on the HIR, including control flow analysis, data flow analysis, and instruction validation
+8. **VM Program**: Translates the analyzed HIR into a format for execution by the virtual machine
+9. **Virtual Machine Execution**: The VM interprets the generated program, executing instructions sequentially
+
+## Execution Process
+
+When you run a RAM program, the following steps occur:
+
+1. The source code is read from the file
+2. The code is parsed and transformed through the compilation pipeline
+3. The resulting VM program is loaded into the virtual machine
+4. The VM initializes its memory and registers
+5. The VM executes instructions one by one, updating memory and registers as needed
+6. Execution continues until a HALT instruction is encountered or an error occurs
+7. The final state of memory and any output produced are returned
+
+## Control Flow
+
+The execution of a RAM program is normally sequential, with instructions executed in order. However, control flow can be altered using jump instructions:
+
+- `JUMP label`: Unconditionally jumps to the specified label
+- `JGTZ label`: Jumps to the label if the accumulator is greater than zero
+- `JZERO label`: Jumps to the label if the accumulator is zero
+- `JNEG label`: Jumps to the label if the accumulator is negative
+
+These instructions change the instruction pointer, causing execution to continue from a different point in the program.
+
+## Error Handling
+
+During execution, various errors can occur:
+
+- **Syntax errors**: Detected during parsing (e.g., invalid instruction format)
+- **Semantic errors**: Detected during analysis (e.g., undefined label)
+- **Runtime errors**: Detected during execution (e.g., division by zero)
+
+When an error is detected, execution is typically halted, and an error message is displayed.
+
+## Debugging
+
+The RAM VM provides several features to help with debugging:
+
+- Detailed error messages with line and column information
+- Memory state inspection
+- Step-by-step execution
+- Control flow visualization
+
+These features can be accessed through the CLI or programmatically.
+
+## Example
+
+Here's an example of how a simple RAM program is executed:
+
+```
+# Calculate the sum of numbers from 1 to 5
+        LOAD =0     # Initialize sum to 0
+        STORE 1     # Store sum in address 1
+        LOAD =1     # Initialize counter to 1
+        STORE 2     # Store counter in address 2
+loop:   LOAD 2      # Load counter
+        JGTZ cont   # If counter > 0, continue
+        JUMP end    # Otherwise, jump to end
+cont:   LOAD 1      # Load current sum
+        ADD 2       # Add counter to sum
+        STORE 1     # Store updated sum
+        LOAD 2      # Load counter
+        SUB =1      # Decrement counter
+        STORE 2     # Store updated counter
+        JUMP loop   # Repeat
+end:    HALT        # Stop execution
+```
+
+Execution trace:
+
+1. Initialize sum (address 1) to 0
+2. Initialize counter (address 2) to 5
+3. Load counter (5) into accumulator
+4. Since accumulator > 0, continue to `cont`
+5. Load sum (0) into accumulator
+6. Add counter (5) to accumulator, resulting in 5
+7. Store updated sum (5) in address 1
+8. Load counter (5) into accumulator
+9. Subtract 1, resulting in 4
+10. Store updated counter (4) in address 2
+11. Jump back to `loop`
+12. ... (repeat steps 3-11 with decreasing counter values)
+13. Eventually, counter becomes 0
+14. Jump to `end`
+15. Halt execution
+
+After execution, address 1 contains 15 (the sum of numbers from 1 to 5).
+
+<Callout type="info">
+  The RAM VM is designed to provide a balance between faithfulness to the theoretical model and practical usability. The execution model is simple enough to understand but powerful enough to implement complex algorithms.
+</Callout>

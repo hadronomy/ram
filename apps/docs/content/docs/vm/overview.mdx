@@ -1,0 +1,82 @@
+---
+title: VM Overview
+description: Introduction to the RAM Virtual Machine
+---
+
+## Components of the RAM VM
+
+The RAM VM consists of several key components:
+
+### Memory
+
+The VM provides a memory space that can store integer values. Each memory location is identified by an address, which is also an integer. The memory is conceptually infinite, but practical implementations may have limitations.
+
+### Registers
+
+The VM includes a set of registers, which are special memory locations that can be accessed more efficiently than regular memory. The most important register is the accumulator (R0), which is used for most arithmetic operations.
+
+### Instruction Pointer
+
+The instruction pointer (IP) keeps track of the current instruction being executed. It automatically advances to the next instruction after each execution, unless a jump instruction changes its value.
+
+### Input/Output
+
+The VM provides mechanisms for reading input values and writing output values, allowing programs to interact with the outside world.
+
+## Execution Model
+
+The RAM VM follows a simple execution model:
+
+1. Fetch the instruction at the current instruction pointer
+2. Decode the instruction to determine the operation and operands
+3. Execute the instruction, which may modify memory, registers, or the instruction pointer
+4. If the instruction pointer was not modified by the instruction, advance it to the next instruction
+5. Repeat until a HALT instruction is encountered or an error occurs
+
+## Instruction Set
+
+The RAM VM supports a variety of instructions, including:
+
+- Arithmetic operations (ADD, SUB, MUL, DIV, MOD)
+- Memory operations (LOAD, STORE)
+- Control flow operations (JUMP, JGTZ, JZERO, JNEG)
+- Input/output operations (READ, WRITE)
+
+See the [Instructions](/docs/language/instructions) page for a complete list of available instructions.
+
+## Memory Model
+
+The RAM VM uses a simple memory model where each memory location can store an integer value. Memory addresses are also integers, allowing for indirect addressing.
+
+See the [Memory Model](/docs/vm/memory-model) page for more details.
+
+## Execution Details
+
+The execution of a RAM program involves several stages, including parsing, analysis, and actual execution.
+
+See the [Execution](/docs/vm/execution) page for more information on how programs are executed.
+
+## Example
+
+Here's a simple example of how the RAM VM executes a program:
+
+```
+# Program to add two numbers
+        LOAD 1      # Load the value from address 1 into the accumulator
+        ADD 2       # Add the value from address 2 to the accumulator
+        STORE 3     # Store the result in address 3
+        HALT        # Stop execution
+```
+
+Assuming memory addresses 1 and 2 contain the values 5 and 7 respectively, the execution would proceed as follows:
+
+1. `LOAD 1`: The value 5 is loaded into the accumulator
+2. `ADD 2`: The value 7 is added to the accumulator, resulting in 12
+3. `STORE 3`: The value 12 is stored in memory address 3
+4. `HALT`: Execution stops
+
+After execution, memory address 3 would contain the value 12.
+
+<Callout type="info">
+  The RAM VM is designed to be a faithful implementation of the theoretical Random Access Machine model, while also providing practical features for real-world use.
+</Callout>

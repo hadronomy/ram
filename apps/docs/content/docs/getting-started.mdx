@@ -1,0 +1,87 @@
+---
+title: Getting Started
+description: Learn how to install and use the RAM language
+---
+
+## Installation
+
+RAM is available as an npm package. You can install it globally using npm, yarn, or pnpm.
+
+### Using npm
+
+```bash
+npm install -g @ramlang/cli
+```
+
+### Using yarn
+
+```bash
+yarn global add @ramlang/cli
+```
+
+### Using pnpm
+
+```bash
+pnpm add -g @ramlang/cli
+```
+
+After installation, you should have access to the `ram` command in your terminal.
+
+## Verifying Installation
+
+To verify that RAM is installed correctly, run:
+
+```bash
+ram --version
+```
+
+You should see the version number of the installed RAM CLI.
+
+## Your First RAM Program
+
+Let's create a simple RAM program that adds two numbers. Create a file named `add.ram` with the following content:
+
+```
+# Simple RAM program that adds two numbers
+LOAD 1    # Load value from address 1
+ADD 2     # Add value from address 2
+STORE 3   # Store result in address 3
+HALT      # Stop execution
+```
+
+### Understanding the Program
+
+This program performs the following operations:
+
+1. `LOAD 1`: Loads the value stored at memory address 1 into the accumulator
+2. `ADD 2`: Adds the value stored at memory address 2 to the accumulator
+3. `STORE 3`: Stores the result (now in the accumulator) to memory address 3
+4. `HALT`: Stops the program execution
+
+### Running the Program
+
+To run the program, use the `ram run` command:
+
+```bash
+ram run add.ram
+```
+
+By default, the memory locations are initialized to 0. To provide input values, you can use the `--memory` flag:
+
+```bash
+ram run add.ram --memory "1=5,2=7"
+```
+
+This sets memory address 1 to 5 and memory address 2 to 7. After running the program, memory address 3 should contain 12 (the sum of 5 and 7).
+
+## Next Steps
+
+Now that you've written and run your first RAM program, you can:
+
+- Learn more about the [RAM language syntax](/docs/language/syntax)
+- Explore the available [instructions](/docs/language/instructions)
+- Check out more complex [examples](/docs/examples/basic)
+
+<Callout type="tip">
+  The RAM language is designed to be simple yet powerful. As you become more familiar with it, you'll be able to write increasingly complex programs to solve a variety of computational problems.
+</Callout>

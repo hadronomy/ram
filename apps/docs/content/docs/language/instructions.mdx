@@ -1,0 +1,98 @@
+---
+title: Instructions
+description: Reference for all RAM language instructions
+---
+
+## Arithmetic Instructions
+
+These instructions perform arithmetic operations on the accumulator (R0).
+
+| Instruction | Description | Example |
+|-------------|-------------|---------|
+| `ADD x` | Add the value at address x to the accumulator | `ADD 1` |
+| `SUB x` | Subtract the value at address x from the accumulator | `SUB 2` |
+| `MUL x` | Multiply the accumulator by the value at address x | `MUL 3` |
+| `DIV x` | Divide the accumulator by the value at address x | `DIV 4` |
+| `MOD x` | Set the accumulator to the remainder of division by the value at address x | `MOD 5` |
+
+## Memory Instructions
+
+These instructions are used to move data between memory and the accumulator.
+
+| Instruction | Description | Example |
+|-------------|-------------|---------|
+| `LOAD x` | Load the value from address x into the accumulator | `LOAD 1` |
+| `STORE x` | Store the value in the accumulator to address x | `STORE 2` |
+| `CLEAR` | Set the accumulator to zero | `CLEAR` |
+
+## Control Flow Instructions
+
+These instructions control the flow of execution in the program.
+
+| Instruction | Description | Example |
+|-------------|-------------|---------|
+| `JUMP x` | Jump to the instruction with label x | `JUMP loop` |
+| `JGTZ x` | Jump to x if the accumulator is greater than zero | `JGTZ positive` |
+| `JZERO x` | Jump to x if the accumulator is zero | `JZERO zero` |
+| `JNEG x` | Jump to x if the accumulator is negative | `JNEG negative` |
+| `HALT` | Stop program execution | `HALT` |
+
+## Input/Output Instructions
+
+These instructions handle input and output operations.
+
+| Instruction | Description | Example |
+|-------------|-------------|---------|
+| `READ x` | Read a value from input and store it at address x | `READ 1` |
+| `WRITE x` | Write the value at address x to output | `WRITE 2` |
+
+## Register Instructions
+
+These instructions operate on specific registers.
+
+| Instruction | Description | Example |
+|-------------|-------------|---------|
+| `LOAD Rx` | Load the value from register x into the accumulator | `LOAD R1` |
+| `STORE Rx` | Store the value in the accumulator to register x | `STORE R2` |
+
+## Advanced Instructions
+
+These instructions provide additional functionality for more complex programs.
+
+| Instruction | Description | Example |
+|-------------|-------------|---------|
+| `AND x` | Bitwise AND the accumulator with the value at address x | `AND 1` |
+| `OR x` | Bitwise OR the accumulator with the value at address x | `OR 2` |
+| `XOR x` | Bitwise XOR the accumulator with the value at address x | `XOR 3` |
+| `NOT` | Bitwise NOT the accumulator | `NOT` |
+| `SHL x` | Shift the accumulator left by x bits | `SHL 1` |
+| `SHR x` | Shift the accumulator right by x bits | `SHR 2` |
+
+## Example Program
+
+Here's an example program that uses several of these instructions:
+
+```
+# Calculate the factorial of the value at address 1
+# and store the result at address 2
+        LOAD 1      # Load the input value
+        STORE 3     # Store a copy in address 3 (counter)
+        LOAD =1     # Initialize the result to 1
+        STORE 2     # Store the initial result
+loop:   LOAD 3      # Load the counter
+        JZERO end   # If counter is zero, we're done
+        LOAD 2      # Load the current result
+        MUL 3       # Multiply by the counter
+        STORE 2     # Store the new result
+        LOAD 3      # Load the counter
+        SUB =1      # Decrement the counter
+        STORE 3     # Store the updated counter
+        JUMP loop   # Repeat
+end:    HALT        # Stop execution
+```
+
+This program calculates the factorial of the value stored at address 1 and stores the result at address 2.
+
+<Callout type="info">
+  The exact set of available instructions may vary depending on the RAM implementation. Check the documentation for your specific implementation for the most accurate information.
+</Callout>

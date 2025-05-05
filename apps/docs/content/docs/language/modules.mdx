@@ -1,0 +1,143 @@
+---
+title: Modules
+description: Organizing code with the RAM module system
+---
+
+## Module Declarations
+
+To declare a module, use the `mod` keyword followed by the module name:
+
+```
+mod mymodule;
+```
+
+This tells the RAM compiler to look for a file named `mymodule.ram` in the same directory as the current file.
+
+## Importing from Modules
+
+To use items from a module, you need to import them using the `use` keyword:
+
+```
+use mymodule::function;  # Import a specific item
+use mymodule::*;         # Import all items
+```
+
+## Nested Modules
+
+Modules can be nested to create a hierarchical structure:
+
+```
+mod math {
+    mod basic;
+    mod advanced;
+}
+```
+
+In this case, the compiler will look for files named `math/basic.ram` and `math/advanced.ram`.
+
+## Importing Nested Items
+
+You can import items from nested modules using the path syntax:
+
+```
+use math::basic::add;
+use math::advanced::factorial;
+```
+
+You can also use curly braces to import multiple items from the same module:
+
+```
+use math::basic::{add, subtract};
+use math::advanced::{factorial, fibonacci};
+```
+
+## Example
+
+Here's a complete example of how to use modules in RAM:
+
+**main.ram**:
+```
+mod math;
+use math::basic::*;
+use math::advanced::factorial;
+
+# Use the imported functions
+        LOAD 5
+        STORE 1
+        LOAD 3
+        STORE 2
+        CALL add      # Call the 'add' function from math::basic
+        STORE 3
+
+        LOAD 5
+        STORE 1
+        CALL factorial  # Call the 'factorial' function from math::advanced
+        STORE 4
+
+        HALT
+```
+
+**math/basic.ram**:
+```
+# Basic math functions
+
+# Add two numbers
+# Input: Address 1 and 2 contain the numbers to add
+# Output: Result in accumulator
+add:    LOAD 1
+        ADD 2
+        RETURN
+
+# Subtract two numbers
+# Input: Address 1 and 2 contain the numbers (1 - 2)
+# Output: Result in accumulator
+subtract:
+        LOAD 1
+        SUB 2
+        RETURN
+```
+
+**math/advanced.ram**:
+```
+# Advanced math functions
+use math::basic::*;
+
+# Calculate factorial
+# Input: Address 1 contains the number
+# Output: Result in accumulator
+factorial:
+        LOAD 1
+        JZERO fact_zero
+        STORE 3     # Store a copy in address 3 (counter)
+        LOAD =1     # Initialize the result to 1
+        STORE 2     # Store the initial result
+fact_loop:
+        LOAD 3      # Load the counter
+        JZERO fact_end  # If counter is zero, we're done
+        LOAD 2      # Load the current result
+        MUL 3       # Multiply by the counter
+        STORE 2     # Store the new result
+        LOAD 3      # Load the counter
+        SUB =1      # Decrement the counter
+        STORE 3     # Store the updated counter
+        JUMP fact_loop  # Repeat
+fact_zero:
+        LOAD =1     # 0! = 1
+        JUMP fact_end
+fact_end:
+        LOAD 2      # Load the result
+        RETURN
+```
+
+## Benefits of Using Modules
+
+Using modules in your RAM programs provides several benefits:
+
+1. **Code Organization**: Modules help you organize your code into logical units.
+2. **Code Reuse**: You can reuse code across different programs by importing modules.
+3. **Namespace Management**: Modules create separate namespaces, reducing the risk of name conflicts.
+4. **Maintainability**: Smaller, focused modules are easier to understand and maintain.
+
+<Callout type="info">
+  The module system in RAM is designed to be familiar to developers who have experience with modern programming languages like Rust, making it easier to organize and structure larger programs.
+</Callout>

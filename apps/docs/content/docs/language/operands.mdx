@@ -1,0 +1,110 @@
+---
+title: Operands
+description: Understanding operands and addressing modes in RAM
+---
+
+## Addressing Modes
+
+### Direct Addressing
+
+Direct addressing refers to a memory location directly. The operand specifies the address to access:
+
+```
+LOAD 5      # Load the value from memory address 5
+```
+
+### Indirect Addressing
+
+Indirect addressing uses the value at a memory location as the address to access. This is indicated by an asterisk (`*`) before the operand:
+
+```
+LOAD *5     # Load the value from the address stored at memory address 5
+```
+
+For example, if memory address 5 contains the value 10, then `LOAD *5` will load the value from memory address 10.
+
+### Immediate Addressing
+
+Immediate addressing uses the operand value directly, rather than treating it as an address. This is indicated by an equals sign (`=`) before the operand:
+
+```
+LOAD =5     # Load the value 5 directly into the accumulator
+```
+
+### Register Addressing
+
+Register addressing refers to a specific register. This is indicated by the letter 'R' followed by the register number:
+
+```
+LOAD R1     # Load the value from register 1
+```
+
+The accumulator is register R0, so `LOAD R0` is equivalent to loading the accumulator's value into itself.
+
+## Array Access
+
+RAM supports array-like access with the syntax `base[index]`:
+
+```
+LOAD 5[3]   # Load the value from memory address (5 + 3)
+```
+
+This is equivalent to `LOAD 8` in this case.
+
+You can combine array access with other addressing modes:
+
+```
+LOAD *5[3]  # Load the value from the address stored at memory address (5 + 3)
+LOAD =5[3]  # Load the value 8 directly (5 + 3)
+```
+
+## Label References
+
+Labels can be used as operands in jump instructions:
+
+```
+loop:   LOAD 1
+        ADD 2
+        STORE 3
+        JUMP loop   # Jump back to the 'loop' label
+```
+
+## Expressions
+
+Some RAM implementations support simple expressions as operands:
+
+```
+LOAD =(5 + 3)   # Load the value 8 directly
+```
+
+However, this feature may not be available in all implementations.
+
+## Examples
+
+Here are some examples of different addressing modes in action:
+
+```
+# Direct addressing
+LOAD 5      # Load the value from memory address 5
+STORE 10    # Store the accumulator value to memory address 10
+
+# Indirect addressing
+LOAD *5     # Load the value from the address stored at memory address 5
+STORE *10   # Store the accumulator value to the address stored at memory address 10
+
+# Immediate addressing
+LOAD =5     # Load the value 5 directly into the accumulator
+ADD =10     # Add the value 10 directly to the accumulator
+
+# Register addressing
+LOAD R1     # Load the value from register 1
+STORE R2    # Store the accumulator value to register 2
+
+# Array access
+LOAD 5[3]   # Load the value from memory address (5 + 3)
+STORE 10[R1]  # Store the accumulator value to memory address (10 + value in R1)
+```
+
+<Callout type="warning">
+  The behavior of operands may vary slightly between different RAM implementations. Always refer to the documentation for your specific implementation for the most accurate information.
+</Callout>

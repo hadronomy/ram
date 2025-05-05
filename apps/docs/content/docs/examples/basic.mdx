@@ -1,0 +1,169 @@
+---
+title: Basic Examples
+description: Simple examples of RAM programs
+---
+
+## Addition
+
+This program adds two numbers stored in memory addresses 1 and 2, and stores the result in address 3:
+
+```
+# Add two numbers
+        LOAD 1      # Load the value from address 1
+        ADD 2       # Add the value from address 2
+        STORE 3     # Store the result in address 3
+        HALT        # Stop execution
+```
+
+To run this program with specific input values:
+
+```bash
+ram run add.ram --memory "1=5,2=7"
+```
+
+After execution, memory address 3 will contain 12.
+
+## Subtraction
+
+This program subtracts the number in address 2 from the number in address 1, and stores the result in address 3:
+
+```
+# Subtract two numbers
+        LOAD 1      # Load the value from address 1
+        SUB 2       # Subtract the value from address 2
+        STORE 3     # Store the result in address 3
+        HALT        # Stop execution
+```
+
+## Multiplication
+
+This program multiplies two numbers stored in addresses 1 and 2, and stores the result in address 3:
+
+```
+# Multiply two numbers
+        LOAD 1      # Load the value from address 1
+        MUL 2       # Multiply by the value from address 2
+        STORE 3     # Store the result in address 3
+        HALT        # Stop execution
+```
+
+## Division
+
+This program divides the number in address 1 by the number in address 2, and stores the result in address 3:
+
+```
+# Divide two numbers
+        LOAD 1      # Load the value from address 1
+        DIV 2       # Divide by the value from address 2
+        STORE 3     # Store the result in address 3
+        HALT        # Stop execution
+```
+
+## Swap
+
+This program swaps the values stored in addresses 1 and 2:
+
+```
+# Swap two values
+        LOAD 1      # Load the value from address 1
+        STORE 3     # Store it temporarily in address 3
+        LOAD 2      # Load the value from address 2
+        STORE 1     # Store it in address 1
+        LOAD 3      # Load the temporary value
+        STORE 2     # Store it in address 2
+        HALT        # Stop execution
+```
+
+## Absolute Value
+
+This program calculates the absolute value of the number stored in address 1 and stores the result in address 2:
+
+```
+# Calculate absolute value
+        LOAD 1      # Load the value from address 1
+        JGTZ pos    # If it's positive, jump to 'pos'
+        JZERO pos   # If it's zero, jump to 'pos'
+        MUL =-1     # Otherwise, multiply by -1
+pos:    STORE 2     # Store the result in address 2
+        HALT        # Stop execution
+```
+
+## Counting
+
+This program counts from 1 to the value stored in address 1, storing each value in consecutive memory locations starting from address 2:
+
+```
+# Count from 1 to N
+        LOAD =1     # Initialize counter to 1
+        STORE 2     # Store counter in first output location
+loop:   LOAD 2      # Load current counter
+        SUB 1       # Compare with target value
+        JZERO end   # If equal, we're done
+        LOAD 2      # Load current counter
+        ADD =1      # Increment counter
+        STORE 2     # Update counter
+        STORE 2[1]  # Store in next output location
+        JUMP loop   # Repeat
+end:    HALT        # Stop execution
+```
+
+## Maximum
+
+This program finds the maximum of two numbers stored in addresses 1 and 2, and stores the result in address 3:
+
+```
+# Find maximum of two numbers
+        LOAD 1      # Load first number
+        SUB 2       # Subtract second number
+        JGTZ first  # If result > 0, first is larger
+        LOAD 2      # Otherwise, load second number
+        JUMP store  # Jump to store
+first:  LOAD 1      # Load first number
+store:  STORE 3     # Store the maximum in address 3
+        HALT        # Stop execution
+```
+
+## Minimum
+
+This program finds the minimum of two numbers stored in addresses 1 and 2, and stores the result in address 3:
+
+```
+# Find minimum of two numbers
+        LOAD 1      # Load first number
+        SUB 2       # Subtract second number
+        JGTZ second # If result > 0, second is smaller
+        LOAD 1      # Otherwise, load first number
+        JUMP store  # Jump to store
+second: LOAD 2      # Load second number
+store:  STORE 3     # Store the minimum in address 3
+        HALT        # Stop execution
+```
+
+## Sum of Array
+
+This program calculates the sum of an array of numbers. Address 1 contains the length of the array, and the array elements are stored starting from address 2:
+
+```
+# Calculate sum of array
+        LOAD =0     # Initialize sum to 0
+        STORE 10    # Store sum in address 10
+        LOAD 1      # Load array length
+        STORE 11    # Store length in address 11
+        LOAD =0     # Initialize index to 0
+        STORE 12    # Store index in address 12
+loop:   LOAD 12     # Load current index
+        SUB 11      # Compare with array length
+        JZERO end   # If equal, we're done
+        LOAD 10     # Load current sum
+        ADD 2[12]   # Add array element at current index
+        STORE 10    # Update sum
+        LOAD 12     # Load current index
+        ADD =1      # Increment index
+        STORE 12    # Update index
+        JUMP loop   # Repeat
+end:    HALT        # Stop execution
+```
+
+<Callout type="tip">
+  These examples demonstrate the basic capabilities of the RAM language. You can use them as starting points for your own programs or as references when learning the language.
+</Callout>

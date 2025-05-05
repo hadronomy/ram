@@ -1,0 +1,94 @@
+---
+title: Syntax
+description: Overview of the RAM language syntax
+---
+
+## Program Structure
+
+A RAM program consists of a sequence of lines, each containing one of the following:
+
+- An instruction (optionally preceded by a label)
+- A label definition
+- A comment
+- A module declaration or import statement
+
+### Example
+
+```
+# This is a comment
+start:  LOAD 1      # This loads the value at address 1
+        ADD 2       # Add the value at address 2
+        STORE 3     # Store the result in address 3
+loop:   LOAD 3      # Load the result
+        SUB 1       # Subtract 1
+        JGTZ end    # Jump to 'end' if the result is greater than zero
+        JUMP loop   # Jump back to 'loop'
+end:    HALT        # Stop execution
+```
+
+## Comments
+
+Comments in RAM start with a `#` character and continue until the end of the line:
+
+```
+# This is a comment
+LOAD 1  # This is also a comment
+```
+
+## Labels
+
+Labels are identifiers that mark specific positions in the code. They can be used as targets for jump instructions:
+
+```
+start:  LOAD 1      # 'start' is a label
+        JUMP start  # Jump back to the 'start' label
+```
+
+Labels must be followed by an instruction and can only contain alphanumeric characters and underscores.
+
+## Instructions
+
+Instructions are the basic building blocks of RAM programs. Each instruction consists of an opcode and, optionally, an operand:
+
+```
+LOAD 1      # Opcode: LOAD, Operand: 1
+ADD 2       # Opcode: ADD, Operand: 2
+HALT        # Opcode: HALT, No operand
+```
+
+See the [Instructions](/docs/language/instructions) page for a complete list of available instructions.
+
+## Operands
+
+Operands specify the data that instructions operate on. RAM supports several addressing modes:
+
+```
+LOAD 1      # Direct addressing: Load from address 1
+LOAD *1     # Indirect addressing: Load from the address stored at address 1
+LOAD =1     # Immediate addressing: Load the value 1 directly
+```
+
+See the [Operands](/docs/language/operands) page for more details on addressing modes.
+
+## Modules
+
+RAM supports a module system similar to Rust's, allowing you to organize your code into separate files:
+
+```
+mod mymodule;       # Declare a module
+use mymodule::*;    # Import all items from a module
+```
+
+See the [Modules](/docs/language/modules) page for more information on the module system.
+
+## Whitespace and Formatting
+
+RAM is not sensitive to whitespace, except for separating tokens. You can use spaces and tabs for indentation according to your preference.
+
+## Case Sensitivity
+
+RAM is case-sensitive. For example, `LOAD` and `load` are considered different instructions.
+
+## Line Continuation
+
+RAM does not support line continuation. Each instruction must be on a single line.
