@@ -230,14 +230,13 @@ impl<W: Write> Write for ConditionalWriter<W> {
 /// Creates a file writer with fallback to stdout on error
 fn create_file_writer(log_path: &PathBuf) -> Box<dyn Write + Send> {
     // Ensure the parent directory exists
-    if let Some(parent) = log_path.parent() {
-        if !parent.exists() {
-            if let Err(err) = std::fs::create_dir_all(parent) {
-                eprintln!("Failed to create log directory '{}': {}", parent.display(), err);
-                // Fallback to stdout if we can't create the directory
-                return Box::new(io::stdout());
-            }
-        }
+    if let Some(parent) = log_path.parent()
+        && !parent.exists()
+        && let Err(err) = std::fs::create_dir_all(parent)
+    {
+        eprintln!("Failed to create log directory '{}': {}", parent.display(), err);
+        // Fallback to stdout if we can't create the directory
+        return Box::new(io::stdout());
     }
 
     // Try to open the log file

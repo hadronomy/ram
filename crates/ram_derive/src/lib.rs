@@ -74,20 +74,19 @@ fn find_static_text_attribute(attrs: &[Attribute]) -> Result<Option<syn::LitStr>
                 let mut parser = tokens.into_iter().peekable();
 
                 // Try to extract a string literal from the tokens
-                if let Some(token) = parser.next() {
-                    if let Ok(Lit::Str(lit_str)) =
+                if let Some(token) = parser.next()
+                    && let Ok(Lit::Str(lit_str)) =
                         syn::parse2::<Lit>(proc_macro2::TokenStream::from(token.clone()))
-                    {
-                        // Check that there are no more tokens
-                        if parser.peek().is_none() {
-                            return Ok(Some(lit_str));
-                        }
-
-                        return Err(syn::Error::new_spanned(
-                            &meta_list,
-                            "Expected exactly one string literal inside #[static_text(...)]",
-                        ));
+                {
+                    // Check that there are no more tokens
+                    if parser.peek().is_none() {
+                        return Ok(Some(lit_str));
                     }
+
+                    return Err(syn::Error::new_spanned(
+                        &meta_list,
+                        "Expected exactly one string literal inside #[static_text(...)]",
+                    ));
                 }
 
                 return Err(syn::Error::new_spanned(

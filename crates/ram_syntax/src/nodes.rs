@@ -13,7 +13,7 @@ pub struct Program(pub(crate) ResolvedNode);
 
 impl Program {
     /// Returns an iterator over the statements in the program
-    pub fn statements(&self) -> AstChildren<Statement> {
+    pub fn statements(&self) -> AstChildren<'_, Statement> {
         AstChildren::<Statement>::new(self.syntax())
     }
 }
@@ -215,12 +215,12 @@ pub struct CommentGroup(pub(crate) ResolvedNode);
 
 impl CommentGroup {
     /// Returns the comments in this group
-    pub fn comments(&self) -> AstChildren<Comment> {
+    pub fn comments(&self) -> AstChildren<'_, Comment> {
         AstChildren::<Comment>::new(self.syntax())
     }
 
     /// Returns the documentation comments in this group
-    pub fn doc_comments(&self) -> AstChildren<DocComment> {
+    pub fn doc_comments(&self) -> AstChildren<'_, DocComment> {
         AstChildren::<DocComment>::new(self.syntax())
     }
 }

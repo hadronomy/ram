@@ -89,18 +89,18 @@ pub trait InstructionDefinition: Send + Sync + 'static {
             )));
         }
 
-        if let Some(operand) = operand {
-            if !self.allowed_operand_kinds().contains(&operand.kind) {
-                return Err(VmError::InvalidOperand(format!(
-                    "{} does not accept {} operands",
-                    self.name(),
-                    match operand.kind {
-                        OperandKind::Direct => "direct",
-                        OperandKind::Indirect => "indirect",
-                        OperandKind::Immediate => "immediate",
-                    }
-                )));
-            }
+        if let Some(operand) = operand
+            && !self.allowed_operand_kinds().contains(&operand.kind)
+        {
+            return Err(VmError::InvalidOperand(format!(
+                "{} does not accept {} operands",
+                self.name(),
+                match operand.kind {
+                    OperandKind::Direct => "direct",
+                    OperandKind::Indirect => "indirect",
+                    OperandKind::Immediate => "immediate",
+                }
+            )));
         }
 
         Ok(())
@@ -311,18 +311,18 @@ impl InstructionDefinition for InstructionKind {
                 self.name()
             )));
         }
-        if let Some(operand) = operand {
-            if !self.allowed_operand_kinds().contains(&operand.kind) {
-                return Err(VmError::InvalidOperand(format!(
-                    "{} does not accept {} operands",
-                    self.name(),
-                    match operand.kind {
-                        OperandKind::Direct => "direct",
-                        OperandKind::Indirect => "indirect",
-                        OperandKind::Immediate => "immediate",
-                    }
-                )));
-            }
+        if let Some(operand) = operand
+            && !self.allowed_operand_kinds().contains(&operand.kind)
+        {
+            return Err(VmError::InvalidOperand(format!(
+                "{} does not accept {} operands",
+                self.name(),
+                match operand.kind {
+                    OperandKind::Direct => "direct",
+                    OperandKind::Indirect => "indirect",
+                    OperandKind::Immediate => "immediate",
+                }
+            )));
         }
         Ok(())
     }

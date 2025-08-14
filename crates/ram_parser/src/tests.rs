@@ -1,10 +1,11 @@
 //! Tests for the RAM parser.
 
+use ram_syntax::SyntaxKind;
+
 use crate::diagnostic::Diagnostic;
 use crate::event::Event;
 use crate::lexer::{Lexer, Token};
 use crate::parser::{Input, Parser};
-use ram_syntax::SyntaxKind;
 
 /// Helper function to parse a string and return the events
 fn parse_test(source: &str) -> (Vec<Event>, Vec<Diagnostic>) {

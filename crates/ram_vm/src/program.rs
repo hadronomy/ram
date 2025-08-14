@@ -65,11 +65,11 @@ impl Program {
         // Second pass: process all labels to build an accurate label map
         debug!("HIR Labels: {:?}", body.labels);
         for label in &body.labels {
-            if let Some(instr_id) = label.instruction_id {
-                if let Some(&idx) = instruction_indices.get(&instr_id.0) {
-                    debug!("Label {} maps to instruction at index {}", label.name, idx);
-                    program.labels.insert(label.name.clone(), idx);
-                }
+            if let Some(instr_id) = label.instruction_id
+                && let Some(&idx) = instruction_indices.get(&instr_id.0)
+            {
+                debug!("Label {} maps to instruction at index {}", label.name, idx);
+                program.labels.insert(label.name.clone(), idx);
             }
         }
 

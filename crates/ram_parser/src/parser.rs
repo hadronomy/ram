@@ -417,10 +417,10 @@ impl<'t> Parser<'t> {
                 return None;
             }
 
-            if predicate(kind) {
-                if let Some(token) = self.inp.token(pos) {
-                    return Some((pos, token.span.clone()));
-                }
+            if predicate(kind)
+                && let Some(token) = self.inp.token(pos)
+            {
+                return Some((pos, token.span.clone()));
             }
 
             pos += 1;

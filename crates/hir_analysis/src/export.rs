@@ -256,10 +256,10 @@ impl<'a> PipelineExporter<'a> {
             let mut node = Map::new();
             node.insert("id".to_string(), Value::String(format!("N{}", node_idx.index())));
 
-            if options.include_pass_names {
-                if let Some(&name) = self.pass_names.get(&type_id) {
-                    node.insert("name".to_string(), Value::String(name.to_string()));
-                }
+            if options.include_pass_names
+                && let Some(&name) = self.pass_names.get(&type_id)
+            {
+                node.insert("name".to_string(), Value::String(name.to_string()));
             }
 
             if options.include_type_ids {

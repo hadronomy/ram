@@ -335,10 +335,10 @@ pub mod debug {
                 result.push_str(&format!("  [{:?}] {:?}\n", i, label));
 
                 // Show the instruction this label is mapped to
-                if let Some(instr_id) = label.instruction_id {
-                    if let Some(pos) = body.instructions.iter().position(|i| i.id == instr_id) {
-                        result.push_str(&format!("      → Instruction [{:?}]\n", pos));
-                    }
+                if let Some(instr_id) = label.instruction_id
+                    && let Some(pos) = body.instructions.iter().position(|i| i.id == instr_id)
+                {
+                    result.push_str(&format!("      → Instruction [{:?}]\n", pos));
                 }
             }
         }
@@ -350,17 +350,17 @@ pub mod debug {
                 result.push_str(&format!("  [{:?}] {:?}\n", i, instruction));
 
                 // Show the operand expression
-                if let Some(operand_id) = instruction.operand {
-                    if let Some(expr) = body.exprs.get(operand_id.0 as usize) {
-                        result.push_str(&format!("      Operand: {:?}\n", expr));
-                    }
+                if let Some(operand_id) = instruction.operand
+                    && let Some(expr) = body.exprs.get(operand_id.0 as usize)
+                {
+                    result.push_str(&format!("      Operand: {:?}\n", expr));
                 }
 
                 // Show the label associated with this instruction
-                if let Some(label_name) = &instruction.label_name {
-                    if let Some(pos) = body.labels.iter().position(|l| &l.name == label_name) {
-                        result.push_str(&format!("      Label: [{:?}] {:?}\n", pos, label_name));
-                    }
+                if let Some(label_name) = &instruction.label_name
+                    && let Some(pos) = body.labels.iter().position(|l| &l.name == label_name)
+                {
+                    result.push_str(&format!("      Label: [{:?}] {:?}\n", pos, label_name));
                 }
             }
         }

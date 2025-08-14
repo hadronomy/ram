@@ -134,10 +134,10 @@ impl<'a> ConstantPropagationAnalyzer<'a> {
         if let Ok(sorted_nodes) = self.cfg.topological_sort() {
             // Process instructions in topological order
             for node_idx in sorted_nodes {
-                if let Some(instr_id) = self.cfg.get_node(node_idx).instruction_id {
-                    if let Some(instr) = self.body.instructions.iter().find(|i| i.id == instr_id) {
-                        self.process_instruction(instr);
-                    }
+                if let Some(instr_id) = self.cfg.get_node(node_idx).instruction_id
+                    && let Some(instr) = self.body.instructions.iter().find(|i| i.id == instr_id)
+                {
+                    self.process_instruction(instr);
                 }
             }
         } else {
@@ -252,10 +252,10 @@ impl<'a> ConstantPropagationAnalyzer<'a> {
                     // unless they are direct literals with a constant address and immediate mode
                     if let AddressingMode::Immediate = mem_ref.mode {
                         // For immediate addressing (e.g., =5), we can use the literal value
-                        if let Some(addr_expr) = self.body.exprs.get(mem_ref.address.0 as usize) {
-                            if let ExprKind::Literal(Literal::Int(value)) = &addr_expr.kind {
-                                return Some(*value);
-                            }
+                        if let Some(addr_expr) = self.body.exprs.get(mem_ref.address.0 as usize)
+                            && let ExprKind::Literal(Literal::Int(value)) = &addr_expr.kind
+                        {
+                            return Some(*value);
                         }
                     }
                     // For all other memory references, the value is not statically known

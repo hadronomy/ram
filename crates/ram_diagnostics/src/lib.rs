@@ -344,11 +344,7 @@ impl Iterator for DiagnosticCollection {
     type Item = Diagnostic;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.diagnostics.is_empty() {
-            None
-        } else {
-            Some(self.diagnostics.remove(0))
-        }
+        if self.diagnostics.is_empty() { None } else { Some(self.diagnostics.remove(0)) }
     }
 }
 

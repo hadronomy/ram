@@ -162,10 +162,8 @@ impl InstructionSet {
 
 /// The standard instruction set for the RAM virtual machine
 pub static STANDARD_INSTRUCTION_SET: Lazy<InstructionSet> = Lazy::new(|| {
-    let mut set = InstructionSet::new(
-        "Standard",
-        "The standard instruction set for the RAM virtual machine",
-    );
+    let mut set =
+        InstructionSet::new("Standard", "The standard instruction set for the RAM virtual machine");
 
     // Add metadata
     set.add_metadata("version", "1.0.0")
@@ -174,7 +172,7 @@ pub static STANDARD_INSTRUCTION_SET: Lazy<InstructionSet> = Lazy::new(|| {
 
     // Register standard instructions
     let registry = standard_instructions();
-    
+
     // Copy all instructions from the registry to the set
     for kind in InstructionKind::standard_kinds() {
         if let Some(definition) = registry.get(&kind) {
@@ -194,9 +192,7 @@ pub struct InstructionSetRegistry {
 impl InstructionSetRegistry {
     /// Create a new empty instruction set registry
     pub fn new() -> Self {
-        let mut registry = Self {
-            sets: DashMap::new(),
-        };
+        let mut registry = Self { sets: DashMap::new() };
 
         // Register the standard instruction set
         registry.register(Arc::new(InstructionSet::standard()));
@@ -237,4 +233,5 @@ impl Default for InstructionSetRegistry {
 }
 
 /// The global instruction set registry
-pub static INSTRUCTION_SET_REGISTRY: Lazy<InstructionSetRegistry> = Lazy::new(InstructionSetRegistry::new);
+pub static INSTRUCTION_SET_REGISTRY: Lazy<InstructionSetRegistry> =
+    Lazy::new(InstructionSetRegistry::new);

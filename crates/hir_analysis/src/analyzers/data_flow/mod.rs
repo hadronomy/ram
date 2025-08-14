@@ -127,42 +127,42 @@ impl<'a> DataFlowGraphBuilder<'a> {
         match instr.opcode.to_uppercase().as_str() {
             "LOAD" => {
                 // LOAD reads from memory and writes to the accumulator
-                if let Some(operand_id) = instr.operand {
-                    if let Some(addr) = self.get_memory_address(operand_id) {
-                        self.read_addrs.insert(addr);
-                    }
+                if let Some(operand_id) = instr.operand
+                    && let Some(addr) = self.get_memory_address(operand_id)
+                {
+                    self.read_addrs.insert(addr);
                 }
             }
             "STORE" => {
                 // STORE reads from the accumulator and writes to memory
-                if let Some(operand_id) = instr.operand {
-                    if let Some(addr) = self.get_memory_address(operand_id) {
-                        self.written_addrs.insert(addr);
-                    }
+                if let Some(operand_id) = instr.operand
+                    && let Some(addr) = self.get_memory_address(operand_id)
+                {
+                    self.written_addrs.insert(addr);
                 }
             }
             "ADD" | "SUB" | "MUL" | "DIV" => {
                 // Arithmetic operations read from memory and write to the accumulator
-                if let Some(operand_id) = instr.operand {
-                    if let Some(addr) = self.get_memory_address(operand_id) {
-                        self.read_addrs.insert(addr);
-                    }
+                if let Some(operand_id) = instr.operand
+                    && let Some(addr) = self.get_memory_address(operand_id)
+                {
+                    self.read_addrs.insert(addr);
                 }
             }
             "READ" => {
                 // READ writes to memory
-                if let Some(operand_id) = instr.operand {
-                    if let Some(addr) = self.get_memory_address(operand_id) {
-                        self.written_addrs.insert(addr);
-                    }
+                if let Some(operand_id) = instr.operand
+                    && let Some(addr) = self.get_memory_address(operand_id)
+                {
+                    self.written_addrs.insert(addr);
                 }
             }
             "WRITE" => {
                 // WRITE reads from memory
-                if let Some(operand_id) = instr.operand {
-                    if let Some(addr) = self.get_memory_address(operand_id) {
-                        self.read_addrs.insert(addr);
-                    }
+                if let Some(operand_id) = instr.operand
+                    && let Some(addr) = self.get_memory_address(operand_id)
+                {
+                    self.read_addrs.insert(addr);
                 }
             }
             _ => {
@@ -206,42 +206,42 @@ impl<'a> DataFlowGraphBuilder<'a> {
             match instr.opcode.to_uppercase().as_str() {
                 "LOAD" => {
                     // LOAD reads from memory
-                    if let Some(operand_id) = instr.operand {
-                        if let Some(addr) = self.get_memory_address(operand_id) {
-                            addr_to_readers.entry(addr).or_default().push(instr.id);
-                        }
+                    if let Some(operand_id) = instr.operand
+                        && let Some(addr) = self.get_memory_address(operand_id)
+                    {
+                        addr_to_readers.entry(addr).or_default().push(instr.id);
                     }
                 }
                 "STORE" => {
                     // STORE writes to memory
-                    if let Some(operand_id) = instr.operand {
-                        if let Some(addr) = self.get_memory_address(operand_id) {
-                            addr_to_writers.entry(addr).or_default().push(instr.id);
-                        }
+                    if let Some(operand_id) = instr.operand
+                        && let Some(addr) = self.get_memory_address(operand_id)
+                    {
+                        addr_to_writers.entry(addr).or_default().push(instr.id);
                     }
                 }
                 "ADD" | "SUB" | "MUL" | "DIV" => {
                     // Arithmetic operations read from memory
-                    if let Some(operand_id) = instr.operand {
-                        if let Some(addr) = self.get_memory_address(operand_id) {
-                            addr_to_readers.entry(addr).or_default().push(instr.id);
-                        }
+                    if let Some(operand_id) = instr.operand
+                        && let Some(addr) = self.get_memory_address(operand_id)
+                    {
+                        addr_to_readers.entry(addr).or_default().push(instr.id);
                     }
                 }
                 "READ" => {
                     // READ writes to memory
-                    if let Some(operand_id) = instr.operand {
-                        if let Some(addr) = self.get_memory_address(operand_id) {
-                            addr_to_writers.entry(addr).or_default().push(instr.id);
-                        }
+                    if let Some(operand_id) = instr.operand
+                        && let Some(addr) = self.get_memory_address(operand_id)
+                    {
+                        addr_to_writers.entry(addr).or_default().push(instr.id);
                     }
                 }
                 "WRITE" => {
                     // WRITE reads from memory
-                    if let Some(operand_id) = instr.operand {
-                        if let Some(addr) = self.get_memory_address(operand_id) {
-                            addr_to_readers.entry(addr).or_default().push(instr.id);
-                        }
+                    if let Some(operand_id) = instr.operand
+                        && let Some(addr) = self.get_memory_address(operand_id)
+                    {
+                        addr_to_readers.entry(addr).or_default().push(instr.id);
                     }
                 }
                 _ => {

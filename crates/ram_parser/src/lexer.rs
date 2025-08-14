@@ -164,10 +164,10 @@ impl<'a> Lexer<'a> {
         let start = self.position;
 
         // First character must be a letter
-        if let Some(c) = self.peek() {
-            if c.is_ascii_alphabetic() {
-                self.advance();
-            }
+        if let Some(c) = self.peek()
+            && c.is_ascii_alphabetic()
+        {
+            self.advance();
         }
 
         // Subsequent characters can be letters, digits, or underscores

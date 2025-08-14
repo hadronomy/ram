@@ -124,10 +124,10 @@ impl DataFlowGraph {
 
             // Check incoming edges for reads
             for (_, value) in self.get_incoming_edges(node_idx) {
-                if let DataFlowValue::Memory(addr) = value {
-                    if !initialized.contains(&addr) {
-                        uninitialized.insert((addr, instr_id));
-                    }
+                if let DataFlowValue::Memory(addr) = value
+                    && !initialized.contains(&addr)
+                {
+                    uninitialized.insert((addr, instr_id));
                 }
             }
 
