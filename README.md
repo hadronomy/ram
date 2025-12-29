@@ -16,6 +16,14 @@
       src="https://img.shields.io/github/stars/hadronomy/ram?style=for-the-badge&logo=starship&color=c69ff5&logoColor=D9E0EE&labelColor=302D41"
     />
   </a>
+
+  <!-- CodSpeed Badge -->
+  <a href="https://codspeed.io/hadronomy/ram?utm_source=badge">
+    <img
+      alt="CodSpeed"
+      src="https://img.shields.io/endpoint?url=https://codspeed.io/badge.json&style=for-the-badge&logo=codspeed&logoColor=D9E0EE&labelColor=302D41"
+    />
+  </a>
   <p></p>
   <span>
     <code>RAM</code> <i>(Random Access Machine)</i> <strong>language</strong> and <strong>emulator</strong>.

@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use criterion::{BenchmarkId, Criterion, Throughput, criterion_group};
+use codspeed_criterion_compat::{BenchmarkId, Criterion, Throughput, criterion_group};
 
 fn parse(c: &mut Criterion) {
     let crate_root = env!("CARGO_MANIFEST_DIR");
