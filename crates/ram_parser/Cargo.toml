@@ -42,6 +42,7 @@ ram_error       = { workspace = true }
 ram_syntax      = { workspace = true }
 
 [dev-dependencies]
+codspeed-criterion-compat = "4.2.0"
 criterion = "0.5.1"
 proptest  = { workspace = true }
 
