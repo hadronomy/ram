@@ -47,10 +47,16 @@ pub trait VmState {
     /// Set the value of the accumulator
     fn set_accumulator(&mut self, value: i64);
 
-    /// Get a value from memory
+    /// Get a value from the Register File
+    fn get_register(&self, index: i64) -> Result<i64, VmError>;
+
+    /// Set a value in the Register File
+    fn set_register(&mut self, index: i64, value: i64) -> Result<(), VmError>;
+
+    /// Get a value from Heap Memory
     fn get_memory(&self, address: i64) -> Result<i64, VmError>;
 
-    /// Set a value in memory
+    /// Set a value in Heap Memory
     fn set_memory(&mut self, address: i64, value: i64) -> Result<(), VmError>;
 
     /// Get the program counter

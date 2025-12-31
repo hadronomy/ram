@@ -180,10 +180,19 @@ impl InstructionValidationAnalysis {
                                     );
                                 }
                             }
+                            ExprKind::ArrayAccess(_) => {
+                                // Array access is a valid address expression
+                            }
+                            ExprKind::LabelRef(_) => {
+                                // Label reference is a valid address expression (e.g. for indirect addressing)
+                            }
+                            ExprKind::Literal(Literal::Label(_)) => {
+                                // Label literal is a valid address expression
+                            }
                             _ => {
                                 ctx.error_at_expr(
-                                    "Memory reference address must be an integer".to_string(),
-                                    "Use an integer for the memory address".to_string(),
+                                    "Memory reference address must be an integer, label, or array access".to_string(),
+                                    "Use an integer, label, or array access for the memory address".to_string(),
                                     mem_ref.address,
                                 );
                             }

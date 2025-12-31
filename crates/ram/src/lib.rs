@@ -170,9 +170,9 @@ async fn handle_command_iner(
 
             Ok::<_, Error>(ExitCode::SUCCESS)
         }
-        Command::Run { program, input: _, memory: _ } => {
+        Command::Run { program, input, memory: _ } => {
             let program_path = std::path::Path::new(&program);
-            run::run_program(program_path, None, None)
+            run::run_program(program_path, input, None)
                 .map(|_| ExitCode::SUCCESS)
                 .map_err(Error::RunError)
         }

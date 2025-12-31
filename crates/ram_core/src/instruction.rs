@@ -99,6 +99,7 @@ pub trait InstructionDefinition: Send + Sync + 'static {
                     OperandKind::Direct => "direct",
                     OperandKind::Indirect => "indirect",
                     OperandKind::Immediate => "immediate",
+                    OperandKind::Indexed => "indexed",
                 }
             )));
         }
@@ -169,8 +170,12 @@ impl InstructionKind {
 
     /// Get the allowed operand kinds for this instruction
     pub fn allowed_operand_kinds(&self) -> &[OperandKind] {
-        static ALL_KINDS: [OperandKind; 3] =
-            [OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate];
+        static ALL_KINDS: [OperandKind; 4] = [
+            OperandKind::Direct,
+            OperandKind::Indirect,
+            OperandKind::Immediate,
+            OperandKind::Indexed,
+        ];
 
         match self {
             Self::Halt => &[],
@@ -263,9 +268,30 @@ impl InstructionKind {
     }
 
     /// Validate that the operand is valid for this instruction
-    pub fn validate_operand(&self, _operand: Option<&Operand>) -> Result<(), VmError> {
-        // This is just a placeholder - the actual validation is done by the instruction registry
-        // which has access to the instruction definitions
+    pub fn validate_operand(&self, operand: Option<&Operand>) -> Result<(), VmError> {
+        if self.requires_operand() && operand.is_none() {
+            return Err(VmError::InvalidOperand(format!("{} requires an operand", self.name())));
+        }
+        if !self.requires_operand() && operand.is_some() {
+            return Err(VmError::InvalidOperand(format!(
+                "{} does not accept an operand",
+                self.name()
+            )));
+        }
+        if let Some(operand) = operand
+            && !self.allowed_operand_kinds().contains(&operand.kind)
+        {
+            return Err(VmError::InvalidOperand(format!(
+                "{} does not accept {} operands",
+                self.name(),
+                match operand.kind {
+                    OperandKind::Direct => "direct",
+                    OperandKind::Indirect => "indirect",
+                    OperandKind::Immediate => "immediate",
+                    OperandKind::Indexed => "indexed",
+                }
+            )));
+        }
         Ok(())
     }
 
@@ -302,29 +328,7 @@ impl InstructionDefinition for InstructionKind {
 
     /// Validate that the operand is valid for this instruction
     fn validate_operand(&self, operand: Option<&Operand>) -> Result<(), VmError> {
-        if self.requires_operand() && operand.is_none() {
-            return Err(VmError::InvalidOperand(format!("{} requires an operand", self.name())));
-        }
-        if !self.requires_operand() && operand.is_some() {
-            return Err(VmError::InvalidOperand(format!(
-                "{} does not accept an operand",
-                self.name()
-            )));
-        }
-        if let Some(operand) = operand
-            && !self.allowed_operand_kinds().contains(&operand.kind)
-        {
-            return Err(VmError::InvalidOperand(format!(
-                "{} does not accept {} operands",
-                self.name(),
-                match operand.kind {
-                    OperandKind::Direct => "direct",
-                    OperandKind::Indirect => "indirect",
-                    OperandKind::Immediate => "immediate",
-                }
-            )));
-        }
-        Ok(())
+        self.validate_operand(operand)
     }
 
     /// Execute the instruction with the given operand and VM state

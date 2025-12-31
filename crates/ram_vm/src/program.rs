@@ -167,17 +167,6 @@ impl Program {
                                 // Extract the base value
                                 let base_value = match &base_expr.kind {
                                     body::ExprKind::Literal(body::Literal::Int(value)) => *value,
-                                    body::ExprKind::LabelRef(label_ref) => {
-                                        // Find the label by its ID
-                                        let label =
-                                            Self::find_label_by_id(body, label_ref.label_id)?;
-
-                                        // Use the label name as a string
-                                        return Err(VmError::InvalidInstruction(format!(
-                                            "Label references in array access not yet supported: {}",
-                                            label.name
-                                        )));
-                                    }
                                     _ => {
                                         return Err(VmError::InvalidInstruction(format!(
                                             "Unsupported array base expression: {:?}",
@@ -197,11 +186,10 @@ impl Program {
                                     }
                                 };
 
-                                // Calculate the effective address: base + index
-                                let effective_address = base_value + index_value;
-
-                                // Return the effective address as the operand value
-                                OperandValue::Number(effective_address)
+                                // Return the indexed value
+                                // Note: In indexed mode, index_value is treated as a register address, not a literal offset
+                                // This matches typical RAM semantics where X[Y] means Base=X, Index=Reg(Y)
+                                OperandValue::Indexed(base_value, index_value)
                             }
                             _ => {
                                 return Err(VmError::InvalidInstruction(format!(
@@ -216,14 +204,27 @@ impl Program {
                             body::AddressingMode::Direct => match operand_value {
                                 OperandValue::Number(n) => Some(Operand::direct(n)),
                                 OperandValue::String(s) => Some(Operand::direct_str(s)),
+                                OperandValue::Indexed(base, index) => {
+                                    Some(Operand::indexed(base, index))
+                                }
                             },
                             body::AddressingMode::Indirect => match operand_value {
                                 OperandValue::Number(n) => Some(Operand::indirect(n)),
                                 OperandValue::String(s) => Some(Operand::indirect_str(s)),
+                                OperandValue::Indexed(_, _) => {
+                                    return Err(VmError::InvalidInstruction(
+                                        "Indirect indexed addressing not supported".to_string(),
+                                    ));
+                                }
                             },
                             body::AddressingMode::Immediate => match operand_value {
                                 OperandValue::Number(n) => Some(Operand::immediate(n)),
                                 OperandValue::String(s) => Some(Operand::immediate_str(s)),
+                                OperandValue::Indexed(_, _) => {
+                                    return Err(VmError::InvalidInstruction(
+                                        "Immediate indexed addressing not supported".to_string(),
+                                    ));
+                                }
                             },
                         }
                     }

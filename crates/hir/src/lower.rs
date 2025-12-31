@@ -321,8 +321,21 @@ impl HirCollector {
 
     /// Lower an AST Operand to a HIR Expression, returning its ExprId.
     fn lower_operand(&mut self, operand: &ast::Operand) -> Result<ExprId, HirError> {
+        // Reserve the ID and push a placeholder to maintain index synchronization
         let expr_id = self.next_expr_id();
+        let span_range = operand.syntax().text_range();
+        let span = span_range.start().into()..span_range.end().into();
 
+        // Push a placeholder expression that we'll overwrite later
+        // This ensures the ExprId matches the index in self.body.exprs
+        self.body.exprs.push(Expr {
+            id: expr_id,
+            kind: ExprKind::Literal(Literal::Int(0)), // Placeholder kind
+            span: span.clone(),
+        });
+
+        // Now recursively lower the operand content
+        // This might push more expressions to the vector
         let kind = if let Some(direct) = operand.as_direct() {
             self.lower_direct_operand(direct)?
         } else if let Some(indirect) = operand.as_indirect() {
@@ -335,12 +348,9 @@ impl HirCollector {
             return Err(HirError::UnknownOperand(operand.syntax().text_range()));
         };
 
-        // Convert TextRange to Range<usize>
-        let text_range = operand.syntax().text_range();
-        let span = text_range.start().into()..text_range.end().into();
-
-        let expr = Expr { id: expr_id, kind, span };
-        self.body.exprs.push(expr);
+        // Update the expression at the reserved index with the actual data
+        let index = expr_id.0 as usize;
+        self.body.exprs[index] = Expr { id: expr_id, kind, span };
 
         Ok(expr_id)
     }

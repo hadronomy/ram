@@ -5,34 +5,61 @@ use std::path::Path;
 use std::sync::Arc;
 
 use miette::{IntoDiagnostic, Result, miette};
-use ram_vm::{VecInput, VecOutput, VirtualMachine, VmDatabase, VmDatabaseImpl};
+use ram_vm::{VecInput, VecOutput, VirtualMachine, VmDatabaseImpl};
+
+use crate::language;
 
 /// Run a RAM program from a file path
 pub fn run_program(
     program_path: &Path,
-    _input_path: Option<&Path>,
+    input_values: Option<Vec<i64>>,
     _memory_path: Option<&Path>,
 ) -> Result<()> {
-    // Create a new database
-    let db = Arc::new(VmDatabaseImpl::new());
-
     // Read the program file
     let program_text = std::fs::read_to_string(program_path).into_diagnostic()?;
 
-    // Parse the program
-    let program = db
-        .parse_to_vm_program(&program_text)
-        .map_err(|e| miette!("Failed to parse program: {}", e))?;
+    // Parse and Validate using the full language pipeline
+    // This runs lexer -> parser -> hir lowering -> analysis pipeline
+    let (_ast, body, _pipeline, _context, errors) = language::parse_program(&program_text);
 
-    // TODO: Improve io API
-    print!("Input: ");
-    std::io::stdout().flush().into_diagnostic()?;
-    let mut input = String::new();
-    std::io::stdin().read_line(&mut input).into_diagnostic()?;
+    // Check for validation errors
+    if !errors.is_empty() {
+        // Print all errors
+        for error in &errors {
+            eprintln!("{:?}", error);
+        }
+        // Fail the run command
+        return Err(miette!("Program validation failed with {} errors", errors.len()));
+    }
 
-    let input =
-        VecInput::new(input.split_whitespace().map(|number| number.parse().unwrap()).collect());
+    // Determine input values: use provided CLI args or prompt interactively
+    let values = if let Some(vals) = input_values {
+        vals
+    } else {
+        print!("Input: ");
+        std::io::stdout().flush().into_diagnostic()?;
+        let mut buffer = String::new();
+        std::io::stdin().read_line(&mut buffer).into_diagnostic()?;
+
+        // Replace commas with spaces to allow comma-separated input (e.g. "1, 2, 3")
+        buffer
+            .replace(',', " ")
+            .split_whitespace()
+            .map(|token| {
+                token.parse::<i64>().map_err(|e| miette!("Invalid number '{}': {}", token, e))
+            })
+            .collect::<Result<Vec<i64>>>()?
+    };
+
+    let input = VecInput::new(values);
     let output = VecOutput::new();
+
+    // Create a new database for VM execution
+    let db = Arc::new(VmDatabaseImpl::new());
+
+    // Convert the validated HIR Body to a VM Program
+    let program = ram_vm::Program::from_hir(&body, &*db)
+        .map_err(|e| miette!("Failed to compile to VM program: {}", e))?;
 
     // Create a virtual machine
     let mut vm = VirtualMachine::new(program, input, output, db);

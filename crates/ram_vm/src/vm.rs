@@ -16,8 +16,10 @@ use crate::program::Program;
 pub struct VirtualMachine<I: Input, O: Output> {
     /// The program being executed
     program: Program,
-    /// The memory
+    /// The heap memory (arrays, indirect addressing targets)
     memory: Memory,
+    /// The register file (variables, direct addressing targets)
+    registers: Memory,
     /// The accumulator register
     accumulator: i64,
     /// The program counter
@@ -38,6 +40,7 @@ impl<I: Input, O: Output> VirtualMachine<I, O> {
         Self {
             program,
             memory: Memory::new(),
+            registers: Memory::new(),
             accumulator: 0,
             pc: 0,
             running: true,
@@ -60,6 +63,7 @@ impl<I: Input, O: Output> VirtualMachine<I, O> {
     /// Reset the virtual machine
     pub fn reset(&mut self) {
         self.memory.clear();
+        self.registers.clear();
         self.accumulator = 0;
         self.pc = 0;
         self.running = true;
@@ -102,45 +106,36 @@ impl<I: Input, O: Output> VirtualMachine<I, O> {
             .get_instruction(self.pc)
             .ok_or_else(|| VmError::InvalidInstruction("Invalid program counter".to_string()))?;
 
-        // Debug log the current instruction
-        // Get the instruction name from the registry
+        // Debug log
         let instr_name = format!("{:?}", instruction.kind);
         let operand_str = match &instruction.operand {
-            Some(op) => format!("{:?}={}", op.kind, op.value),
+            Some(op) => format!("{}", op),
             None => "None".to_string(),
         };
-        debug!("Executing instruction at PC={}: {} {}", self.pc, instr_name, operand_str);
-        debug!("Current accumulator={}, labels={:?}", self.accumulator, self.program.labels);
+        debug!("PC={}: {} {}", self.pc, instr_name, operand_str);
 
         // Increment the PC for the next instruction
         self.pc += 1;
 
-        // Clone the instruction data to avoid borrowing issues
+        // Clone instruction data to avoid borrowing issues while executing
         let kind = instruction.kind.clone();
         let operand = instruction.operand.clone();
 
-        // Get the instruction definition
+        // Get definition
         let definition = self
             .db
             .get_instruction_definition(&kind)
             .ok_or_else(|| VmError::InvalidInstruction(format!("Unknown instruction: {}", kind)))?;
 
-        // Execute the instruction
+        // Execute
         match definition.execute(operand.as_ref(), self) {
-            Ok(()) => {
-                debug!("After execution: accumulator={}, PC={}", self.accumulator, self.pc);
-                Ok(())
-            }
+            Ok(()) => Ok(()),
             Err(VmError::ProgramTerminated) => {
-                // Special case for HALT instruction
-                debug!("Program terminated with HALT instruction");
-                self.running = false; // Set running flag to false
+                debug!("Program terminated");
+                self.running = false;
                 Ok(())
             }
-            Err(e) => {
-                debug!("Error executing instruction: {:?}", e);
-                Err(e)
-            }
+            Err(e) => Err(e),
         }
     }
 
@@ -153,6 +148,21 @@ impl<I: Input, O: Output> VirtualMachine<I, O> {
     pub fn is_running(&self) -> bool {
         self.running
     }
+
+    /// Get the current accumulator value
+    pub fn accumulator(&self) -> i64 {
+        self.accumulator
+    }
+
+    /// Helper to get register value (mostly for tests/debugging)
+    pub fn get_register_value(&self, index: i64) -> i64 {
+        self.registers.get(index).unwrap_or(0)
+    }
+
+    /// Helper to get heap memory value (mostly for tests/debugging)
+    pub fn get_heap_value(&self, address: i64) -> i64 {
+        self.memory.get(address).unwrap_or(0)
+    }
 }
 
 impl<I: Input, O: Output> VmState for VirtualMachine<I, O> {
@@ -164,26 +174,25 @@ impl<I: Input, O: Output> VmState for VirtualMachine<I, O> {
         self.accumulator = value;
     }
 
-    fn get_memory(&self, address: i64) -> Result<i64, VmError> {
-        debug!("Getting memory at address {}", address);
-        // Special case: address 0 refers to the accumulator
-        if address == 0 {
-            debug!("Reading from accumulator: {}", self.accumulator);
-            Ok(self.accumulator)
-        } else {
-            self.memory.get(address)
-        }
+    fn get_register(&self, index: i64) -> Result<i64, VmError> {
+        if index == 0 { Ok(self.accumulator) } else { self.registers.get(index) }
     }
 
-    fn set_memory(&mut self, address: i64, value: i64) -> Result<(), VmError> {
-        // Special case: address 0 refers to the accumulator
-        if address == 0 {
-            debug!("Setting accumulator to {}", value);
+    fn set_register(&mut self, index: i64, value: i64) -> Result<(), VmError> {
+        if index == 0 {
             self.accumulator = value;
             Ok(())
         } else {
-            self.memory.set(address, value)
+            self.registers.set(index, value)
         }
+    }
+
+    fn get_memory(&self, address: i64) -> Result<i64, VmError> {
+        self.memory.get(address)
+    }
+
+    fn set_memory(&mut self, address: i64, value: i64) -> Result<(), VmError> {
+        self.memory.set(address, value)
     }
 
     fn program_counter(&self) -> usize {
@@ -217,8 +226,10 @@ pub struct VirtualMachineBuilder<I: Input, O: Output> {
     output: O,
     /// The database for instruction definitions
     db: Arc<VmDatabaseImpl>,
-    /// Initial memory values
-    initial_memory: HashMap<i64, i64>,
+    /// Initial register values
+    initial_registers: HashMap<i64, i64>,
+    /// Initial heap memory values
+    initial_heap: HashMap<i64, i64>,
     /// Initial accumulator value
     initial_accumulator: i64,
     /// Maximum number of iterations
@@ -233,7 +244,8 @@ impl<I: Input, O: Output> VirtualMachineBuilder<I, O> {
             input,
             output,
             db,
-            initial_memory: HashMap::new(),
+            initial_registers: HashMap::new(),
+            initial_heap: HashMap::new(),
             initial_accumulator: 0,
             max_iterations: None,
         }
@@ -245,17 +257,23 @@ impl<I: Input, O: Output> VirtualMachineBuilder<I, O> {
         self
     }
 
-    /// Set the initial value of a memory location
+    /// Set the initial value of a register (Direct addressing target)
     pub fn with_memory(mut self, address: i64, value: i64) -> Self {
-        self.initial_memory.insert(address, value);
+        self.initial_registers.insert(address, value);
         self
     }
 
-    /// Set the initial values of multiple memory locations
+    /// Set the initial values of multiple registers
     pub fn with_memory_values(mut self, values: impl IntoIterator<Item = (i64, i64)>) -> Self {
         for (address, value) in values {
-            self.initial_memory.insert(address, value);
+            self.initial_registers.insert(address, value);
         }
+        self
+    }
+
+    /// Set the initial value of a heap memory address (Indirect/Indexed target)
+    pub fn with_heap(mut self, address: i64, value: i64) -> Self {
+        self.initial_heap.insert(address, value);
         self
     }
 
@@ -272,9 +290,13 @@ impl<I: Input, O: Output> VirtualMachineBuilder<I, O> {
         // Set the initial accumulator value
         vm.accumulator = self.initial_accumulator;
 
-        // Set the initial memory values
-        for (address, value) in self.initial_memory {
-            // Ignore errors when setting initial memory values
+        // Set the initial register values
+        for (address, value) in self.initial_registers {
+            let _ = vm.registers.set(address, value);
+        }
+
+        // Set the initial heap values
+        for (address, value) in self.initial_heap {
             let _ = vm.memory.set(address, value);
         }
 

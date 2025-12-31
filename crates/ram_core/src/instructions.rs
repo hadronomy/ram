@@ -1,12 +1,15 @@
 //! Standard instruction implementations for the RAM virtual machine
 
+use std::sync::Arc;
+
 use tracing::debug;
 
 use crate::db::VmState;
 use crate::error::VmError;
-use crate::instruction::InstructionDefinition;
+use crate::instruction::{InstructionDefinition, InstructionKind};
 use crate::operand::{Operand, OperandKind};
-use crate::operand_resolver::{DefaultOperandResolver, OperandResolver};
+use crate::operand_resolver::{DefaultOperandResolver, OperandResolver, StoreTarget};
+use crate::registry::InstructionRegistry;
 
 /// LOAD instruction implementation
 #[derive(Debug, Clone)]
@@ -22,7 +25,7 @@ impl InstructionDefinition for LoadInstruction {
     }
 
     fn allowed_operand_kinds(&self) -> &[OperandKind] {
-        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate]
+        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate, OperandKind::Indexed]
     }
 
     fn execute(
@@ -56,7 +59,7 @@ impl InstructionDefinition for StoreInstruction {
     }
 
     fn allowed_operand_kinds(&self) -> &[OperandKind] {
-        &[OperandKind::Direct, OperandKind::Indirect]
+        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Indexed]
     }
 
     fn execute(
@@ -70,12 +73,15 @@ impl InstructionDefinition for StoreInstruction {
         // Get the accumulator value
         let acc = vm_state.accumulator();
 
-        // Use the operand resolver to get the address to store to
+        // Use the operand resolver to get the target (Register vs Memory) and address
         let resolver = DefaultOperandResolver;
-        let address = resolver.resolve_store_address(operand, vm_state)?;
+        let (target_type, address) = resolver.resolve_store_address(operand, vm_state)?;
 
-        // Store the accumulator value to the resolved address
-        vm_state.set_memory(address, acc)?;
+        match target_type {
+            StoreTarget::Register => vm_state.set_register(address, acc)?,
+            StoreTarget::Memory => vm_state.set_memory(address, acc)?,
+            StoreTarget::Accumulator => vm_state.set_accumulator(acc),
+        }
 
         Ok(())
     }
@@ -95,7 +101,7 @@ impl InstructionDefinition for AddInstruction {
     }
 
     fn allowed_operand_kinds(&self) -> &[OperandKind] {
-        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate]
+        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate, OperandKind::Indexed]
     }
 
     fn execute(
@@ -132,7 +138,7 @@ impl InstructionDefinition for SubInstruction {
     }
 
     fn allowed_operand_kinds(&self) -> &[OperandKind] {
-        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate]
+        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate, OperandKind::Indexed]
     }
 
     fn execute(
@@ -169,7 +175,7 @@ impl InstructionDefinition for MulInstruction {
     }
 
     fn allowed_operand_kinds(&self) -> &[OperandKind] {
-        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate]
+        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate, OperandKind::Indexed]
     }
 
     fn execute(
@@ -206,7 +212,7 @@ impl InstructionDefinition for DivInstruction {
     }
 
     fn allowed_operand_kinds(&self) -> &[OperandKind] {
-        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate]
+        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate, OperandKind::Indexed]
     }
 
     fn execute(
@@ -369,7 +375,7 @@ impl InstructionDefinition for ReadInstruction {
     }
 
     fn allowed_operand_kinds(&self) -> &[OperandKind] {
-        &[OperandKind::Direct, OperandKind::Indirect]
+        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Indexed]
     }
 
     fn execute(
@@ -383,12 +389,15 @@ impl InstructionDefinition for ReadInstruction {
         // Read input from the VM state
         let value = vm_state.read_input()?;
 
-        // Use the operand resolver to get the address to store to
+        // Use the operand resolver to get the target
         let resolver = DefaultOperandResolver;
-        let address = resolver.resolve_store_address(operand, vm_state)?;
+        let (target_type, address) = resolver.resolve_store_address(operand, vm_state)?;
 
-        // Store the input value to the resolved address
-        vm_state.set_memory(address, value)?;
+        match target_type {
+            StoreTarget::Register => vm_state.set_register(address, value)?,
+            StoreTarget::Memory => vm_state.set_memory(address, value)?,
+            StoreTarget::Accumulator => vm_state.set_accumulator(value),
+        }
 
         Ok(())
     }
@@ -408,7 +417,7 @@ impl InstructionDefinition for WriteInstruction {
     }
 
     fn allowed_operand_kinds(&self) -> &[OperandKind] {
-        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate]
+        &[OperandKind::Direct, OperandKind::Indirect, OperandKind::Immediate, OperandKind::Indexed]
     }
 
     fn execute(
@@ -458,12 +467,7 @@ impl InstructionDefinition for HaltInstruction {
 }
 
 /// Create a registry with all standard instructions
-pub fn standard_instructions() -> crate::registry::InstructionRegistry {
-    use std::sync::Arc;
-
-    use crate::instruction::InstructionKind;
-    use crate::registry::InstructionRegistry;
-
+pub fn standard_instructions() -> InstructionRegistry {
     let mut registry = InstructionRegistry::new();
 
     // Register standard instructions
