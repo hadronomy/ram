@@ -9,7 +9,6 @@ read_loop: load 10
         sub 2
         jzero end_read
         read 0      # Read next element
-        jzero hey
         store 3[2]  # Store in array
         load 2
         add =1

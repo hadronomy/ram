@@ -43,17 +43,51 @@ impl AnalysisPass for ControlFlowAnalysis {
         let cfg = cfg_builder.build();
 
         // Check for unreachable code
-        let unreachable = cfg.find_unreachable_nodes();
-        for node_id in unreachable {
-            if let Some(instr_id) = cfg.get_node(node_id).instruction_id
-                && let Some(instr) = body.instructions.iter().find(|i| i.id == instr_id)
-            {
-                ctx.warning_at_instruction(
-                    format!("Unreachable instruction: {}", instr.opcode),
-                    "This instruction will never be executed".to_string(),
-                    instr_id,
-                );
+        let unreachable_nodes = cfg.find_unreachable_nodes();
+
+        // Collect instruction indices for unreachable nodes
+        let mut unreachable_indices: Vec<usize> = unreachable_nodes
+            .iter()
+            .filter_map(|&node_idx| {
+                let node = cfg.get_node(node_idx);
+                // Map the instruction ID back to its index in the body instructions vector
+                // This assumes instructions are stored sequentially
+                node.instruction_id.and_then(|id| body.instructions.iter().position(|i| i.id == id))
+            })
+            .collect();
+
+        // Sort indices to group them by program order
+        unreachable_indices.sort_unstable();
+
+        // Group contiguous indices into ranges
+        let mut unreachable_ranges: Vec<(usize, usize)> = Vec::new();
+
+        for &idx in &unreachable_indices {
+            match unreachable_ranges.last_mut() {
+                // If the current index follows immediately after the end of the last range, extend it
+                Some((_, end)) if *end + 1 == idx => {
+                    *end = idx;
+                }
+                // Otherwise, start a new range
+                _ => {
+                    unreachable_ranges.push((idx, idx));
+                }
             }
+        }
+
+        // Report one warning per contiguous block
+        for (start_idx, end_idx) in unreachable_ranges {
+            let start_instr = &body.instructions[start_idx];
+            let end_instr = &body.instructions[end_idx];
+
+            // Create a span that covers the entire block
+            let full_span = start_instr.span.start..end_instr.span.end;
+
+            ctx.warning(
+                "Unreachable code",
+                "This block of instructions will never be executed",
+                Some(full_span),
+            );
         }
 
         // Check for infinite loops
